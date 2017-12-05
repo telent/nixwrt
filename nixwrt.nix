@@ -36,12 +36,7 @@ let onTheBuild = import ./default.nix {} ;
   };
 };
    stdenv = onTheHost.stdenv;
-   nocheck = d : onTheHost.lib.overrideDerivation d (a: {
-    doCheck = stdenv.buildPlatform == stdenv.hostPlatform;
-    })  ;
 in with onTheHost; rec {
-  hello = (nocheck pkgs.hello);
-
   kernel = onTheBuild.stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
     src = onTheBuild.fetchurl {
@@ -110,6 +105,5 @@ in with onTheHost; rec {
     chmod a+r $out/image.squashfs
     '';
   };
-  acl = pkgs.acl;
 }
 
