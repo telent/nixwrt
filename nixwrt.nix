@@ -71,13 +71,7 @@ in with onTheHost; rec {
 
     
   };
-  zlib_ = lib.overrideDerivation pkgs.zlib (attrs: {
-    CC = "${targetPlatform.config}-cc";
-    AR = "${targetPlatform.config}-ar";    
-    hardeningDisable = [ "all" ];
-  });
   rsync = pkgs.rsync.override {
-    zlib = zlib_;
     enableACLs = false;
   };
   inherit (pkgs) busybox; 
