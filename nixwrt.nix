@@ -85,21 +85,28 @@ in with onTheHost; rec {
     zlib = zlib_;
     enableACLs = false;
   };
-  image = let inputs = [ kernel pkgs.busybox rsync ] ;
-                  
-   in stdenv.mkDerivation {
+  inherit (pkgs) busybox; 
+  squashfs = import ./nixos/lib/make-squashfs.nix {  
+    inherit (buildPackages) perl pathsFromGraph squashfsTools;
+    stdenv = onTheHost.stdenv;
+    storeContents = [ kernel busybox rsync ] ;
+    compression = "gzip";       # probably should use lz4 or lzo, but need 
+    compressionFlags = "";      # to rebuild kernel & squashfs-tools for that
+  };
+  image = stdenv.mkDerivation {
     name = "nixwrt-root";
     phases = [ "buildPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
-    buildPhase = '' 
-    mkdir -p $out
+    buildPhase = ''
+    mkdir -p $out/sbin
     date >> $out/CREATED
-    # mksquashfs is unhelpful here; this copies /nix/store/xyz to /xyz
-    ${lib.concatMapStrings (n: "mksquashfs  ${n} $out/image.squashfs -all-root -keep-as-directory\n") inputs}
-    # so we need to graft it back to /nix/store/xyz
-    mkdir $out/sbin
     ln -s ${pkgs.busybox}/bin/busybox $out/sbin/init
-    mksquashfs $out/sbin $out/CREATED /$out/image.squashfs  -root-becomes nix/store
+    # mksquashfs has the unhelpful (for us) property that it will
+    # copy /nix/store/$xyz as /$xyz in the image
+    cp ${squashfs} $out/image.squashfs
+    chmod +w  $out/image.squashfs
+    # so we need to graft all the directories in the image back onto /nix/store
+    mksquashfs $out/sbin $out/CREATED $out/image.squashfs  -root-becomes nix/store
     chmod a+r $out/image.squashfs
     '';
   };
