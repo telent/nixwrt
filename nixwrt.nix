@@ -60,8 +60,7 @@ in with onTheHost; rec {
       make V=1 olddefconfig 
     '';
     buildPhase = ''
-      make vmlinux V=1 NM=${NM} AR=${AR} OBJCOPY=${OBJCOPY} OBDUMP=${OBJDUMP}
-      make modules V=1 NM=${NM} AR=${AR} OBJCOPY=${OBJCOPY}
+      make vmlinux modules V=1 NM=${NM} AR=${AR} OBJCOPY=${OBJCOPY} OBDUMP=${OBJDUMP}
     '';
     installPhase = ''
       mkdir -p $out
@@ -74,28 +73,57 @@ in with onTheHost; rec {
   rsync = pkgs.rsync.override {
     enableACLs = false;
   };
-  inherit (pkgs) busybox; 
+  
+  busybox = let bb = pkgs.busybox.override {
+    enableStatic = true;
+    enableMinimal = true;
+    extraConfig = ''
+      CONFIG_ASH y
+      CONFIG_ASH BUILTIN_ECHO y
+      CONFIG_ASH_BUILTIN_TEST y
+      CONFIG_ASH_OPTIMIZE_FOR_SIZE y
+      CONFIG_LS y
+      CONFIG_FIND y
+      CONFIG_GREP y
+    '';
+  }; in lib.overrideDerivation bb (a: {
+    LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
+  });  
   squashfs = import ./nixos/lib/make-squashfs.nix {  
     inherit (buildPackages) perl pathsFromGraph squashfsTools;
     stdenv = onTheHost.stdenv;
-    storeContents = [ kernel busybox rsync ] ;
+    storeContents = [ kernel busybox rsync hello ] ;
     compression = "gzip";       # probably should use lz4 or lzo, but need 
     compressionFlags = "";      # to rebuild kernel & squashfs-tools for that
   };
-  image = stdenv.mkDerivation {
+  image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
+    deviceNodes = writeText "devicenodes.txt" ''
+      /dev d 0755 root root
+      /dev/console c 0600 root root 5 1
+      /dev/ttyS0 c 0777 root root 4 64
+      /dev/full c 0666 root root 1 7
+      /dev/zero c 0666 root root 1 5
+      /dev/null c 0666 root root 1 3
+      /dev/sda b 0660 root root 8 0
+      /dev/sda1 b 0660 root root 8 1
+      /dev/sr0 b 0660 root root 11 0
+    '';
     phases = [ "buildPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
     buildPhase = ''
-    mkdir -p $out/sbin
-    date >> $out/CREATED
-    ln -s ${pkgs.busybox}/bin/busybox $out/sbin/init
+    mkdir -p $out/sbin $out/bin $out/nix/store $out/var
+    cp ${busybox}/bin/busybox $out/bin/busybox
+    cp ${busybox}/bin/busybox $out/bin/sh
+    cp ${busybox}/bin/busybox $out/bin/ls
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
     cp ${squashfs} $out/image.squashfs
     chmod +w  $out/image.squashfs
     # so we need to graft all the directories in the image back onto /nix/store
-    mksquashfs $out/sbin $out/CREATED $out/image.squashfs  -root-becomes nix/store
+    mksquashfs $out/var $out/image.squashfs -pf ${deviceNodes} -root-becomes /store/
+    mksquashfs $out/sbin $out/bin $out/image.squashfs  \
+     -root-becomes /nix
     chmod a+r $out/image.squashfs
     '';
   };
