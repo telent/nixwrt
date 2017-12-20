@@ -13,6 +13,19 @@
 #    build=x86-64, host=mips, target is not relevant
 
 let onTheBuild = import ./default.nix {} ;
+    mkPlatform = name : baseConfig : {
+      uboot = null;
+      name = name;
+      kernelArch = "mips";
+      kernelBaseConfig = baseConfig;
+      kernelHeadersBaseConfig = baseConfig;
+      kernelTarget = "uImage";
+      gcc = { abi = "32"; } ;
+      kernelAutoModules = false;
+      kernelModules = false;      
+      kernelPreferBuiltin = true;
+      bfdEmulation = "elf32ltsmip";
+    };
     onTheHost = import ./default.nix {
   crossSystem = rec {
     system = "mipsel-linux-gnu";
@@ -21,55 +34,73 @@ let onTheBuild = import ./default.nix {} ;
     inherit (platform) gcc;
     # libc = "uclibc";
     # float = "soft" ;
-    platform = {
-      uboot = null;
-      name = "malta";
-      kernelArch = "mips";
-      kernelBaseConfig = "malta_defconfig";
-      kernelHeadersBaseConfig = "malta_defconfig";
-      kernelTarget = "uImage";
-      gcc = { abi = "32"; } ;
-      kernelAutoModules = false;
-      kernelModules = false;      
-      kernelPreferBuiltin = true;
-    };
+    platform = # (mkPlatform "malta" "malta_defconfig");
+      (mkPlatform "ath79" "ath79_defconfig");
   };
 };
    stdenv = onTheHost.stdenv;
 in with onTheHost; rec {
-  kernel = onTheBuild.stdenv.mkDerivation rec {
+  kernel = stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
     src = onTheBuild.fetchurl {
       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
       sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
     };
     hardeningDisable = ["all"];
-    nativeBuildInputs = [onTheBuild.pkgs.bc buildPackages.binutils];
-    CROSS_COMPILE = "${buildPackages.gcc}/bin/mipsel-unknown-linux-gnu-";
-    NM = "${buildPackages.binutils}/bin/mipsel-unknown-linux-gnu-nm";
-    AR = "${buildPackages.binutils}/bin/mipsel-unknown-linux-gnu-ar";
-    OBJCOPY = "${buildPackages.binutils}/bin/mipsel-unknown-linux-gnu-objcopy";
-    OBJDUMP = "${buildPackages.binutils}/bin/mipsel-unknown-linux-gnu-objdump";
+    nativeBuildInputs = [onTheBuild.pkgs.bc
+     lzmaLegacy onTheBuild.stdenv.cc
+     onTheBuild.pkgs.ubootTools];
+    CC = "${stdenv.cc.bintools.targetPrefix}gcc";
+    HOSTCC = "gcc";
+    CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
     ARCH = "mips";
     dontStrip = true;
     dontPatchELF = true;
     preConfigure = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
-      make V=1 mrproper
-      ( cat arch/mips/configs/malta_defconfig && echo CONFIG_MODULES=y && echo CONFIG_SQUASHFS=y ) > .config
+      make V=1 mrproper CC=${CC}
+      ( cat arch/mips/configs/ath79_defconfig && echo CONFIG_MODULES=y && echo CONFIG_SQUASHFS=y ) > .config
       make V=1 olddefconfig 
     '';
+    # we need to invoke the lzma command with a filename (not stdin),
+    # so that we get an archive that's not "streamed".  I know it
+    # looks like we're building the whole thing twice: the makefile is
+    # smart enough to only rebuild missing targets, but also Too Smart
+    # in that it rebuilds vmlinux.bin.lzma (incorrectly, from stdin)
+    # if the make command line changed
     buildPhase = ''
-      make vmlinux modules V=1 NM=${NM} AR=${AR} OBJCOPY=${OBJCOPY} OBDUMP=${OBJDUMP}
+      make uImage.lzma modules V=1 
+      rm arch/mips/boot/uImage.lzma || true
+      ${lzmaLegacy}/bin/lzma -v -v -c -6 arch/mips/boot/vmlinux.bin >  arch/mips/boot/vmlinux.bin.lzma
+      ls -lart arch/mips/boot/
+      make uImage.lzma modules V=1 
     '';
     installPhase = ''
       mkdir -p $out
-      cp vmlinux $out/
+      cp arch/mips/boot/uImage.lzma $out/
       make modules_install INSTALL_MOD_PATH=$out
     '';
-
-    
   };
+
+  # build real lzma instead of using xz, because the lzma decoder in
+  # u-boot doesn't understand streaming lzma archives ("Stream with
+  # EOS marker is not supported") and xz can't create non-streaming
+  # ones.
+  # See https://sourceforge.net/p/squashfs/mailman/message/26599379/
+  
+  lzmaLegacy = onTheBuild.stdenv.mkDerivation {
+    name = "lzma";
+    version = "4.32.7";
+    # workaround for "forbidden reference to /tmp" message which will one
+    # day be fixed by a new patchelf release
+    # https://github.com/NixOS/nixpkgs/commit/cbdcc20e7778630cd67f6425c70d272055e2fecd
+    preFixup = ''rm -rf "$(pwd)" && mkdir "$(pwd)" '';
+    srcs = onTheBuild.fetchurl {
+      url = "https://tukaani.org/lzma/lzma-4.32.7.tar.gz";
+      sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
+    };
+  };
+
   rsync = pkgs.rsync.override {
     enableACLs = false;
   };
