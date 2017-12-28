@@ -121,9 +121,12 @@ in with onTheHost; rec {
     LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
   });  
   squashfs = import ./nixos/lib/make-squashfs.nix {  
-    inherit (buildPackages) perl pathsFromGraph squashfsTools;
+    inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     stdenv = onTheHost.stdenv;
-    storeContents = [ kernel busybox rsync hello ] ;
+    storeContents = [ # kernel
+    busybox
+    rsync
+     ] ;
     compression = "gzip";       # probably should use lz4 or lzo, but need 
     compressionFlags = "";      # to rebuild kernel & squashfs-tools for that
   };
@@ -131,6 +134,7 @@ in with onTheHost; rec {
     name = "nixwrt-root";
     deviceNodes = writeText "devicenodes.txt" ''
       /dev d 0755 root root
+      /var d 0755 root root
       /dev/console c 0600 root root 5 1
       /dev/ttyS0 c 0777 root root 4 64
       /dev/full c 0666 root root 1 7
@@ -143,18 +147,19 @@ in with onTheHost; rec {
     phases = [ "buildPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
     buildPhase = ''
-    mkdir -p $out/sbin $out/bin $out/nix/store $out/var
+    mkdir -p $out/sbin $out/bin $out/nix/store
+    touch $out/.empty
     cp ${busybox}/bin/busybox $out/bin/busybox
     cp ${busybox}/bin/busybox $out/bin/sh
     cp ${busybox}/bin/busybox $out/bin/ls
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
     cp ${squashfs} $out/image.squashfs
-    chmod +w  $out/image.squashfs
+    chmod +w $out/image.squashfs
     # so we need to graft all the directories in the image back onto /nix/store
-    mksquashfs $out/var $out/image.squashfs -pf ${deviceNodes} -root-becomes /store/
+    mksquashfs $out/.empty $out/image.squashfs -root-becomes store
     mksquashfs $out/sbin $out/bin $out/image.squashfs  \
-     -root-becomes /nix
+     -root-becomes nix -pf ${deviceNodes} 
     chmod a+r $out/image.squashfs
     '';
   };
