@@ -59,7 +59,7 @@ in with onTheHost; rec {
     preConfigure = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper CC=${CC}
-      ( cat arch/mips/configs/ath79_defconfig && echo CONFIG_MODULES=y && echo CONFIG_SQUASHFS=y ) > .config
+      ( cat arch/mips/configs/ath79_defconfig && echo CONFIG_NFS=y && echo CONFIG_ROOT_NFS=y && echo CONFIG_MODULES=y && echo CONFIG_SQUASHFS=y ) > .config
       make V=1 olddefconfig 
     '';
     # we need to invoke the lzma command with a filename (not stdin),
