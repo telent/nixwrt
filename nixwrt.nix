@@ -56,10 +56,18 @@ in with onTheHost; rec {
     ARCH = "mips";
     dontStrip = true;
     dontPatchELF = true;
+    enableKconfig = builtins.concatStringsSep "\n" (map (n : "CONFIG_${n}=y") [
+      "NFS_FS"
+      "IP_PNP"
+      "ROOT_NFS"
+      "MODULES"
+      "SQUASHFS"
+      "SQUASHFS_XZ"      
+      "MTD_PHRAM"]);
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      ( cat arch/mips/configs/ath79_defconfig && echo CONFIG_NFS_FS=y && echo CONFIG_IP_PNP=y  && echo CONFIG_ROOT_NFS=y && echo CONFIG_MODULES=y && echo CONFIG_SQUASHFS=y ) > .config
+      ( cat arch/mips/configs/ath79_defconfig && echo "$enableKconfig" ) > .config
       make V=1 olddefconfig 
     '';
     # we need to invoke the lzma command with a filename (not stdin),
