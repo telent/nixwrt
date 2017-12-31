@@ -24,11 +24,11 @@ let onTheBuild = import ./default.nix {} ;
       kernelAutoModules = false;
       kernelModules = false;      
       kernelPreferBuiltin = true;
-      bfdEmulation = "elf32ltsmip";
+      bfdEmulation = "elf32btsmip";
     };
     onTheHost = import ./default.nix {
   crossSystem = rec {
-    system = "mipsel-linux-gnu";
+    system = "mips-linux-gnu";
     openssl.system = "linux-generic32";
     withTLS = true;
     inherit (platform) gcc;
