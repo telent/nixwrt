@@ -145,6 +145,8 @@ in with onTheHost; rec {
       /var d 0755 root root
       /dev/console c 0600 root root 5 1
       /dev/ttyS0 c 0777 root root 4 64
+      /dev/ttyATH0 c 0777 root root 252 0
+      /dev/tty c 0777 root root 5 0
       /dev/full c 0666 root root 1 7
       /dev/zero c 0666 root root 1 5
       /dev/null c 0666 root root 1 3
