@@ -13,54 +13,74 @@ Tomato run on.
 
 ## Status/TODO
 
+### Using QEMU (obsolete)
+
 - [x] builds a kernel
 - [x] builds a root filesystem
+- [x] mounts the root filesystem
 - [x] statically linked init (busybox) runs
 - [ ] make shared libraries work
 
-Currently: There is a problem with squashfs or the way we are using it
-which means that `/nix/store` is empty when the squashfs image is
-mounted (the `-root-becomes` option doesn't appear to work).  This is
-an obvious cause of shared libraries not working - because they're not
-there.
+### On real hardware
 
+- [x] builds a kernel
+- [x] builds a root filesystem
+- [ ] mounts the root filesystem
+- [ ] statically linked init (busybox) runs
+- [ ] make shared libraries work
 
-## How to build it
+Currently: it can see the root fs is there and contains a squashfs
+image, but it does not want to boot it: instead it hangs and/or resets
+after printing
 
-    nix-build nixwrt.nix -A image -o image
-    nix-build nixwrt.nix -A kernel -o kernel
-    
+```
+ar933x-uart: ttyATH0 at MMIO 0x18020000 (irq = 11, base_baud = 1562500) is a ART
+console [ttyATH0] enabled
+console [ttyATH0] enabled
+bootconsole [early0] disabled
+bootconsole [early0] disabled
+phram: rootfs device: 0x900000 at 0x81178000
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+ehci-pci: EHCI PCI platform driver
+ehci-platform: EHCI generic platform driver
+ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+ohci-pci: OHCI PCI platform driver
+ohci-platform: OHCI generic platform driver
+NET: Registered protocol family 17
+```
+
 ## How to run it
 
-    nix-shell '<nixpkgs>' -p qemu --run "qemu-system-mipsel  -M malta -m 512 -kernel kernel/vmlinux  -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=image/image.squashfs -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic"
+### You will need 
 
-# Real hardware
+* an Arduino Yun: The initial target is the Arduino Yun because I have
+one and because the USB gadget interface on the Atmega side makes it
+easy to test with.  The Yun is logically a traditional Arduino bolted
+onto an Atheros 9331 by means of a two-wire serial connection: we're
+going to target the Atheros SoC and use the Arduino MCU as a
+USB/serial converter.  The downside of this SoC, however, is that 
+_it currently appears_ that mainstream Linux has no support for its
+Ethernet device.
 
-Initial target is the Arduino Yun because I have one and because the
-USB gadget interface on the Atmega side makes it easy to test with.
-The Yun is logically a traditional Arduino bolted onto an Atheros 9331
-by means of a two-wire serial connection: we're going to target the
-Atheros SoC and use the Arduino MCU as a USB/serial converter 
+* In order to talk to the Atheros over a serial connection, upload
+https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your Yun using
+the standard Arduino IDE.  Once the sketch is running, rather than
+using the Arduino serial monitor as it suggests, I run minicom on
+`/dev/ttyACM0`
 
-## Invoking the kernel
+* a TFTP server (most convenient if this is on your build machine
+itself)
 
-* You need a tftp server, and you need to choose a static IP address
-  for your Yun.  In my case these are 192.168.0.2 and 192.168.0.251
+* a static IP address for your Yun, and to know the address of your
+TFTP server.  In my case these are 192.168.0.251 and 192.168.0.2
 
-* When developing remotely there is no easy way to hard-reset the Linux
-half of the Yun.  To mitigate, be sure to start the kernel with 
-panic=10 oops=panic
+## Installation
 
-* To talk to the Atheros over a serial connection, upload
-  https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your Yun
-  using the standard Arduino IDE.  Once the sketch is running, rather
-  than using the Arduino serial monitor as it suggests, I run minicom
-  on `/dev/ttyACM0`
+Build the derivation and copy the result into your tftp server data
+directory:
 
-On your build machine, copy the files to somewhere the tftp server
-can see them
-  
-    cp kernel/uImage.lzma image/image.squashfs /tftp
+    nix-build nixwrt.nix -A tftproot -o tftproot
+    rsync -a tftproot/ /tftp/ # or wherever
 
 On a serial connection to the Yun, get into the U-Boot monitor
 (hit YUN RST button, then press RET a couple of times - or in newer
@@ -68,29 +88,23 @@ U-Boot versions you need to type `ard` very quickly -
 https://www.arduino.cc/en/Tutorial/YunUBootReflash may help)
 Once you have the `ar7240>` prompt, run
 
-    setenv serverip 192.168.0.2 ; setenv ipaddr 192.168.0.251 ; setenv bootargs console=ttyS0 panic=10 oops=panic init=/bin/sh ; tftp 0x81060000 /tftp/uImage.lzma ; bootm   0x81060000
+    setenv serverip 192.168.0.2 
+    setenv ipaddr 192.168.0.251 
+    setenv kernaddr 0x81000000
+    setenv rootaddr 0x81177fc0
+    setenv bootargs console=ttyATH0,250000 panic=10 oops=panic init=/bin/sh phram.phram=rootfs,0x81178000,9Mi root=/dev/mtdblock0 memmap=10M\$0x1177fc0
+    setenv bootn "tftp $kernaddr /tftp/kernel.image ; tftp $rootaddr /tftp/rootfs.image; bootm  $kernaddr"
+    run bootn
+    
+substituting your own IP addresses where appropriate.  The constraints
+on memory addresses are as follows
 
-substituting your own IP addresses where appropriate.  0x81060000 is
-an address I chose at random which (I hope) exists and is sufficiently
-greater than 0x80060000 that the uncompressed kernel doesn't overwrite
-the compressed kernel.
+* the rootaddr is a page boundary minus 0x40 bytes
+* the kernel and root images don't overlap, nor does anything encroach
+  on the area starting at 0x8006000 where the kernel will be
+  uncompressed to
+* the phram parameters in bootargs are the rootaddr plus 0x40, and the
+  approximate ramdisk size
+* the memmap parameter in bootargs is at least as big as the rootfs.
 
-# Testing with nfs root
-
-On the build system (or anywhere with access to the artifacts), create
-the nfs root by unpacking the squashfs image
-
-    sudo nix-shell '<nixpkgs>'  -p squashfsTools --run "mkdir -p /tmp/yun-root && cd /tmp/yun-root &&  unsquashfs `pwd`/result/image.squashfs" 
-
-and start an nfs server
-
-    nix-shell '<nixpkgs>' -p  unfs3 --run "unfsd -d -u -e `pwd`/exports.nfs -p -s "
-
-Now at the arduino `ar7240>` u-boot  prompt, run 
-
-    setenv serverip 192.168.0.2 ; setenv ipaddr 192.168.0.251 ; setenv bootargs console=ttyS0 panic=10 oops=panic init=/bin/sh root=/dev/nfs rw nfsroot=192.168.0.2:/tmp/yun-root/squashfs-root,port= ip=192.168.0.251:192.168.0.2 ; tftp 0x81060000 /tftp/uImage.lzma ; bootm   0x81060000
-
-(tip if you're using Minicom: I found that pasted long lines like
-that one tended to get scrambled until I pressed `C-a t f` and
-changed the "Character tx delay" to about 2ms)
 
