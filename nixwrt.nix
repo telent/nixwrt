@@ -27,17 +27,17 @@ let onTheBuild = import ./default.nix {} ;
       bfdEmulation = "elf32btsmip";
     };
     onTheHost = import ./default.nix {
-  crossSystem = rec {
-    system = "mips-linux-gnu";
-    openssl.system = "linux-generic32";
-    withTLS = true;
-    inherit (platform) gcc;
-    # libc = "uclibc";
-    # float = "soft" ;
-    platform = # (mkPlatform "malta" "malta_defconfig");
-      (mkPlatform "ath79" "ath79_defconfig");
-  };
-};
+      crossSystem = rec {
+        system = "mips-linux-gnu";
+        openssl.system = "linux-generic32";
+        withTLS = true;
+        inherit (platform) gcc;
+        # libc = "uclibc";
+        # float = "soft" ;
+        platform = # (mkPlatform "malta" "malta_defconfig");
+          (mkPlatform "ath79" "ath79_defconfig");
+      };
+   };
    stdenv = onTheHost.stdenv;
 in with onTheHost; rec {
   kernel = stdenv.mkDerivation rec {
