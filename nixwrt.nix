@@ -12,8 +12,14 @@
 # * we need a busybox that runs on the end-user device, 
 #    build=x86-64, host=mips, target is not relevant
 
+{ target ? "malta" }: 
 let onTheBuild = import ./default.nix {} ;
-    mkPlatform = name : baseConfig : {
+    targetPlatform = {
+      malta = { endian= "little"; baseConfig = "malta_defconfig"; };
+      yun = { endian = "big";  baseConfig = "ath79_defconfig"; };
+    }.${target};
+    wantModules = false;
+    mkPlatform = { name ? "yun", endian, baseConfig } : {
       uboot = null;
       name = name;
       kernelArch = "mips";
@@ -24,18 +30,17 @@ let onTheBuild = import ./default.nix {} ;
       kernelAutoModules = false;
       kernelModules = false;      
       kernelPreferBuiltin = true;
-      bfdEmulation = "elf32btsmip";
+      bfdEmulation = (if endian=="little" then "elf32ltsmip" else "elf32btsmip");
     };
     onTheHost = import ./default.nix {
       crossSystem = rec {
-        system = "mips-linux-gnu";
+        system = (if targetPlatform.endian=="little" then "mipsel-linux-gnu" else "mips-linux-gnu" );
         openssl.system = "linux-generic32";
         withTLS = true;
         inherit (platform) gcc;
         # libc = "uclibc";
         # float = "soft" ;
-        platform = # (mkPlatform "malta" "malta_defconfig");
-          (mkPlatform "ath79" "ath79_defconfig");
+        platform = mkPlatform targetPlatform;
       };
    };
    stdenv = onTheHost.stdenv;
@@ -67,7 +72,7 @@ in with onTheHost; rec {
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      ( cat arch/mips/configs/ath79_defconfig && echo "$enableKconfig" ) > .config
+      ( cat arch/mips/configs/${targetPlatform.baseConfig} && echo "$enableKconfig" ) > .config
       make V=1 olddefconfig 
     '';
     # we need to invoke the lzma command with a filename (not stdin),
@@ -76,17 +81,18 @@ in with onTheHost; rec {
     # smart enough to only rebuild missing targets, but also Too Smart
     # in that it rebuilds vmlinux.bin.lzma (incorrectly, from stdin)
     # if the make command line changed
-    buildPhase = ''
-      make uImage.lzma modules V=1 
+    buildPhase = let makeCmd = ''
+      make uImage.lzma vmlinux ${if wantModules then "modules" else ""} V=1
+      '' ; in ''
       rm arch/mips/boot/uImage.lzma || true
+      ${makeCmd}
       ${lzmaLegacy}/bin/lzma -v -v -c -6 arch/mips/boot/vmlinux.bin >  arch/mips/boot/vmlinux.bin.lzma
-      ls -lart arch/mips/boot/
-      make uImage.lzma modules V=1 
+      ${makeCmd}
     '';
     installPhase = ''
       mkdir -p $out
-      cp arch/mips/boot/uImage.lzma $out/
-      make modules_install INSTALL_MOD_PATH=$out
+      cp vmlinux arch/mips/boot/uImage.lzma $out/
+      ${if wantModules then "make modules_install INSTALL_MOD_PATH=$out" else ""}
     '';
   };
 
@@ -178,6 +184,7 @@ in with onTheHost; rec {
     installPhase = ''
       mkdir -p $out
       cp ${kernel}/uImage.lzma  $out/kernel.image
+      cp ${kernel}/vmlinux  $out/
       cp ${image}/image.squashfs  $out/rootfs.image
     '';
   };
