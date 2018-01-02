@@ -91,20 +91,22 @@ Once you have the `ar7240>` prompt, run
     setenv serverip 192.168.0.2 
     setenv ipaddr 192.168.0.251 
     setenv kernaddr 0x81000000
-    setenv rootaddr 0x81177fc0
-    setenv bootargs console=ttyATH0,250000 panic=10 oops=panic init=/bin/sh phram.phram=rootfs,0x81178000,9Mi root=/dev/mtdblock0 memmap=10M\$0x1177fc0
-    setenv bootn "tftp $kernaddr /tftp/kernel.image ; tftp $rootaddr /tftp/rootfs.image; bootm  $kernaddr"
+    setenv rootaddr 1178000
+    setenv rootaddr_useg 0x$rootaddr
+    setenv rootaddr_ks0 0x8$rootaddr
+    setenv bootargs keep_bootcon console=ttyATH0,250000 panic=10 oops=panic init=/bin/sh phram.phram=rootfs,$rootaddr_ks0,9Mi root=/dev/mtdblock0 memmap=10M\$$rootaddr_useg
+    setenv bootn "tftp $kernaddr /tftp/kernel.image ; tftp $rootaddr_ks0 /tftp/rootfs.image; bootm  $kernaddr"
     run bootn
     
 substituting your own IP addresses where appropriate.  The constraints
 on memory addresses are as follows
 
-* the rootaddr is a page boundary minus 0x40 bytes
 * the kernel and root images don't overlap, nor does anything encroach
   on the area starting at 0x8006000 where the kernel will be
   uncompressed to
-* the phram parameters in bootargs are the rootaddr plus 0x40, and the
-  approximate ramdisk size
-* the memmap parameter in bootargs is at least as big as the rootfs.
+* the memmap parameter in bootargs should cover the whole rootfs image
+
+
+
 
 

@@ -175,12 +175,11 @@ in with onTheHost; rec {
   };
   tftproot = stdenv.mkDerivation rec {
     name = "uImage";
-    phases = [ "buildPhase" ];
-    nativeBuildInputs = [ onTheBuild.pkgs.ubootTools ];
-    buildPhase = ''
+    phases = [ "installPhase" ];
+    installPhase = ''
       mkdir -p $out
       cp ${kernel}/uImage.lzma  $out/kernel.image
-      mkimage -T ramdisk -A mips -O linux -C none  -n root -d ${image}/image.squashfs  $out/rootfs.image
+      cp ${image}/image.squashfs  $out/rootfs.image
     '';
   };
 }
