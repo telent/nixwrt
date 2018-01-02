@@ -112,26 +112,27 @@ in with onTheHost; rec {
   rsync = pkgs.rsync.override {
     enableACLs = false;
   };
-  
+
+  busyboxApplets = [ "ls" "find" "grep" "halt" "gzip" ];  
   busybox = let bb = pkgs.busybox.override {
     enableStatic = true;
     enableMinimal = true;
     extraConfig = ''
       CONFIG_ASH y
-      CONFIG_ASH BUILTIN_ECHO y
+      CONFIG_ASH_ECHO y
+      CONFIG_BASH_IS_NONE y
+      CONFIG_ASH_BUILTIN_ECHO y
       CONFIG_ASH_BUILTIN_TEST y
       CONFIG_ASH_OPTIMIZE_FOR_SIZE y
-      CONFIG_LS y
-      CONFIG_FIND y
-      CONFIG_GREP y
-    '';
+      '' + builtins.concatStringsSep
+              "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") busyboxApplets);
   }; in lib.overrideDerivation bb (a: {
     LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
   });  
   squashfs = import ./nixos/lib/make-squashfs.nix {  
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     stdenv = onTheHost.stdenv;
-    storeContents = [ # kernel
+    storeContents = [ 
     busybox
     rsync
      ] ;
@@ -154,14 +155,12 @@ in with onTheHost; rec {
       /dev/sda1 b 0660 root root 8 1
       /dev/sr0 b 0660 root root 11 0
     '';
-    phases = [ "buildPhase" ];
+    phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
-    buildPhase = ''
+    installPhase =  ''
     mkdir -p $out/sbin $out/bin $out/nix/store
     touch $out/.empty
-    cp ${busybox}/bin/busybox $out/bin/busybox
-    cp ${busybox}/bin/busybox $out/bin/sh
-    cp ${busybox}/bin/busybox $out/bin/ls
+    ( cd $out/bin; for i in busybox sh ${builtins.concatStringsSep" "  busyboxApplets} ; do ln -s ${busybox}/bin/busybox $i ; done )
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
     cp ${squashfs} $out/image.squashfs
