@@ -15,11 +15,11 @@
 { target ? "malta" }: 
 let onTheBuild = import ./default.nix {} ;
     targetPlatform = {
-      malta = { endian= "little"; baseConfig = "malta_defconfig"; };
-      yun = { endian = "big";  baseConfig = "ath79_defconfig"; };
+      malta = { name = "malta"; endian = "big"; baseConfig = "malta_defconfig"; };
+      yun = { name = "yun"; endian = "big";  baseConfig = "ath79_defconfig"; };
     }.${target};
     wantModules = false;
-    mkPlatform = { name ? "yun", endian, baseConfig } : {
+    mkPlatform = { name, endian, baseConfig } : {
       uboot = null;
       name = name;
       kernelArch = "mips";
@@ -72,7 +72,7 @@ in with onTheHost; rec {
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      ( cat arch/mips/configs/${targetPlatform.baseConfig} && echo "$enableKconfig" ) > .config
+      ( cat arch/mips/configs/${targetPlatform.baseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
       make V=1 olddefconfig 
     '';
     # we need to invoke the lzma command with a filename (not stdin),

@@ -70,7 +70,7 @@ Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
 ## With QEMU
 
     nix-build ./nixwrt.nix -A tftproot -o malta --argstr target malta
-    nix-shell  -p qemu --run "qemu-system-mipsel  -M malta -m 64 -nographic -kernel malta/vmlinux   -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic" 
+    nix-shell  -p qemu --run "qemu-system-mips -M malta -m 64 -nographic -kernel malta/vmlinux   -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic" 
 
 
 ## On real hardware
