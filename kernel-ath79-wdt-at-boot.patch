@@ -1,0 +1,26 @@
+--- ./drivers/watchdog/ath79_wdt.c~	2017-11-21 08:49:25.000000000 +0000
++++ ./drivers/watchdog/ath79_wdt.c	2018-01-04 22:49:24.396466091 +0000
+@@ -61,6 +61,11 @@
+ MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds "
+ 			  "(default=" __MODULE_STRING(WDT_TIMEOUT) "s)");
+ 
++static bool from_boot = false;
++module_param(from_boot, bool, 0);
++MODULE_PARM_DESC(from_boot, "Enable Watchdog timer at boot "
++			  "(default=false)");
++
+ static unsigned long wdt_flags;
+ 
+ #define WDT_FLAGS_BUSY		0
+@@ -294,6 +299,11 @@
+ 		goto err_clk_disable;
+ 	}
+ 
++        if(from_boot) {
++        	pr_warn("enabling watchdog\n");
++        	ath79_wdt_enable();
++        }
++
+ 	return 0;
+ 
+ err_clk_disable:

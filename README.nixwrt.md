@@ -122,8 +122,8 @@ Once you have the `ar7240>` prompt, run
     setenv rootaddr 1178000
     setenv rootaddr_useg 0x$rootaddr
     setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs keep_bootcon console=ttyATH0,250000 panic=10 oops=panic init=/bin/sh phram.phram=rootfs,$rootaddr_ks0,9Mi root=/dev/mtdblock0 memmap=10M\$$rootaddr_useg
-    setenv bootn "tftp $kernaddr /tftp/kernel.image ; tftp $rootaddr_ks0 /tftp/rootfs.image; bootm  $kernaddr"
+    setenv bootargs keep_bootcon console=ttyATH0,250000 panic=10 oops=panic init=/bin/sh phram.phram=rootfs,$rootaddr_ks0,9Mi root=/dev/mtdblock0 memmap=10M\$$rootaddr_useg ath79-wdt.from_boot=y ath79-wdt.timeout=10
+    setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
     run bootn
     
 substituting your own IP addresses where appropriate.  The constraints

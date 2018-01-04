@@ -1,0 +1,15 @@
+--- ./drivers/tty/serial/ar933x_uart.c~	2017-11-21 08:49:25.000000000 +0000
++++ ./drivers/tty/serial/ar933x_uart.c	2018-01-04 22:04:54.996021228 +0000
+@@ -230,6 +230,12 @@
+ 			*step = tstep;
+ 		}
+ 	}
++        /* https://github.com/arduino/openwrt-yun/blob/master/target/linux/ar71xx/patches-3.3/619-MIPS-ath79-Linino-uart-fix-baudrate.patch#L23 */
++        if(baud == 250000) {
++          *scale = 0x0017;
++          *step = 0x7ae0;
++          return;
++        }
+ }
+ 
+ static void ar933x_uart_set_termios(struct uart_port *port,

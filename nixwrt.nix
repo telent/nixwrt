@@ -51,6 +51,9 @@ in with onTheHost; rec {
       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
       sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
     };
+    patches = [ ./kernel-ar933x-uart-rate.patch
+                ./kernel-ath79-wdt-at-boot.patch ];
+    patchFlags = [ "-p0" ]; 
     hardeningDisable = ["all"];
     nativeBuildInputs = [onTheBuild.pkgs.bc
      lzmaLegacy onTheBuild.stdenv.cc
@@ -62,13 +65,17 @@ in with onTheHost; rec {
     dontStrip = true;
     dontPatchELF = true;
     enableKconfig = builtins.concatStringsSep "\n" (map (n : "CONFIG_${n}=y") [
-      "NFS_FS"
+      "ATH79_WDT"
       "IP_PNP"
-      "ROOT_NFS"
       "MODULES"
+      "MTD_AR7_PARTS"
+      "MTD_CMDLINE_PART"
+      "MTD_PHRAM"
+      "NFS_FS"
+      "ROOT_NFS"
       "SQUASHFS"
       "SQUASHFS_XZ"      
-      "MTD_PHRAM"]);
+      ]);
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
