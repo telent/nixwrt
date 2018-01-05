@@ -48,8 +48,10 @@ in with onTheHost; rec {
   kernel = stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
     src = onTheBuild.fetchurl {
-      url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
-      sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
+      url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.110.tar.xz";
+      # "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
+      sha256 = "0n6v872ahny9j29lh60c7ha5fa1as9pdag7jsb5fcy2nmid1g6fh";
+      # "2rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
     };
     patches = [ ./kernel-ar933x-uart-rate.patch
                 ./kernel-ath79-wdt-at-boot.patch ];
@@ -71,15 +73,13 @@ in with onTheHost; rec {
       "MTD_AR7_PARTS"
       "MTD_CMDLINE_PART"
       "MTD_PHRAM"
-      "NFS_FS"
-      "ROOT_NFS"
       "SQUASHFS"
       "SQUASHFS_XZ"      
       ]);
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      ( cat arch/mips/configs/${targetPlatform.baseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
+      ( grep -v CONFIG_BLK_DEV_INITRD arch/mips/configs/${targetPlatform.baseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
       make V=1 olddefconfig 
     '';
     # we need to invoke the lzma command with a filename (not stdin),
