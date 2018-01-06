@@ -47,12 +47,14 @@ let onTheBuild = import ./default.nix {} ;
 in with onTheHost; rec {
   kernel = stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
-    src = onTheBuild.fetchurl {
+    src = let url_4_4 = {
       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.110.tar.xz";
-      # "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
       sha256 = "0n6v872ahny9j29lh60c7ha5fa1as9pdag7jsb5fcy2nmid1g6fh";
-      # "2rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
     };
+           url_4_14 = {
+      url ="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
+      sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
+    }; in onTheBuild.fetchurl url_4_14;
     patches = [ ./kernel-ar933x-uart-rate.patch
                 ./kernel-ath79-wdt-at-boot.patch ];
     patchFlags = [ "-p0" ]; 
