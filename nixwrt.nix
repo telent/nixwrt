@@ -70,6 +70,7 @@ in with onTheHost; rec {
     dontPatchELF = true;
     enableKconfig = builtins.concatStringsSep "\n" (map (n : "CONFIG_${n}=y") [
       "ATH79_WDT"
+      "DEVTMPFS"
       "IP_PNP"
       "MODULES"
       "MTD_AR7_PARTS"
@@ -128,7 +129,16 @@ in with onTheHost; rec {
     enableACLs = false;
   };
 
-  busyboxApplets = [ "ls" "find" "grep" "halt" "gzip" ];  
+  busyboxApplets = [
+    "find"
+    "grep"
+    "gzip"
+    "ls"
+    "mkdir"
+    "mount"
+    "reboot"
+    "umount"
+    ];  
   busybox = let bb = pkgs.busybox.override {
     enableStatic = true;
     enableMinimal = true;
@@ -156,25 +166,38 @@ in with onTheHost; rec {
   };
   image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
+
     deviceNodes = writeText "devicenodes.txt" ''
       /dev d 0755 root root
-      /var d 0755 root root
       /dev/console c 0600 root root 5 1
-      /dev/ttyS0 c 0777 root root 4 64
-      /dev/ttyATH0 c 0777 root root 252 0
-      /dev/tty c 0777 root root 5 0
       /dev/full c 0666 root root 1 7
-      /dev/zero c 0666 root root 1 5
       /dev/null c 0666 root root 1 3
       /dev/sda b 0660 root root 8 0
       /dev/sda1 b 0660 root root 8 1
       /dev/sr0 b 0660 root root 11 0
+      /dev/tty c 0777 root root 5 0
+      /dev/ttyATH0 c 0777 root root 253 0
+      /dev/ttyS0 c 0777 root root 4 64
+      /dev/zero c 0666 root root 1 5
+      /proc d 0555 root root
+      /run d 0755 root root      
+      /sys d 0555 root root      
+      /tmp d 1777 root root
+      /var d 0755 root root
+    '';
+    fstab = writeText "fstab" ''
+      proc /proc proc defaults 0 0
+      tmpfs /tmp tmpfs defaults 0 0
+      tmpfs /run tmpfs defaults 0 0
+      sysfs /sys sysfs defaults 0 0
+      devtmpfs /dev devtmpfs defaults 0 0
     '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
     installPhase =  ''
-    mkdir -p $out/sbin $out/bin $out/nix/store
+    mkdir -p $out/sbin $out/bin $out/nix/store $out/etc
     touch $out/.empty
+    cp ${fstab} $out/etc/fstab
     ( cd $out/bin; for i in busybox sh ${builtins.concatStringsSep" "  busyboxApplets} ; do ln -s ${busybox}/bin/busybox $i ; done )
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
@@ -182,7 +205,7 @@ in with onTheHost; rec {
     chmod +w $out/image.squashfs
     # so we need to graft all the directories in the image back onto /nix/store
     mksquashfs $out/.empty $out/image.squashfs -root-becomes store
-    mksquashfs $out/sbin $out/bin $out/image.squashfs  \
+    mksquashfs $out/sbin $out/bin $out/etc $out/image.squashfs  \
      -root-becomes nix -pf ${deviceNodes} 
     chmod a+r $out/image.squashfs
     '';
