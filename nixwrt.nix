@@ -156,6 +156,7 @@ in with onTheHost; rec {
     "grep"
     "gzip"
     "ifconfig"
+    "init"
     "ls"
     "mkdir"
     "mount"
@@ -178,20 +179,23 @@ in with onTheHost; rec {
               "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") busyboxApplets);
   }; in lib.overrideDerivation bb (a: {
     LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
-  });  
+  });
+  monit = pkgs.monit.override { usePAM = false; openssl = null; };
   squashfs = import ./nixos/lib/make-squashfs.nix {  
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     stdenv = onTheHost.stdenv;
     storeContents = [ 
     busybox
     rsync
+    monit
      ] ;
     compression = "gzip";       # probably should use lz4 or lzo, but need 
-    compressionFlags = "";      # to rebuild kernel & squashfs-tools for that
+    compressionFlags = "";      # to rebuild squashfs-tools for that
   };
   image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
 
+    # probably don't need most of these now we mount devtmpfs
     deviceNodes = writeText "devicenodes.txt" ''
       /dev d 0755 root root
       /dev/console c 0600 root root 5 1
@@ -202,7 +206,6 @@ in with onTheHost; rec {
       /dev/sr0 b 0660 root root 11 0
       /dev/tty c 0777 root root 5 0
       /dev/ttyATH0 c 0777 root root 253 0
-      /dev/ttyS0 c 0777 root root 4 64
       /dev/zero c 0666 root root 1 5
       /proc d 0555 root root
       /run d 0755 root root      
@@ -218,12 +221,25 @@ in with onTheHost; rec {
       sysfs /sys sysfs defaults 0 0
       devtmpfs /dev devtmpfs defaults 0 0
     '';
+    inittab = writeText "inittab" ''
+      # hey
+      ::askfirst:-/bin/sh
+      ::sysinit:/etc/rc
+      ::respawn:${monit}/bin/monit
+    '';
+    rc = writeText "rc" ''
+      #!${busybox}/bin/sh
+      mount -a
+      '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
     installPhase =  ''
     mkdir -p $out/sbin $out/bin $out/nix/store $out/etc
     touch $out/.empty
-    cp ${fstab} $out/etc/fstab #foo
+    cp ${fstab} $out/etc/fstab
+    cp ${inittab} $out/etc/inittab
+    cp ${rc} $out/etc/rc
+    chmod +x $out/etc/rc
     ( cd $out/bin; for i in busybox sh ${builtins.concatStringsSep" "  busyboxApplets} ; do ln -s ${busybox}/bin/busybox $i ; done )
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
@@ -237,7 +253,7 @@ in with onTheHost; rec {
     '';
   };
   tftproot = stdenv.mkDerivation rec {
-    name = "uImage";
+    name = "tftproot";
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
