@@ -81,6 +81,7 @@ in with onTheHost; rec {
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
+                ./kernel-memmap-param.patch
                 ];
                 
     patchFlags = [ "-p1" ];
