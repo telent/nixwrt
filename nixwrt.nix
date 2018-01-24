@@ -176,6 +176,7 @@ in with onTheHost; rec {
       CONFIG_ASH_BUILTIN_ECHO y
       CONFIG_ASH_BUILTIN_TEST y
       CONFIG_ASH_OPTIMIZE_FOR_SIZE y
+      CONFIG_FEATURE_USE_INITTAB y
       '' + builtins.concatStringsSep
               "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") busyboxApplets);
   }; in lib.overrideDerivation bb (a: {
