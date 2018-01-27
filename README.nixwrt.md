@@ -27,43 +27,15 @@ Tomato run on.
 
 - [x] builds a kernel
 - [x] builds a root filesystem
-- [ ] mounts the root filesystem
-- [ ] ethernet driver
+- [x] mounts the root filesystem
+- [x] ethernet driver
+- [ ] bring the network up at boot
+- [ ] wireless
+- [ ] run some services, route some packets
 
-Currently: it can see the root fs is there and contains a squashfs
-image, but it does not want to boot it: instead it hangs and/or resets
-after printing
-
-```
-ar933x-uart: ttyATH0 at MMIO 0x18020000 (irq = 11, base_baud = 1562500) is a ART
-console [ttyATH0] enabled
-console [ttyATH0] enabled
-bootconsole [early0] disabled
-bootconsole [early0] disabled
-phram: rootfs device: 0x900000 at 0x81178000
-ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-ehci-pci: EHCI PCI platform driver
-ehci-platform: EHCI generic platform driver
-ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-ohci-pci: OHCI PCI platform driver
-ohci-platform: OHCI generic platform driver
-NET: Registered protocol family 17
-```
-
-I suspect the tty is in some way part of the problem, because if I
-give it an incorrect `console=` entry it gets further
-
-
-```
-ohci-platform: OHCI generic platform driver
-NET: Registered protocol family 17
-Warning: unable to open an initial console.
-VFS: Mounted root (squashfs filesystem) readonly on device 31:0.
-Freeing unused kernel memory: 208K
-This architecture does not have kernel memory protection.
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
-```
-
+You can follow progress (or lack of) in my blog: start with
+https://ww.telent.net/2017/12/27/all_mipsy_were_the_borogroves and
+follow the 'next week' links at the bottom of each post.
 
 # How to run it
 
@@ -77,8 +49,6 @@ Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
 
 This is a little more complicated ...
 
-_[ Note that As of Tue Jan  2 23:11:48 2018 this doesn't entirely work ]_
-
 ### Preparation
 
 * Get an Arduino Yun: this is the initial target for no better reason
@@ -86,9 +56,9 @@ than that I have one and the USB device interface on the Atmega side
 makes it easy to test with.  The Yun is logically a traditional
 Arduino bolted onto an Atheros 9331 by means of a two-wire serial
 connection: we target the Atheros SoC and use the Arduino MCU as a
-USB/serial converter.  The downside of this SoC, however, is that _it
-currently appears_ that mainstream Linux has no support for its
-Ethernet device.
+USB/serial converter.  The downside of this SoC is that mainstream
+Linux (4.14.x) has no support for its Ethernet device, but that seems
+to be true of most MIPS targets.
 
 * In order to talk to the Atheros over a serial connection, upload
 https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your Yun using
@@ -99,7 +69,7 @@ using the Arduino serial monitor as it suggests, I run minicom on
 * install a TFTP server (most convenient if this is on your build
 machine itself)
 
-* acquire a static IP address for your Yun, and find otu the address of
+* acquire a static IP address for your Yun, and find out the address of
 your TFTP server.  In my case these are 192.168.0.251 and 192.168.0.2
 
 ### Installation
@@ -134,5 +104,8 @@ on memory addresses are as follows
   uncompressed to
 * the memmap parameter in bootargs should cover the whole rootfs image
 
-
+If the output changes to gibberish partway through bootup, this is
+because the kernel serial driver is running at a different speed to
+U-Boot, and you need to change it (if using the YunSerialTerminal
+sketch, by pressing `~1` or something along those lines).
 
