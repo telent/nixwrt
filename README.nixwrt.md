@@ -108,7 +108,7 @@ Build the derivation and copy the result into your tftp server data
 directory:
 
     nix-build nixwrt.nix -A tftproot -o yun --argstr target yun
-    rsync -a yun/ /tftp/ # or wherever
+    rsync -cIa yun/ /tftp/ # rync should ignore timestamps when comparing
 
 On a serial connection to the Yun, get into the U-Boot monitor
 (hit YUN RST button, then press RET a couple of times - or in newer
