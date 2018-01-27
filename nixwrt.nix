@@ -110,6 +110,7 @@ in with onTheHost; rec {
       "SQUASHFS"
       "SQUASHFS_XZ"
       "SWCONFIG" # switch config, AG71XX needs register_switch to build
+      "TMPFS"
       ]);
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
@@ -203,19 +204,24 @@ in with onTheHost; rec {
        (name: spec:
          let s = defaults // spec;
              c = builtins.replaceStrings ["\n"] ["\\n"] s.content; in
-           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -e \"${c}\"")
+           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -ne \"${c}\"")
       { 
         monitrc = {mode = "0400"; content = ''
           set init
           set daemon 30
           set httpd port 80
+            allow localhost
+            allow 192.168.0.0/24
+          set idfile /run/monit.id
+          set statefile /run/monit.state          
           check host gw address 192.168.0.2
             if failed ping then unmonitor  
           '';};
+        hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
           proc /proc proc defaults 0 0
-          tmpfs /tmp tmpfs defaults 0 0
-          tmpfs /run tmpfs defaults 0 0
+          tmpfs /tmp tmpfs rw 0 0
+          tmpfs /run tmpfs rw 0 0
           sysfs /sys sysfs defaults 0 0
           devtmpfs /dev devtmpfs defaults 0 0
         '';};
@@ -225,7 +231,7 @@ in with onTheHost; rec {
         inittab = {content = ''
           ::askfirst:-/bin/sh
           ::sysinit:/etc/rc
-          # ::respawn:${monit}/bin/monit -I -c /etc/monitrc
+          ::respawn:${monit}/bin/monit -I -c /etc/monitrc
         '';};
         rc = {mode="0755"; content = ''
           #!${busybox}/bin/sh
@@ -244,8 +250,8 @@ in with onTheHost; rec {
       /dev/tty c 0777 root root 5 0
       /dev/zero c 0666 root root 1 5
       /proc d 0555 root root
-      /run d 0755 root root      
-      /sys d 0555 root root      
+      /run d 0755 root root
+      /sys d 0555 root root
       /tmp d 1777 root root
       /var d 0755 root root
     '';
