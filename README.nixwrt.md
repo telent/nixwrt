@@ -11,6 +11,21 @@ Tomato run on.
   upstream it) nixpkgs with a few changes I've had to make for
   cross-compiling some packages
 
+# Milestones/initial use cases
+
+* Milestone 0 ("what I came in for"): backup server on TL-WR842 with
+attached USB disk.
+
+* Milestone 1: replace the wireless access point in the study
+  (Trendnet something-or-other)
+
+* Milestone 2: IP camera with motion detection on Raspberry Pi (note this is ARM not MIPS)
+
+* Milestone 3: replace the router attached to my DSL modem
+  ("GL-MT300N":https://www.gl-inet.com/mt300n/ which is a relink
+  device not ar9xxx)
+
+
 # Status/TODO
 
 ## Using QEMU
@@ -92,7 +107,7 @@ Once you have the `ar7240>` prompt, run
     setenv rootaddr 1178000
     setenv rootaddr_useg 0x$rootaddr
     setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs  console=ttyATH0 panic=10 oops=panic init=/bin/init phram.phram=rootfs,$rootaddr_ks0,10Mi root=/dev/mtdblock0 memmap=11M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
+    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=rootfs,$rootaddr_ks0,10Mi root=/dev/mtdblock0 memmap=11M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
     setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
     run bootn
     
@@ -108,4 +123,17 @@ If the output changes to gibberish partway through bootup, this is
 because the kernel serial driver is running at a different speed to
 U-Boot, and you need to change it (if using the YunSerialTerminal
 sketch, by pressing `~1` or something along those lines).
+
+# Rambling
+
+services & stuff
+
+we want to define services "pull" - style
+
+"I can reach 5 of 12 big internet sites"
+if I can't, why not?
+  do I have dns?
+  do I have ip routing?
+  
+  
 
