@@ -44,7 +44,14 @@ let onTheBuild = import ./default.nix {} ;
       };
    };
    stdenv = onTheHost.stdenv;
+   sshHostKey = ./ssh_host_key;
+   sshAuthorizedKeys = stdenv.lib.strings.splitString "\n" ( builtins.readFile "/home/dan/.ssh/authorized_keys" );
+   
 in with onTheHost; rec {
+  dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
+   ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${sshHostKey} $out
+  '';
+    
   kernel = stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
     src = let
@@ -70,14 +77,14 @@ in with onTheHost; rec {
       q_apply() {
         find $1 -type f | sort | xargs  -n1 patch -N -p1 -i
       }
-      cp -dRv ${ledeSrc}/target/linux/generic/files/* . 
+      cp -dRv ${ledeSrc}/target/linux/generic/files/* .   # */
       q_apply ${ledeSrc}/target/linux/generic/backport-4.9/
       q_apply ${ledeSrc}/target/linux/generic/pending-4.9/
       q_apply ${ledeSrc}/target/linux/generic/hack-4.9/
-      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .
+      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .  # */
       q_apply ${ledeSrc}/target/linux/ar71xx/patches-4.9/
       chmod -R +w .
-    '';   # */ <- this here just to unconfuse emacs nix-mode
+    '';  
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
@@ -159,9 +166,12 @@ in with onTheHost; rec {
     "gzip"
     "ifconfig"
     "init"
+    "kill"
     "ls"
     "mkdir"
     "mount"
+    "ping"
+    "ps"
     "reboot"
     "stty"
     "syslogd"
@@ -196,6 +206,7 @@ in with onTheHost; rec {
     storeContents = [ 
     busybox
     monit
+    dropbear
     rsync
      ] ;
     compression = "gzip";       # probably should use lz4 or lzo, but need 
@@ -230,6 +241,9 @@ in with onTheHost; rec {
             start program = "/bin/syslogd -R 192.168.0.2"
             stop program = "/bin/kill \$MONIT_PROCESS_PID"
             depends on wired
+          check process dropbear with pidfile /run/dropbear.pid
+            start program = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid"
+            stop program = "/bin/kill \$MONIT_PROCESS_PID"
         '';};
         hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
@@ -249,6 +263,7 @@ in with onTheHost; rec {
         '';};
         rc = {mode="0755"; content = ''
           #!${busybox}/bin/sh
+          stty sane < /dev/console
           mount -a
         '';};
 
@@ -257,7 +272,7 @@ in with onTheHost; rec {
 
     # only need enough in /dev to get us to where we can mount devtmpfs,
     # this can probably be pared down
-    pseudoDev = writeText "pseudo-dev.txt" ''
+    pseudoDev = let newline = "\\n"; in writeText "pseudo-dev.txt" ''
       /dev d 0755 root root
       /dev/console c 0600 root root 5 1
       /dev/null c 0666 root root 1 3
@@ -270,6 +285,9 @@ in with onTheHost; rec {
       /sys d 0555 root root
       /tmp d 1777 root root
       /var d 0755 root root
+      /etc/dropbear d 0700 root root
+      /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey} 
+      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline sshAuthorizedKeys}"
     '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.squashfsTools ];
