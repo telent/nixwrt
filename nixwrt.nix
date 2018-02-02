@@ -215,8 +215,11 @@ in with onTheHost; rec {
           set idfile /run/monit.id
           set statefile /run/monit.state          
           check host gw address 192.168.0.2
-            if failed ping then unmonitor  
-          '';};
+            if failed ping then unmonitor
+          check network wired interface eth1
+            start program = "/bin/ifconfig eth1 192.168.0.251 up"
+            stop program = "/bin/ifconfig eth1 down"
+            if failed link then restart
         hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
           proc /proc proc defaults 0 0
@@ -226,7 +229,7 @@ in with onTheHost; rec {
           devtmpfs /dev devtmpfs defaults 0 0
         '';};
         passwd = {content = ''
-          root:x:0:0:System administrator:/:/bin/sh
+          root:x:0:0:System administrator:/root:/bin/sh
         '';};
         inittab = {content = ''
           ::askfirst:-/bin/sh
