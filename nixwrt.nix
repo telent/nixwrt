@@ -203,8 +203,8 @@ in with onTheHost; rec {
                     lines = lib.attrsets.mapAttrsToList
        (name: spec:
          let s = defaults // spec;
-             c = builtins.replaceStrings ["\n"] ["\\n"] s.content; in
-           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -ne \"${c}\"")
+             c = builtins.replaceStrings ["\n" "=" "\""] ["=0A" "=3D" "=22"] s.content; in
+           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo \"${c}\" |qprint -d")
       { 
         monitrc = {mode = "0400"; content = ''
           set init
@@ -250,6 +250,8 @@ in with onTheHost; rec {
       /dev/tty c 0777 root root 5 0
       /dev/zero c 0666 root root 1 5
       /proc d 0555 root root
+      /root d 0700 root root
+      /root/.ssh d 0700 root root
       /run d 0755 root root
       /sys d 0555 root root
       /tmp d 1777 root root
