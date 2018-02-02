@@ -164,6 +164,7 @@ in with onTheHost; rec {
     "mount"
     "reboot"
     "stty"
+    "syslogd"
     "udhcpc"
     "umount"
     ];  
@@ -178,6 +179,10 @@ in with onTheHost; rec {
       CONFIG_ASH_BUILTIN_TEST y
       CONFIG_ASH_OPTIMIZE_FOR_SIZE y
       CONFIG_FEATURE_USE_INITTAB y
+      CONFIG_FEATURE_REMOTE_LOG y
+      CONFIG_FEATURE_PIDFILE y
+      CONFIG_PID_FILE_PATH "/run"
+      CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
       '' + builtins.concatStringsSep
               "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") busyboxApplets);
   }; in lib.overrideDerivation bb (a: {
@@ -213,13 +218,19 @@ in with onTheHost; rec {
             allow localhost
             allow 192.168.0.0/24
           set idfile /run/monit.id
-          set statefile /run/monit.state          
+          set statefile /run/monit.state
           check host gw address 192.168.0.2
             if failed ping then unmonitor
+            depends on wired
           check network wired interface eth1
             start program = "/bin/ifconfig eth1 192.168.0.251 up"
             stop program = "/bin/ifconfig eth1 down"
             if failed link then restart
+          check process syslogd with pidfile /run/syslogd.pid
+            start program = "/bin/syslogd -R 192.168.0.2"
+            stop program = "/bin/kill \$MONIT_PROCESS_PID"
+            depends on wired
+        '';};
         hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
           proc /proc proc defaults 0 0
