@@ -45,7 +45,7 @@ let onTheBuild = import ./default.nix {} ;
    };
    stdenv = onTheHost.stdenv;
    sshHostKey = ./ssh_host_key;
-   sshAuthorizedKeys = stdenv.lib.strings.splitString "\n" ( builtins.readFile "/home/dan/.ssh/authorized_keys" );
+   sshAuthorizedKeys = stdenv.lib.strings.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" );
    
 in with onTheHost; rec {
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
@@ -220,7 +220,7 @@ in with onTheHost; rec {
        (name: spec:
          let s = defaults // spec;
              c = builtins.replaceStrings ["\n" "=" "\""] ["=0A" "=3D" "=22"] s.content; in
-           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo \"${c}\" |qprint -d")
+           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -n \"${c}\" |qprint -d")
       { 
         monitrc = {mode = "0400"; content = ''
           set init
@@ -252,6 +252,7 @@ in with onTheHost; rec {
           tmpfs /run tmpfs rw 0 0
           sysfs /sys sysfs defaults 0 0
           devtmpfs /dev devtmpfs defaults 0 0
+          #devpts /dev/pts devpts noauto 0 0          
         '';};
         passwd = {content = ''
           root:x:0:0:System administrator:/root:/bin/sh
@@ -265,6 +266,8 @@ in with onTheHost; rec {
           #!${busybox}/bin/sh
           stty sane < /dev/console
           mount -a
+          mkdir /dev/pts
+          mount -t devpts none /dev/pts
         '';};
 
       }; in
@@ -290,7 +293,7 @@ in with onTheHost; rec {
       /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline sshAuthorizedKeys}"
     '';
     phases = [ "installPhase" ];
-    nativeBuildInputs = [ buildPackages.squashfsTools ];
+    nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
     installPhase =  ''
     mkdir -p $out/sbin $out/bin $out/nix/store 
     touch $out/.empty
