@@ -170,9 +170,11 @@ in with onTheHost; rec {
     "ls"
     "mkdir"
     "mount"
+    "ntpd"
     "ping"
     "ps"
     "reboot"
+    "route"
     "stty"
     "syslogd"
     "udhcpc"
@@ -234,11 +236,15 @@ in with onTheHost; rec {
             if failed ping then unmonitor
             depends on wired
           check network wired interface eth1
-            start program = "/bin/ifconfig eth1 192.168.0.251 up"
+            start program = "/bin/sh -c '/bin/ifconfig eth1 192.168.0.251 up && route add default gw 192.168.0.254'"
             stop program = "/bin/ifconfig eth1 down"
             if failed link then restart
           check process syslogd with pidfile /run/syslogd.pid
             start program = "/bin/syslogd -R 192.168.0.2"
+            stop program = "/bin/kill \$MONIT_PROCESS_PID"
+            depends on wired
+          check process ntpd with pidfile /run/ntpd.pid
+            start program = "/bin/ntpd -p pool.ntp.org"
             stop program = "/bin/kill \$MONIT_PROCESS_PID"
             depends on wired
           check process dropbear with pidfile /run/dropbear.pid
@@ -254,6 +260,7 @@ in with onTheHost; rec {
           devtmpfs /dev devtmpfs defaults 0 0
           #devpts /dev/pts devpts noauto 0 0          
         '';};
+        "resolv.conf" = { content = ( lib.readFile "/etc/resolv.conf" );};
         passwd = {content = ''
           root:x:0:0:System administrator:/root:/bin/sh
         '';};
