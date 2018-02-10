@@ -52,89 +52,12 @@ in with onTheHost; rec {
    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${sshHostKey} $out
   '';
     
-  kernel = stdenv.mkDerivation rec {
-    name = "nixwrt_kernel";
-    src = let
-     url_4_4 = {
-       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.110.tar.xz";
-       sha256 = "0n6v872ahny9j29lh60c7ha5fa1as9pdag7jsb5fcy2nmid1g6fh";
-     };
-     url_4_9 = {
-       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
-       sha256 = "1pl7x1fnyhvwbdxgh0w5fka9dyysi74n8lj9fkgfmapz5hrr8axq";
-     };
-     url_4_14 = {
-       url ="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
-       sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
-     }; in onTheBuild.fetchurl url_4_9;
-
-    prePatch = let ledeSrc = onTheBuild.fetchFromGitHub {
-      owner = "lede-project";
-      repo = "source";
-      rev = "57157618d4c25b3f08adf28bad5b24d26b3a368a";
-      sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
-    }; in ''
-      q_apply() {
-        find $1 -type f | sort | xargs  -n1 patch -N -p1 -i
-      }
-      cp -dRv ${ledeSrc}/target/linux/generic/files/* .   # */
-      q_apply ${ledeSrc}/target/linux/generic/backport-4.9/
-      q_apply ${ledeSrc}/target/linux/generic/pending-4.9/
-      q_apply ${ledeSrc}/target/linux/generic/hack-4.9/
-      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .  # */
-      q_apply ${ledeSrc}/target/linux/ar71xx/patches-4.9/
-      chmod -R +w .
-    '';  
-
-    patches = [ ./kernel-ath79-wdt-at-boot.patch
-                ./kernel-lzma-command.patch
-                ./kernel-memmap-param.patch
-                ];
-                
-    patchFlags = [ "-p1" ];
-
-    hardeningDisable = ["all"];
-    nativeBuildInputs = [onTheBuild.pkgs.bc
-     lzmaLegacy onTheBuild.stdenv.cc
-     onTheBuild.pkgs.ubootTools];
-    CC = "${stdenv.cc.bintools.targetPrefix}gcc";
-    HOSTCC = "gcc";
-    CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
-    ARCH = "mips";
-    dontStrip = true;
-    dontPatchELF = true;
-    enableKconfig = builtins.concatStringsSep "\n" (map (n : "CONFIG_${n}=y") [
-      "AG71XX"
-      "ATH79_DEV_ETH"
-      "ATH79_MACH_ARDUINO_YUN"
-      "ATH79_WDT"
-      "DEVTMPFS"
-      "IP_PNP"
-      "MODULES"
-      "MTD_AR7_PARTS"
-      "MTD_CMDLINE_PART"
-      "MTD_PHRAM"
-      "SQUASHFS"
-      "SQUASHFS_XZ"
-      "SWCONFIG" # switch config, AG71XX needs register_switch to build
-      "TMPFS"
-      ]);
-    configurePhase = ''
-      substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
-      make V=1 mrproper
-      ( grep -v CONFIG_BLK_DEV_INITRD arch/mips/configs/${targetPlatform.baseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
-      make V=1 olddefconfig 
-    '';
-    buildPhase = ''
-      make uImage.lzma ${if wantModules then "modules" else ""} V=1 LZMA_COMMAND=${lzmaLegacy}/bin/lzma 
-    '';
-    installPhase = ''
-      mkdir -p $out
-      cp vmlinux arch/mips/boot/uImage.lzma $out/
-      ${if wantModules then "make modules_install INSTALL_MOD_PATH=$out" else ""}
-    '';
+  kernel = import ./kernel.nix {
+    stdenv = stdenv;
+    lzma = lzmaLegacy;
+    onTheBuild = onTheBuild;
+    targetPlatform = targetPlatform;
   };
-
   # build real lzma instead of using xz, because the lzma decoder in
   # u-boot doesn't understand streaming lzma archives ("Stream with
   # EOS marker is not supported") and xz can't create non-streaming
@@ -158,48 +81,32 @@ in with onTheHost; rec {
     enableACLs = false;
   };
   
-  busyboxApplets = [
-    "cat"
-    "dmesg"
-    "find"
-    "grep"
-    "gzip"
-    "ifconfig"
-    "init"
-    "kill"
-    "ls"
-    "mkdir"
-    "mount"
-    "ntpd"
-    "ping"
-    "ps"
-    "reboot"
-    "route"
-    "stty"
-    "syslogd"
-    "udhcpc"
-    "umount"
-    ];  
-  busybox = let bb = pkgs.busybox.override {
-    enableStatic = true;
-    enableMinimal = true;
-    extraConfig = ''
-      CONFIG_ASH y
-      CONFIG_ASH_ECHO y
-      CONFIG_BASH_IS_NONE y
-      CONFIG_ASH_BUILTIN_ECHO y
-      CONFIG_ASH_BUILTIN_TEST y
-      CONFIG_ASH_OPTIMIZE_FOR_SIZE y
-      CONFIG_FEATURE_USE_INITTAB y
-      CONFIG_FEATURE_REMOTE_LOG y
-      CONFIG_FEATURE_PIDFILE y
-      CONFIG_PID_FILE_PATH "/run"
-      CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
-      '' + builtins.concatStringsSep
-              "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") busyboxApplets);
-  }; in lib.overrideDerivation bb (a: {
-    LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
-  });
+  busybox = import ./busybox.nix {
+    stdenv = stdenv; pkgs = pkgs;
+    applets = [
+      "cat"
+      "dmesg"
+      "find"
+      "grep"
+      "gzip"
+      "ifconfig"
+      "init"
+      "kill"
+      "ls"
+      "mkdir"
+      "mount"
+      "ntpd"
+      "ping"
+      "ps"
+      "reboot"
+      "route"
+      "stty"
+      "syslogd"
+      "udhcpc"
+      "umount"
+    ];
+  };
+  
   monit = pkgs.monit.override { usePAM = false; openssl = null; };
     
   squashfs = import ./nixos/lib/make-squashfs.nix {  
@@ -304,7 +211,7 @@ in with onTheHost; rec {
     installPhase =  ''
     mkdir -p $out/sbin $out/bin $out/nix/store 
     touch $out/.empty
-    ( cd $out/bin; for i in busybox sh ${builtins.concatStringsSep" "  busyboxApplets} ; do ln -s ${busybox}/bin/busybox $i ; done )
+    ( cd $out/bin; for i in ${busybox}/bin/* ; do ln -s $i . ; done )
     # mksquashfs has the unhelpful (for us) property that it will
     # copy /nix/store/$xyz as /$xyz in the image
     cp ${squashfs} $out/image.squashfs
