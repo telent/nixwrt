@@ -131,33 +131,27 @@ in with onTheHost; rec {
              c = builtins.replaceStrings ["\n" "=" "\""] ["=0A" "=3D" "=22"] s.content; in
            "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -n \"${c}\" |qprint -d")
       { 
-        monitrc = {mode = "0400"; content = ''
-          set init
-          set daemon 30
-          set httpd port 80
-            allow localhost
-            allow 192.168.0.0/24
-          set idfile /run/monit.id
-          set statefile /run/monit.state
-          check host gw address 192.168.0.2
-            if failed ping then unmonitor
-            depends on wired
-          check network wired interface eth1
-            start program = "/bin/sh -c '/bin/ifconfig eth1 192.168.0.251 up && route add default gw 192.168.0.254'"
-            stop program = "/bin/ifconfig eth1 down"
-            if failed link then restart
-          check process syslogd with pidfile /run/syslogd.pid
-            start program = "/bin/syslogd -R 192.168.0.2"
-            stop program = "/bin/kill \$MONIT_PROCESS_PID"
-            depends on wired
-          check process ntpd with pidfile /run/ntpd.pid
-            start program = "/bin/ntpd -p pool.ntp.org"
-            stop program = "/bin/kill \$MONIT_PROCESS_PID"
-            depends on wired
-          check process dropbear with pidfile /run/dropbear.pid
-            start program = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid"
-            stop program = "/bin/kill \$MONIT_PROCESS_PID"
-        '';};
+        monitrc = {
+          mode = "0400";
+          content = import ./monitrc.nix {
+            lib = lib;
+            interfaces.wired = {
+              device = "eth1";
+              address = "192.168.0.251";
+              defaultRoute = "192.168.0.254";
+            };
+            services = {
+              dropbear = {
+                start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
+                depends = [ "wired"];
+              };
+              syslogd = { start = "/bin/syslogd -R 192.168.0.2"; 
+                          depends = ["wired"]; };
+              ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
+                        depends = ["wired"]; };
+            };
+          };
+        };
         hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
           proc /proc proc defaults 0 0
