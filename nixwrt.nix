@@ -152,6 +152,9 @@ in with onTheHost; rec {
             };
           };
         };
+        group = {content = ''
+          root:x:0:
+        '';};
         hosts = {content = "127.0.0.1 localhost\n"; };
         fstab = {content = ''
           proc /proc proc defaults 0 0
