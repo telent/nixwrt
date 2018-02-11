@@ -18,7 +18,6 @@ let onTheBuild = import ./default.nix {} ;
       malta = { name = "malta"; endian = "big"; baseConfig = "malta_defconfig"; };
       yun = { name = "yun"; endian = "big";  baseConfig = "ath79_defconfig"; };
     }.${target};
-    wantModules = false;
     mkPlatform = { name, endian, baseConfig } : {
       uboot = null;
       name = name;
@@ -58,6 +57,7 @@ in with onTheHost; rec {
     onTheBuild = onTheBuild;
     targetPlatform = targetPlatform;
   };
+
   # build real lzma instead of using xz, because the lzma decoder in
   # u-boot doesn't understand streaming lzma archives ("Stream with
   # EOS marker is not supported") and xz can't create non-streaming
@@ -111,13 +111,13 @@ in with onTheHost; rec {
     
   squashfs = import ./nixos/lib/make-squashfs.nix {  
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
-    stdenv = onTheHost.stdenv;
+    inherit stdenv;
     storeContents = [ 
-    busybox
-    monit
-    dropbear
-    rsync
-     ] ;
+      busybox
+      monit
+      dropbear
+      rsync
+    ];
     compression = "gzip";       # probably should use lz4 or lzo, but need 
     compressionFlags = "";      # to rebuild squashfs-tools for that
   };

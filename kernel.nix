@@ -4,18 +4,10 @@ let wantModules = false;
 stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
     src = let
-     url_4_4 = {
-       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.110.tar.xz";
-       sha256 = "0n6v872ahny9j29lh60c7ha5fa1as9pdag7jsb5fcy2nmid1g6fh";
-     };
-     url_4_9 = {
+     url = {
        url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
        sha256 = "1pl7x1fnyhvwbdxgh0w5fka9dyysi74n8lj9fkgfmapz5hrr8axq";
-     };
-     url_4_14 = {
-       url ="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.1.tar.xz";
-       sha256 = "1rsdrdapjw8lhm8dyckwxfihykirbkincm5k0lwwx1pr09qgdfbg";
-     }; in onTheBuild.fetchurl url_4_9;
+     }; in onTheBuild.fetchurl url;
 
     prePatch = let ledeSrc = onTheBuild.fetchFromGitHub {
       owner = "lede-project";
