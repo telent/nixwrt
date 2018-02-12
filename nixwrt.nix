@@ -12,50 +12,30 @@
 # * we need a busybox that runs on the end-user device, 
 #    build=x86-64, host=mips, target is not relevant
 
-{ target ? "malta" }: 
+platform: config:
 let onTheBuild = import ./default.nix {} ;
-    targetPlatform = {
-      malta = { name = "malta"; endian = "big"; baseConfig = "malta_defconfig"; };
-      yun = { name = "yun"; endian = "big";  baseConfig = "ath79_defconfig"; };
-    }.${target};
-    mkPlatform = { name, endian, baseConfig } : {
-      uboot = null;
-      name = name;
-      kernelArch = "mips";
-      kernelBaseConfig = baseConfig;
-      kernelHeadersBaseConfig = baseConfig;
-      kernelTarget = "uImage";
-      gcc = { abi = "32"; } ;
-      kernelAutoModules = false;
-      kernelModules = false;      
-      kernelPreferBuiltin = true;
-      bfdEmulation = (if endian=="little" then "elf32ltsmip" else "elf32btsmip");
-    };
     onTheHost = import ./default.nix {
       crossSystem = rec {
-        system = (if targetPlatform.endian=="little" then "mipsel-linux-gnu" else "mips-linux-gnu" );
+        system = "mips-linux-gnu";
         openssl.system = "linux-generic32";
         withTLS = true;
         inherit (platform) gcc;
-        # libc = "uclibc";
-        # float = "soft" ;
-        platform = mkPlatform targetPlatform;
+        inherit platform;
       };
    };
    stdenv = onTheHost.stdenv;
-   sshHostKey = ./ssh_host_key;
-   sshAuthorizedKeys = stdenv.lib.strings.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" );
-   
+   mkPseudoFile = import ./pseudofile.nix onTheHost;
+   configuration = config onTheHost;
 in with onTheHost; rec {
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
-   ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${sshHostKey} $out
+   ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
   '';
     
   kernel = import ./kernel.nix {
     stdenv = stdenv;
     lzma = lzmaLegacy;
     onTheBuild = onTheBuild;
-    targetPlatform = targetPlatform;
+    targetPlatform = platform;
   };
 
   # build real lzma instead of using xz, because the lzma decoder in
@@ -124,65 +104,43 @@ in with onTheHost; rec {
   image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
 
-    pseudoEtc = let defaults = { mode = "0444"; owner="root"; group="root"; };
-                    lines = lib.attrsets.mapAttrsToList
-       (name: spec:
-         let s = defaults // spec;
-             c = builtins.replaceStrings ["\n" "=" "\""] ["=0A" "=3D" "=22"] s.content; in
-           "/etc/${name} f ${s.mode} ${s.owner} ${s.group} echo -n \"${c}\" |qprint -d")
-      { 
-        monitrc = {
-          mode = "0400";
-          content = import ./monitrc.nix {
-            lib = lib;
-            interfaces.wired = {
-              device = "eth1";
-              address = "192.168.0.251";
-              defaultRoute = "192.168.0.254";
-            };
-            services = {
-              dropbear = {
-                start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-                depends = [ "wired"];
-              };
-              syslogd = { start = "/bin/syslogd -R 192.168.0.2"; 
-                          depends = ["wired"]; };
-              ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
-                        depends = ["wired"]; };
-            };
-          };
+    pseudoEtc = mkPseudoFile "pseudo-etc.txt" "/etc/" ({
+      monitrc = {
+        mode = "0400";
+        content = import ./monitrc.nix {
+          lib = lib;
+          inherit (configuration) interfaces services;
         };
-        group = {content = ''
-          root:x:0:
-        '';};
-        hosts = {content = "127.0.0.1 localhost\n"; };
-        fstab = {content = ''
-          proc /proc proc defaults 0 0
-          tmpfs /tmp tmpfs rw 0 0
-          tmpfs /run tmpfs rw 0 0
-          sysfs /sys sysfs defaults 0 0
-          devtmpfs /dev devtmpfs defaults 0 0
-          #devpts /dev/pts devpts noauto 0 0          
-        '';};
-        "resolv.conf" = { content = ( lib.readFile "/etc/resolv.conf" );};
-        passwd = {content = ''
-          root:x:0:0:System administrator:/root:/bin/sh
-        '';};
-        inittab = {content = ''
-          ::askfirst:-/bin/sh
-          ::sysinit:/etc/rc
-          ::respawn:${monit}/bin/monit -I -c /etc/monitrc
-        '';};
-        rc = {mode="0755"; content = ''
-          #!${busybox}/bin/sh
-          stty sane < /dev/console
-          mount -a
-          mkdir /dev/pts
-          mount -t devpts none /dev/pts
-        '';};
+      };
+      group = {content = ''
+        root:x:0:
+      '';};
+      hosts = {content = "127.0.0.1 localhost\n"; };
+      fstab = {content = ''
+        proc /proc proc defaults 0 0
+        tmpfs /tmp tmpfs rw 0 0
+        tmpfs /run tmpfs rw 0 0
+        sysfs /sys sysfs defaults 0 0
+        devtmpfs /dev devtmpfs defaults 0 0
+        #devpts /dev/pts devpts noauto 0 0          
+      '';};
+      passwd = {content = ''
+        root:x:0:0:System administrator:/root:/bin/sh
+      '';};
+      inittab = {content = ''
+        ::askfirst:-/bin/sh
+        ::sysinit:/etc/rc
+        ::respawn:${monit}/bin/monit -I -c /etc/monitrc
+      '';};
+      rc = {mode="0755"; content = ''
+        #!${busybox}/bin/sh
+        stty sane < /dev/console
+        mount -a
+        mkdir /dev/pts
+        mount -t devpts none /dev/pts
+      '';};
 
-      }; in
-      writeText "pseudo-etc.txt" ( "/etc d 0755 root root\n" + (builtins.concatStringsSep "\n" lines));
+    } // configuration.etc) ;
 
     # only need enough in /dev to get us to where we can mount devtmpfs,
     # this can probably be pared down
@@ -201,7 +159,7 @@ in with onTheHost; rec {
       /var d 0755 root root
       /etc/dropbear d 0700 root root
       /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey} 
-      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline sshAuthorizedKeys}"
+      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline configuration.services.dropbear.authorizedKeys}"
     '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];

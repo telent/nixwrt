@@ -63,7 +63,7 @@ stdenv.mkDerivation rec {
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      ( grep -v CONFIG_BLK_DEV_INITRD arch/mips/configs/${targetPlatform.baseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
+      ( grep -v CONFIG_BLK_DEV_INITRD arch/mips/configs/${targetPlatform.kernelHeadersBaseConfig} && echo "CONFIG_CPU_${lib.strings.toUpper targetPlatform.endian}_ENDIAN=y" && echo "$enableKconfig" ) > .config
       make V=1 olddefconfig 
     '';
     buildPhase = ''

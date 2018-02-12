@@ -21,32 +21,21 @@ attached USB disk.
 
 * Milestone 2: IP camera with motion detection on Raspberry Pi (note this is ARM not MIPS)
 
-* Milestone 3: replace the router attached to my DSL modem
-  ("GL-MT300N":https://www.gl-inet.com/mt300n/ which is a relink
-  device not ar9xxx)
+* Milestone 3: replace the router attached
+  to ["my GL-MT300N DSL modem"](https://www.gl-inet.com/mt300n/) -
+  note this is an ralink device not ar9xxx
 
 
 # Status/TODO
-
-## Using QEMU
-
-- [x] builds a kernel
-- [x] builds a root filesystem
-- [x] mounts the root filesystem
-- [x] statically linked init (busybox) runs
-- [x] make shared libraries work
-- [ ] convert to musl or uclibc
-- [ ] reasonable user environment
-
-## On real hardware
 
 - [x] builds a kernel
 - [x] builds a root filesystem
 - [x] mounts the root filesystem
 - [x] ethernet driver
-- [ ] bring the network up at boot
+- [x] bring the network up at boot
 - [ ] wireless
-- [ ] run some services, route some packets
+- [x] run some services
+- [ ] route some packets
 
 You can follow progress (or lack of) in my blog: start with
 https://ww.telent.net/2017/12/27/all_mipsy_were_the_borogroves and
@@ -54,17 +43,7 @@ follow the 'next week' links at the bottom of each post.
 
 # How to run it
 
-## With QEMU
-
-    nix-build ./nixwrt.nix -A tftproot -o malta --argstr target malta
-    nix-shell  -p qemu --run "qemu-system-mips -M malta -m 64 -nographic -kernel malta/vmlinux   -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic" 
-
-
-## On real hardware
-
-This is a little more complicated ...
-
-### Preparation
+## Preparation
 
 * Get an Arduino Yun: this is the initial target for no better reason
 than that I have one and the USB device interface on the Atmega side
@@ -87,13 +66,17 @@ machine itself)
 * acquire a static IP address for your Yun, and find out the address of
 your TFTP server.  In my case these are 192.168.0.251 and 192.168.0.2
 
-### Installation
+## Installation
+
+You need to create a `.nix` file that invokes the function in
+`nixwrt.nix` with a suitable configuration.  Suggest you start with
+`backuphost.nix` which is so far the ony example.
 
 Build the derivation and copy the result into your tftp server data
 directory:
 
-    nix-build nixwrt.nix -A tftproot -o yun --argstr target yun
-    rsync -cIa yun/ /tftp/ # rync should ignore timestamps when comparing
+    nix-build -A tftproot fileserver.nix  --show-trace -o yun
+    rsync -cIa yun/ /tftp/ # make rsync ignore timestamps when comparing
 
 On a serial connection to the Yun, get into the U-Boot monitor
 (hit YUN RST button, then press RET a couple of times - or in newer
@@ -123,17 +106,4 @@ If the output changes to gibberish partway through bootup, this is
 because the kernel serial driver is running at a different speed to
 U-Boot, and you need to change it (if using the YunSerialTerminal
 sketch, by pressing `~1` or something along those lines).
-
-# Rambling
-
-services & stuff
-
-we want to define services "pull" - style
-
-"I can reach 5 of 12 big internet sites"
-if I can't, why not?
-  do I have dns?
-  do I have ip routing?
-  
-  
 
