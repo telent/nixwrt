@@ -41,4 +41,4 @@ let
     };  
 
     };
-in (import ./nixwrt.nix) platform config
+in (import ./nixwrt) platform config

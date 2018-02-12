@@ -13,8 +13,8 @@
 #    build=x86-64, host=mips, target is not relevant
 
 platform: config:
-let onTheBuild = import ./default.nix {} ;
-    onTheHost = import ./default.nix {
+let onTheBuild = import ../default.nix {} ;
+    onTheHost = import ../default.nix {
       crossSystem = rec {
         system = "mips-linux-gnu";
         openssl.system = "linux-generic32";
@@ -31,7 +31,7 @@ in with onTheHost; rec {
    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
   '';
     
-  kernel = import ./kernel.nix {
+  kernel = import ./kernel {
     stdenv = stdenv;
     lzma = lzmaLegacy;
     onTheBuild = onTheBuild;
@@ -89,7 +89,7 @@ in with onTheHost; rec {
   
   monit = pkgs.monit.override { usePAM = false; openssl = null; };
     
-  squashfs = import ./nixos/lib/make-squashfs.nix {  
+  squashfs = import ../nixos/lib/make-squashfs.nix {  
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     inherit stdenv;
     storeContents = [ 
