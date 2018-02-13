@@ -113,7 +113,7 @@ in with onTheHost; rec {
         };
       };
       group = {content = ''
-        root:x:0:
+        root:!!:0:
       '';};
       hosts = {content = "127.0.0.1 localhost\n"; };
       fstab = {content = ''
@@ -124,9 +124,7 @@ in with onTheHost; rec {
         devtmpfs /dev devtmpfs defaults 0 0
         #devpts /dev/pts devpts noauto 0 0          
       '';};
-      passwd = {content = ''
-        root:x:0:0:System administrator:/root:/bin/sh
-      '';};
+      passwd = {content = (import ./mkpasswd.nix stdenv) configuration.users; };
       inittab = {content = ''
         ::askfirst:-/bin/sh
         ::sysinit:/etc/rc
@@ -159,7 +157,7 @@ in with onTheHost; rec {
       /var d 0755 root root
       /etc/dropbear d 0700 root root
       /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey} 
-      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline configuration.services.dropbear.authorizedKeys}"
+      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
     '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];

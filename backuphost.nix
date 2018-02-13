@@ -1,4 +1,4 @@
-with import <nixpkgs>; 
+with import <nixpkgs> {};  
 let
   platform = {
     uboot = null;
@@ -15,7 +15,8 @@ let
     kernelPreferBuiltin = true; 
 */
 };
- config = { pkgs, stdenv, ... } : {
+  myKeys = (stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
+  config = { pkgs, stdenv, ... } : {
     interfaces = {
       wired = {
         device = "eth1";
@@ -25,20 +26,27 @@ let
     };
     etc = {
       "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
-#      "resolv.conf" = { content = "cxbvS";};
     };
+    users = [
+      {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
+       shell="/bin/sh"; authorizedKeys = myKeys;}
+      {name="store"; uid=500; gid=500; gecos="Storage owner"; dir="/srv";
+       shell="/dev/null"; authorizedKeys = [];}
+      {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
+       shell="/bin/sh"; authorizedKeys = myKeys;}
+    ];
     services = {
       dropbear = {
         start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
         depends = [ "wired"];
         hostKey = ./ssh_host_key;
-        authorizedKeys = stdenv.lib.strings.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" );
       };
       syslogd = { start = "/bin/syslogd -R 192.168.0.2"; 
                   depends = ["wired"]; };
       ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
                 depends = ["wired"]; };
-    };  
-
     };
-in (import ./nixwrt) platform config
+
+  };
+in ((import ./nixwrt) platform config).tftproot
+#in { foo = myKeys ;}
