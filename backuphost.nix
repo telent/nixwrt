@@ -8,13 +8,7 @@ let
     gcc = { abi = "32"; } ;
     bfdEmulation = "elf32btsmip";
     kernelHeadersBaseConfig = "ath79_defconfig";
-/*    kernelBaseConfig = "ath79_defconfig";
-    kernelTarget = "uImage";
-    kernelAutoModules = false;
-    kernelModules = false;      
-    kernelPreferBuiltin = true; 
-*/
-};
+  };
   myKeys = (stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
   config = { pkgs, stdenv, ... } : {
     interfaces = {
@@ -49,4 +43,3 @@ let
 
   };
 in ((import ./nixwrt) platform config).tftproot
-#in { foo = myKeys ;}
