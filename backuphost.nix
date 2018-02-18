@@ -15,12 +15,12 @@ let
       enableKconfig = [
         "USB_COMMON"
         "USB_STORAGE"
-        "USB_STORAGE_DEBUG"
         "USB_UAS"
-        "CONFIG_USB_ANNOUNCE_NEW_DEVICES"
+        "USB_ANNOUNCE_NEW_DEVICES"
         "SCSI" "BLK_DEV_SD" "USB_PRINTER"
         "PARTITION_ADVANCED"
         "MSDOS_PARTITION" "EFI_PARTITION" "CMDLINE_PARTITION"
+        "EXT2_FS" "EXT3_FS" "EXT4_FS" "NTFS_FS"
       ];
     };
     interfaces = {

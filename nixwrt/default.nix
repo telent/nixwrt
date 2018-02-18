@@ -61,6 +61,7 @@ in with onTheHost; rec {
   busybox = import ./busybox.nix {
     stdenv = stdenv; pkgs = pkgs;
     applets = [
+      "blkid"
       "cat"
       "dmesg"
       "find"
