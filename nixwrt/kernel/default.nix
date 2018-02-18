@@ -1,8 +1,24 @@
-{ stdenv, lzma, onTheBuild, targetPlatform } :
+{ stdenv, lzma, onTheBuild, targetPlatform, kconfig ? [] } :
 let wantModules = false;
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
     name = "nixwrt_kernel";
+    defaultKconfig = [
+      "AG71XX"
+      "ATH79_DEV_ETH"
+      "ATH79_MACH_ARDUINO_YUN"
+      "ATH79_WDT"
+      "DEVTMPFS"
+      "IP_PNP"
+      "MODULES"
+      "MTD_AR7_PARTS"
+      "MTD_CMDLINE_PART"
+      "MTD_PHRAM"
+      "SQUASHFS"
+      "SQUASHFS_XZ"
+      "SWCONFIG" # switch config, AG71XX needs register_switch to build
+      "TMPFS"
+      ];
     src = let
      url = {
        url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
@@ -44,22 +60,9 @@ stdenv.mkDerivation rec {
     ARCH = "mips";
     dontStrip = true;
     dontPatchELF = true;
-    enableKconfig = builtins.concatStringsSep "\n" (map (n : "CONFIG_${n}=y") [
-      "AG71XX"
-      "ATH79_DEV_ETH"
-      "ATH79_MACH_ARDUINO_YUN"
-      "ATH79_WDT"
-      "DEVTMPFS"
-      "IP_PNP"
-      "MODULES"
-      "MTD_AR7_PARTS"
-      "MTD_CMDLINE_PART"
-      "MTD_PHRAM"
-      "SQUASHFS"
-      "SQUASHFS_XZ"
-      "SWCONFIG" # switch config, AG71XX needs register_switch to build
-      "TMPFS"
-      ]);
+    enableKconfig = builtins.concatStringsSep
+                     "\n"
+                     (map (n : "CONFIG_${n}=y") (kconfig ++ defaultKconfig));
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
       make V=1 mrproper

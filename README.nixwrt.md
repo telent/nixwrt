@@ -36,6 +36,8 @@ attached USB disk.
 - [ ] wireless
 - [x] run some services
 - [ ] route some packets
+- [x] usb storage module
+
 
 You can follow progress (or lack of) in my blog: start with
 https://ww.telent.net/2017/12/27/all_mipsy_were_the_borogroves and
@@ -75,7 +77,7 @@ You need to create a `.nix` file that invokes the function in
 Build the derivation and copy the result into your tftp server data
 directory:
 
-    nix-build -A tftproot fileserver.nix  --show-trace -o yun
+    nix-build -A tftproot backuphost.nix  --show-trace -o yun
     rsync -cIa yun/ /tftp/ # make rsync ignore timestamps when comparing
 
 On a serial connection to the Yun, get into the U-Boot monitor

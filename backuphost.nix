@@ -8,15 +8,21 @@ let
     gcc = { abi = "32"; } ;
     bfdEmulation = "elf32btsmip";
     kernelHeadersBaseConfig = "ath79_defconfig";
-/*    kernelBaseConfig = "ath79_defconfig";
-    kernelTarget = "uImage";
-    kernelAutoModules = false;
-    kernelModules = false;      
-    kernelPreferBuiltin = true; 
-*/
 };
   myKeys = (stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
   config = { pkgs, stdenv, ... } : {
+    kernel = {
+      enableKconfig = [
+        "USB_COMMON"
+        "USB_STORAGE"
+        "USB_STORAGE_DEBUG"
+        "USB_UAS"
+        "CONFIG_USB_ANNOUNCE_NEW_DEVICES"
+        "SCSI" "BLK_DEV_SD" "USB_PRINTER"
+        "PARTITION_ADVANCED"
+        "MSDOS_PARTITION" "EFI_PARTITION" "CMDLINE_PARTITION"
+      ];
+    };
     interfaces = {
       wired = {
         device = "eth1";
@@ -48,5 +54,4 @@ let
     };
 
   };
-in ((import ./nixwrt) platform config).tftproot
-#in { foo = myKeys ;}
+in ((import ./nixwrt) platform config)

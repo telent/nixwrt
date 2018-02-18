@@ -36,6 +36,7 @@ in with onTheHost; rec {
     lzma = lzmaLegacy;
     onTheBuild = onTheBuild;
     targetPlatform = platform;
+    kconfig = configuration.kernel.enableKconfig;
   };
 
   # build real lzma instead of using xz, because the lzma decoder in
