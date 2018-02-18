@@ -58,10 +58,6 @@ in with onTheHost; rec {
     };
   };
 
-  rsync = pkgs.rsync.override {
-    enableACLs = false;
-  };
-  
   busybox = import ./busybox.nix {
     stdenv = stdenv; pkgs = pkgs;
     applets = [
@@ -93,11 +89,10 @@ in with onTheHost; rec {
   squashfs = import ../nixos/lib/make-squashfs.nix {  
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     inherit stdenv;
-    storeContents = [ 
+    storeContents = configuration.packages ++ [ 
       busybox
       monit
       dropbear
-      rsync
     ];
     compression = "gzip";       # probably should use lz4 or lzo, but need 
     compressionFlags = "";      # to rebuild squashfs-tools for that

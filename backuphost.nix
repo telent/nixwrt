@@ -41,6 +41,11 @@ let
       {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
        shell="/bin/sh"; authorizedKeys = myKeys;}
     ];
+    packages =
+     let rsync = pkgs.rsync.override { enableACLs = false; } ;
+     in
+     [ rsync
+     ];
     services = {
       dropbear = {
         start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
