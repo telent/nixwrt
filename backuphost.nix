@@ -46,6 +46,12 @@ let
      in
      [ rsync
      ];
+    filesystems = {
+      "/srv" = { label = "backup-disk";
+                 fstype = "ext4";
+                 options = "rw";
+               };
+    };
     services = {
       dropbear = {
         start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";

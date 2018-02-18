@@ -113,14 +113,9 @@ in with onTheHost; rec {
         root:!!:0:
       '';};
       hosts = {content = "127.0.0.1 localhost\n"; };
-      fstab = {content = ''
-        proc /proc proc defaults 0 0
-        tmpfs /tmp tmpfs rw 0 0
-        tmpfs /run tmpfs rw 0 0
-        sysfs /sys sysfs defaults 0 0
-        devtmpfs /dev devtmpfs defaults 0 0
-        #devpts /dev/pts devpts noauto 0 0          
-      '';};
+      fstab = {
+        content = (import ./fstab.nix stdenv) configuration.filesystems;
+      };
       passwd = {content = (import ./mkpasswd.nix stdenv) configuration.users; };
       inittab = {content = ''
         ::askfirst:-/bin/sh
@@ -152,6 +147,9 @@ in with onTheHost; rec {
       /sys d 0555 root root
       /tmp d 1777 root root
       /var d 0755 root root
+      ${lib.strings.concatStringsSep "\n"
+         (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
+           configuration.filesystems)}
       /etc/dropbear d 0700 root root
       /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey} 
       /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
