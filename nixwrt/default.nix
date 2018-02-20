@@ -71,6 +71,7 @@ in with onTheHost; rec {
       "init"
       "kill"
       "ls"
+      "mdev"
       "mkdir"
       "mount"
       "ntpd"
@@ -106,7 +107,7 @@ in with onTheHost; rec {
         mode = "0400";
         content = import ./monitrc.nix {
           lib = lib;
-          inherit (configuration) interfaces services;
+          inherit (configuration) interfaces services filesystems;
         };
       };
       group = {content = ''
@@ -122,12 +123,18 @@ in with onTheHost; rec {
         ::sysinit:/etc/rc
         ::respawn:${monit}/bin/monit -I -c /etc/monitrc
       '';};
+      "mdev.conf" = { content = ''
+        -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
+        [sh]d[a-z] 0:0 660 $/usr/bin/env ${monit}/bin/monit stop vol_\$MDEV
+      ''; };
       rc = {mode="0755"; content = ''
         #!${busybox}/bin/sh
         stty sane < /dev/console
         mount -a
         mkdir /dev/pts
         mount -t devpts none /dev/pts
+        echo /bin/mdev > /proc/sys/kernel/hotplug
+        mdev -s
       '';};
 
     } // configuration.etc) ;
