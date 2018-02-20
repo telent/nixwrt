@@ -13,8 +13,8 @@
 #    build=x86-64, host=mips, target is not relevant
 
 platform: config:
-let onTheBuild = import ../default.nix {} ;
-    onTheHost = import ../default.nix {
+let onTheBuild = import <nixpkgs> {} ;
+    onTheHost = import <nixpkgs> {
       crossSystem = rec {
         system = "mips-linux-gnu";
         openssl.system = "linux-generic32";
