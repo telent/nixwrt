@@ -4,12 +4,12 @@
 #  if the program generates code, the Target is the machine that the program
 #    will generate code for
 #
-# For example, 
+# For example,
 #
 # * we require an `ar` that runs on x86-64 linux and generates mips
 #    code, build=x86-64, host=x86-64, target=mips
 #
-# * we need a busybox that runs on the end-user device, 
+# * we need a busybox that runs on the end-user device,
 #    build=x86-64, host=mips, target is not relevant
 
 platform: config:
@@ -30,7 +30,7 @@ in with onTheHost; rec {
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
   '';
-    
+
   kernel = import ./kernel {
     stdenv = stdenv;
     lzma = lzmaLegacy;
@@ -44,7 +44,7 @@ in with onTheHost; rec {
   # EOS marker is not supported") and xz can't create non-streaming
   # ones.
   # See https://sourceforge.net/p/squashfs/mailman/message/26599379/
-  
+
   lzmaLegacy = onTheBuild.stdenv.mkDerivation {
     name = "lzma";
     version = "4.32.7";
@@ -85,18 +85,18 @@ in with onTheHost; rec {
       "umount"
     ];
   };
-  
+
   monit = pkgs.monit.override { usePAM = false; openssl = null; };
-    
-  squashfs = import ../nixos/lib/make-squashfs.nix {  
+
+  squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     inherit stdenv;
-    storeContents = configuration.packages ++ [ 
+    storeContents = configuration.packages ++ [
       busybox
       monit
       dropbear
     ];
-    compression = "gzip";       # probably should use lz4 or lzo, but need 
+    compression = "gzip";       # probably should use lz4 or lzo, but need
     compressionFlags = "";      # to rebuild squashfs-tools for that
   };
   image = stdenv.mkDerivation rec {
@@ -158,13 +158,13 @@ in with onTheHost; rec {
          (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
            configuration.filesystems)}
       /etc/dropbear d 0700 root root
-      /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey} 
+      /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
       /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
     '';
     phases = [ "installPhase" ];
     nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
     installPhase =  ''
-    mkdir -p $out/sbin $out/bin $out/nix/store 
+    mkdir -p $out/sbin $out/bin $out/nix/store
     touch $out/.empty
     ( cd $out/bin; for i in ${busybox}/bin/* ; do ln -s $i . ; done )
     # mksquashfs has the unhelpful (for us) property that it will
@@ -174,7 +174,7 @@ in with onTheHost; rec {
     # so we need to graft all the directories in the image back onto /nix/store
     mksquashfs $out/.empty $out/image.squashfs -root-becomes store
     mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
-     -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc} 
+     -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
     chmod a+r $out/image.squashfs
     '';
   };
