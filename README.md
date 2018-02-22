@@ -4,13 +4,6 @@ An experiment, currently, to see if Nixpkgs is a good way to build an
 OS for a domestic wifi router of the kind that OpenWRT or DD-WRT or
 Tomato run on.
 
-* nixwrt.nix contains the derivation which will eventually produce a
-  firmware router image
-  
-* everything else is a lightly forked (I hope and expect that I can
-  upstream it) nixpkgs with a few changes I've had to make for
-  cross-compiling some packages
-
 # Milestones/initial use cases
 
 * Milestone 0 ("what I came in for"): backup server on TL-WR842 with
@@ -68,16 +61,24 @@ machine itself)
 * acquire a static IP address for your Yun, and find out the address of
 your TFTP server.  In my case these are 192.168.0.251 and 192.168.0.2
 
+* As of February 2018 it doesn't work with unadulterated upstream
+  Nixpkgs, so you will want to clone git@github.com:telent/nixpkgs.git
+  (use the `everything` branch, which _should_ be the default) 
+
+```
+$ (cd .. && git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt)
+```
+
 ## Installation
 
 You need to create a `.nix` file that invokes the function in
-`nixwrt.nix` with a suitable configuration.  Suggest you start with
-`backuphost.nix` which is so far the ony example.
+`nixwrt/default.nix` with a suitable configuration.  Suggest you start with
+`backuphost.nix` which is so far the only example.
 
 Build the derivation and copy the result into your tftp server data
 directory:
 
-    nix-build -A tftproot backuphost.nix  --show-trace -o yun
+    nix-build -I nixpkgs=../nixpkgs-for-nixwrt/  -A tftproot backuphost.nix  --show-trace -o yun
     rsync -cIa yun/ /tftp/ # make rsync ignore timestamps when comparing
 
 On a serial connection to the Yun, get into the U-Boot monitor
@@ -126,7 +127,8 @@ If it doesn't work, you could try
   
 # Feedback
 
-Is welcome.  I'm subscribed to the nix-devel list and will see
-messages there.  I'm @telent_net on Twitter if that suits better, and
-I occasionally show up as `dan_b` or some variant of that name on
-#nixos IRC.
+Is very welcome
+
+* open a github issue, or
+* post on the nix-devel list, or
+* find me on Twitter as  @telent_net
