@@ -1,6 +1,15 @@
-with import <nixpkgs> {};  
+with import <nixpkgs> {};
 let
   platform = {
+    uboot = null;
+    endian = "little";
+    name = "mt300a";
+    kernelArch = "mips";
+    gcc = { abi = "32"; } ;
+    bfdEmulation = "elf32ltsmip";
+    kernelHeadersBaseConfig = "mt7620_defconfig";
+  };
+  platformYun = {
     uboot = null;
     endian = "big";
     name = "yun";
@@ -13,6 +22,8 @@ let
   config = { pkgs, stdenv, ... } : {
     kernel = {
       enableKconfig = [
+#        "RALINK"
+#        "SOC_MT7621"
         "USB_COMMON"
         "USB_STORAGE"
         "USB_UAS"
@@ -41,11 +52,8 @@ let
       {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
        shell="/bin/sh"; authorizedKeys = myKeys;}
     ];
-    packages =
-     let rsync = pkgs.rsync.override { enableACLs = false; } ;
-     in
-     [ rsync
-     ];
+    packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
+               in [ rsyncSansAcls ];
     filesystems = {
       "/srv" = { label = "backup-disk";
                  fstype = "ext4";
@@ -58,7 +66,7 @@ let
         depends = [ "wired"];
         hostKey = ./ssh_host_key;
       };
-      syslogd = { start = "/bin/syslogd -R 192.168.0.2"; 
+      syslogd = { start = "/bin/syslogd -R 192.168.0.2";
                   depends = ["wired"]; };
       ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
                 depends = ["wired"]; };

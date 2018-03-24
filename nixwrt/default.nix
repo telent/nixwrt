@@ -17,7 +17,7 @@ let onTheBuild = import <nixpkgs> {} ;
     onTheHost = import <nixpkgs> {
       crossSystem = rec {
         libc = "musl";
-        system = "mips-linux-musl";
+        system = "mipsel-linux-musl";
         openssl.system = "linux-generic32";
         withTLS = true;
         inherit (platform) gcc;
@@ -92,14 +92,15 @@ in with onTheHost; rec {
   squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
     inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
     inherit stdenv;
-    storeContents = configuration.packages ++ [
-      busybox
-      monit
-      dropbear
+    storeContents =  configuration.packages ++ [
+       busybox
+       monit
+       dropbear
     ];
     compression = "gzip";       # probably should use lz4 or lzo, but need
     compressionFlags = "";      # to rebuild squashfs-tools for that
   };
+  rsy = builtins.elemAt configuration.packages 0;
   image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
 
@@ -184,8 +185,7 @@ in with onTheHost; rec {
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
-      cp ${kernel}/uImage.lzma  $out/kernel.image
-      cp ${kernel}/vmlinux  $out/
+      cp ${kernel}/kernel.image ${kernel}/vmlinux  $out/
       cp ${image}/image.squashfs  $out/rootfs.image
     '';
   };
