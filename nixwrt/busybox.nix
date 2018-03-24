@@ -12,7 +12,7 @@ let lib = stdenv.lib; bb = pkgs.busybox.override {
       CONFIG_FEATURE_MDEV_CONF y
       CONFIG_FEATURE_MDEV_EXEC y
       CONFIG_FEATURE_MOUNT_LABEL y
-      CONFIG_FEATURE_MOUNT_FLAGS y      
+      CONFIG_FEATURE_MOUNT_FLAGS y
       CONFIG_FEATURE_REMOTE_LOG y
       CONFIG_FEATURE_USE_INITTAB y
       CONFIG_FEATURE_PIDFILE y
@@ -23,5 +23,5 @@ let lib = stdenv.lib; bb = pkgs.busybox.override {
       '' + builtins.concatStringsSep
               "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") applets);
   }; in lib.overrideDerivation bb (a: {
-    LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
+#    LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
   })

@@ -16,7 +16,8 @@ platform: config:
 let onTheBuild = import <nixpkgs> {} ;
     onTheHost = import <nixpkgs> {
       crossSystem = rec {
-        system = "mips-linux-gnu";
+        libc = "musl";
+        system = "mips-linux-musl";
         openssl.system = "linux-generic32";
         withTLS = true;
         inherit (platform) gcc;
