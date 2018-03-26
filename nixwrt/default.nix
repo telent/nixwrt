@@ -33,11 +33,11 @@ in with onTheHost; rec {
   '';
 
   kernel = import ./kernel {
-    stdenv = stdenv;
+    inherit stdenv runCommand writeText onTheBuild;
     lzma = lzmaLegacy;
-    onTheBuild = onTheBuild;
     targetPlatform = platform;
-    kconfig = configuration.kernel.enableKconfig;
+    defaultConfig = configuration.kernel.defaultConfig;
+    overrideConfig = configuration.kernel.overrideConfig;
   };
 
   # build real lzma instead of using xz, because the lzma decoder in
@@ -97,8 +97,8 @@ in with onTheHost; rec {
        monit
        dropbear
     ];
-    compression = "gzip";       # probably should use lz4 or lzo, but need
-    compressionFlags = "";      # to rebuild squashfs-tools for that
+    compression = "xz";
+    compressionFlags = "-Xdict-size 100%";
   };
   rsy = builtins.elemAt configuration.packages 0;
   image = stdenv.mkDerivation rec {
