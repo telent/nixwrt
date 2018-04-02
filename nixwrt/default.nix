@@ -100,7 +100,7 @@ in with onTheHost; rec {
     compression = "xz";
     compressionFlags = "-Xdict-size 100%";
   };
-  rsy = builtins.elemAt configuration.packages 0;
+
   image = stdenv.mkDerivation rec {
     name = "nixwrt-root";
 
