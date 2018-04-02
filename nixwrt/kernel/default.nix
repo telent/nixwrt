@@ -88,6 +88,7 @@ stdenv.mkDerivation rec {
       make V=1 olddefconfig
     '';
 
+    outputs = [ "dev" "out"];
     buildPhase = ''
       make vmlinux
       objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.stripped
@@ -102,7 +103,8 @@ stdenv.mkDerivation rec {
 
     installPhase = ''
       mkdir -p $out
-      cp vmlinux kernel.image $out/
+      cp kernel.image $out/
+      make headers_install INSTALL_HDR_PATH=$out
     '';
 
     shellHook = ''

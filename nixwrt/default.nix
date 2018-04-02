@@ -32,6 +32,31 @@ in with onTheHost; rec {
    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
   '';
 
+  swconfig = stdenv.mkDerivation {
+    src = onTheBuild.fetchFromGitHub {
+      owner = "jekader";
+      repo = "swconfig";
+      rev = "66c760893ecdd1d603a7231fea9209daac57b610";
+      sha256 = "0hi2rj1a1fbvr5n1090q1zzigjyxmn643jzrwngw4ij0g82za3al";
+    };
+    name = "swconfig";
+    buildInputs = [ onTheBuild.pkgconfig ];
+    nativeBuildInputs = [ kernel.dev pkgs.libnl ];
+    CFLAGS="-O2 -I${kernel.dev}/include -I${pkgs.libnl.dev}/include/libnl3";
+    LDFLAGS="-L${pkgs.libnl.lib}/lib ";
+
+    buildPhase = ''
+      echo ${onTheBuild.pkgconfig}
+      make swconfig
+      $STRIP swconfig
+    '';
+    installPhase = ''
+      mkdir -p $out/bin
+      cp swconfig $out/bin
+    '';
+  };
+
+
   kernel = import ./kernel {
     inherit stdenv runCommand writeText onTheBuild;
     lzma = lzmaLegacy;
@@ -96,6 +121,7 @@ in with onTheHost; rec {
        busybox
        monit
        dropbear
+       swconfig
     ];
     compression = "xz";
     compressionFlags = "-Xdict-size 100%";
@@ -185,7 +211,7 @@ in with onTheHost; rec {
     phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out
-      cp ${kernel}/kernel.image ${kernel}/vmlinux  $out/
+      cp ${kernel.out}/kernel.image $out/
       cp ${image}/image.squashfs  $out/rootfs.image
     '';
   };

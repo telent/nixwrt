@@ -40,6 +40,7 @@ let
         "SQUASHFS"
         "SQUASHFS_XZ"
         "SQUASHFS_ZLIB"
+	"SWCONFIG"
         "TMPFS"
 
         "USB_COMMON"
@@ -62,7 +63,7 @@ let
     };
     interfaces = {
       wired = {
-        device = "eth1";
+        device = "eth0";
         address = "192.168.0.251";
         defaultRoute = "192.168.0.254";
       };
