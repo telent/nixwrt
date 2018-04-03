@@ -14,8 +14,8 @@ Tomato run on.
 
 * Milestone 2: IP camera with motion detection on Raspberry Pi (note this is ARM not MIPS)
 
-* Milestone 3: replace the router attached
-  to [my GL-MT300N DSL modem](https://www.gl-inet.com/mt300n/)
+* Milestone 3: replace the 
+  [GL-MT300N router](https://www.gl-inet.com/mt300n/)  attached to my DSL modem
 
 # How to build it
 
