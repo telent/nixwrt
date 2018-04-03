@@ -33,10 +33,10 @@ You need to create a `.nix` file that invokes the function in
 Build the derivation and copy the result into your tftp server data
 directory:
 
-    nix-build -I nixpkgs=../nixpkgs-for-nixwrt/  -A tftproot backuphost.nix  --show-trace 
-    rsync -cIa result $TFTP_SERVER_ROOT # make rsync ignore timestamps when comparing
+    $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/  -A tftproot backuphost.nix  --show-trace 
+    $ rsync -cIa result $TFTP_SERVER_ROOT # make rsync ignore timestamps when comparing
 
-This should leave you with two files in `result`: `kernel.image` and `rootfs.image`
+This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
 
 
 # How to run it
@@ -62,16 +62,16 @@ into memory over TFTP.  This means you will need
 ## On a GL-Inet GL-MT300A
 
 The GL-Inet pocket router range makes nice cheap hardware for playing
-with NixWRT or similar projects, are targetted at the DIY market,  
-are much easier to get serial connections than many COTS routers.
-GL-MT300A is my current platform.
+with NixWRT or similar projects.  They are targetted at the DIY
+market, have a reasonable amount of RAM and are much easier to get
+serial connections than many COTS routers.  GL-MT300A is my current
+platform for NixWRT development.
 
 Wire up the serial connection: this probably involves opening the box, locating
-the serial header pins (TX, RX and GND) and connecting a USB TTL convertor
-- e.g. a PL2303 based device - to it.
-  The
-  [defunct OpenWRT wiki](https://wiki.openwrt.org/toh/gl-inet/gl-mt300a#opening_the_case) has
-  a guide with some pictures.
+the serial header pins (TX, RX and GND) and connecting a USB TTL
+converter - e.g. a PL2303 based device - to it.  The
+[defunct OpenWRT wiki](https://wiki.openwrt.org/toh/gl-inet/gl-mt300a#opening_the_case) has
+a guide with some pictures.
   
 Run minicom or something similar on whatever is on the other end of
 the link. I use 115200 8N1 and find it also helps to set "Character tx
