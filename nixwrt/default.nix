@@ -13,23 +13,23 @@
 #    build=x86-64, host=mips, target is not relevant
 
 platform: config:
-let onTheBuild = import <nixpkgs> {} ;
+let triples = { "little" = "mipsel-linux-musl"; "big"="mips-linux-musl"; };
     onTheHost = import <nixpkgs> {
       crossSystem = rec {
         libc = "musl";
-        system = "mipsel-linux-musl";
+        system = triples.${platform.endian};
         openssl.system = "linux-generic32";
         withTLS = true;
-        inherit (platform) gcc;
         inherit platform;
       };
-   };
-   stdenv = onTheHost.stdenv;
-   mkPseudoFile = import ./pseudofile.nix onTheHost;
-   configuration = config onTheHost;
+    };
+    onTheBuild = onTheHost.buildPackages;
+    stdenv = onTheHost.stdenv;
+    mkPseudoFile = import ./pseudofile.nix onTheHost;
+    configuration = config onTheHost;
 in with onTheHost; rec {
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
-   ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
+    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
   '';
 
   swconfig = stdenv.mkDerivation {
