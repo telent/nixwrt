@@ -1,6 +1,6 @@
 {  stdenv
  , lzma
- , onTheBuild
+ , buildPackages
  , targetPlatform
  , defaultConfig
  , overrideConfig
@@ -17,7 +17,7 @@ let readConfig = file:
         lib.mapAttrs'
           (n: v: (lib.nameValuePair (lib.removePrefix "CONFIG_" n) v))
           attrset;
-    ledeSrc = onTheBuild.fetchFromGitHub {
+    ledeSrc = buildPackages.fetchFromGitHub {
       owner = "lede-project";
       repo = "source";
       rev = "57157618d4c25b3f08adf28bad5b24d26b3a368a";
@@ -46,7 +46,7 @@ stdenv.mkDerivation rec {
      url = {
        url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
        sha256 = "1pl7x1fnyhvwbdxgh0w5fka9dyysi74n8lj9fkgfmapz5hrr8axq";
-     }; in onTheBuild.fetchurl url;
+     }; in buildPackages.fetchurl url;
 
     prePatch =  ''
       q_apply() {
@@ -71,9 +71,9 @@ stdenv.mkDerivation rec {
     patchFlags = [ "-p1" ];
 
     hardeningDisable = ["all"];
-    nativeBuildInputs = [onTheBuild.pkgs.bc
-     lzma onTheBuild.stdenv.cc
-     onTheBuild.pkgs.ubootTools];
+    nativeBuildInputs = [buildPackages.pkgs.bc
+     lzma buildPackages.stdenv.cc
+     buildPackages.pkgs.ubootTools];
     CC = "${stdenv.cc.bintools.targetPrefix}gcc";
     HOSTCC = "gcc";
     CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
@@ -82,7 +82,7 @@ stdenv.mkDerivation rec {
     dontPatchELF = true;
 
     configurePhase = ''
-      substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${onTheBuild.pkgs.gawk}/bin/awk
+      substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${buildPackages.pkgs.gawk}/bin/awk
       make V=1 mrproper
       cp ${configuration} .config
       make V=1 olddefconfig

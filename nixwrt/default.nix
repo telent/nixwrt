@@ -12,7 +12,7 @@
 # * we need a busybox that runs on the end-user device,
 #    build=x86-64, host=mips, target is not relevant
 
-platform: config:
+platform :
 let triples = { "little" = "mipsel-linux-musl"; "big"="mips-linux-musl"; };
     onTheHost = import <nixpkgs> {
       crossSystem = rec {
@@ -23,196 +23,196 @@ let triples = { "little" = "mipsel-linux-musl"; "big"="mips-linux-musl"; };
         inherit platform;
       };
     };
-    onTheBuild = onTheHost.buildPackages;
     stdenv = onTheHost.stdenv;
     mkPseudoFile = import ./pseudofile.nix onTheHost;
-    configuration = config onTheHost;
 in with onTheHost; rec {
-  dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
-    ${onTheBuild.pkgs.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
-  '';
-
-  swconfig = stdenv.mkDerivation {
-    src = onTheBuild.fetchFromGitHub {
-      owner = "jekader";
-      repo = "swconfig";
-      rev = "66c760893ecdd1d603a7231fea9209daac57b610";
-      sha256 = "0hi2rj1a1fbvr5n1090q1zzigjyxmn643jzrwngw4ij0g82za3al";
-    };
-    name = "swconfig";
-    buildInputs = [ onTheBuild.pkgconfig ];
-    nativeBuildInputs = [ kernel.dev pkgs.libnl ];
-    CFLAGS="-O2 -I${kernel.dev}/include -I${pkgs.libnl.dev}/include/libnl3";
-    LDFLAGS="-L${pkgs.libnl.lib}/lib ";
-
-    buildPhase = ''
-      echo ${onTheBuild.pkgconfig}
-      make swconfig
-      $STRIP swconfig
+  inherit (onTheHost) pkgs stdenv lib;
+  mkDerivations = configuration @ { interfaces, etc, users, packages, filesystems, services, kernel }: rec {
+    dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
+      ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear ${services.dropbear.hostKey} $out
     '';
-    installPhase = ''
-      mkdir -p $out/bin
-      cp swconfig $out/bin
-    '';
-  };
 
+    swconfig = stdenv.mkDerivation {
+      src = buildPackages.fetchFromGitHub {
+        owner = "jekader";
+        repo = "swconfig";
+        rev = "66c760893ecdd1d603a7231fea9209daac57b610";
+        sha256 = "0hi2rj1a1fbvr5n1090q1zzigjyxmn643jzrwngw4ij0g82za3al";
+      };
+      name = "swconfig";
+      buildInputs = [ buildPackages.pkgconfig ];
+      nativeBuildInputs = [ kernel.dev pkgs.libnl ];
+      CFLAGS="-O2 -I${kernel.dev}/include -I${pkgs.libnl.dev}/include/libnl3";
+      LDFLAGS="-L${pkgs.libnl.lib}/lib ";
 
-  kernel = import ./kernel {
-    inherit stdenv runCommand writeText onTheBuild;
-    lzma = lzmaLegacy;
-    targetPlatform = platform;
-    defaultConfig = configuration.kernel.defaultConfig;
-    overrideConfig = configuration.kernel.overrideConfig;
-  };
-
-  # build real lzma instead of using xz, because the lzma decoder in
-  # u-boot doesn't understand streaming lzma archives ("Stream with
-  # EOS marker is not supported") and xz can't create non-streaming
-  # ones.
-  # See https://sourceforge.net/p/squashfs/mailman/message/26599379/
-
-  lzmaLegacy = onTheBuild.stdenv.mkDerivation {
-    name = "lzma";
-    version = "4.32.7";
-    # workaround for "forbidden reference to /tmp" message which will one
-    # day be fixed by a new patchelf release
-    # https://github.com/NixOS/nixpkgs/commit/cbdcc20e7778630cd67f6425c70d272055e2fecd
-    preFixup = ''rm -rf "$(pwd)" && mkdir "$(pwd)" '';
-    srcs = onTheBuild.fetchurl {
-      url = "https://tukaani.org/lzma/lzma-4.32.7.tar.gz";
-      sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
+      buildPhase = ''
+        echo ${buildPackages.pkgconfig}
+        make swconfig
+        $STRIP swconfig
+      '';
+      installPhase = ''
+        mkdir -p $out/bin
+        cp swconfig $out/bin
+      '';
     };
-  };
 
-  busybox = import ./busybox.nix {
-    stdenv = stdenv; pkgs = pkgs;
-    applets = [
-      "blkid"
-      "cat"
-      "dmesg"
-      "find"
-      "grep"
-      "gzip"
-      "ifconfig"
-      "init"
-      "kill"
-      "ls"
-      "mdev"
-      "mkdir"
-      "mount"
-      "ntpd"
-      "ping"
-      "ps"
-      "reboot"
-      "route"
-      "stty"
-      "syslogd"
-      "udhcpc"
-      "umount"
-    ];
-  };
+    kernel = import ./kernel {
+      inherit stdenv runCommand writeText buildPackages;
+      lzma = lzmaLegacy;
+      targetPlatform = platform;
+      defaultConfig = configuration.kernel.defaultConfig;
+      overrideConfig = configuration.kernel.overrideConfig;
+    };
 
-  monit = pkgs.monit.override { usePAM = false; openssl = null; };
+    # build real lzma instead of using xz, because the lzma decoder in
+    # u-boot doesn't understand streaming lzma archives ("Stream with
+    # EOS marker is not supported") and xz can't create non-streaming
+    # ones.
+    # See https://sourceforge.net/p/squashfs/mailman/message/26599379/
 
-  squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
-    inherit (onTheBuild.pkgs) perl pathsFromGraph squashfsTools;
-    inherit stdenv;
-    storeContents =  configuration.packages ++ [
-       busybox
-       monit
-       dropbear
-       swconfig
-    ];
-    compression = "xz";
-    compressionFlags = "-Xdict-size 100%";
-  };
+    lzmaLegacy = buildPackages.stdenv.mkDerivation {
+      name = "lzma";
+      version = "4.32.7";
+      # workaround for "forbidden reference to /tmp" message which will one
+      # day be fixed by a new patchelf release
+      # https://github.com/NixOS/nixpkgs/commit/cbdcc20e7778630cd67f6425c70d272055e2fecd
+      preFixup = ''rm -rf "$(pwd)" && mkdir "$(pwd)" '';
+      srcs = buildPackages.fetchurl {
+        url = "https://tukaani.org/lzma/lzma-4.32.7.tar.gz";
+        sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
+      };
+    };
 
-  image = stdenv.mkDerivation rec {
-    name = "nixwrt-root";
+    busybox = import ./busybox.nix {
+      inherit stdenv pkgs;
+      applets = [
+        "blkid"
+        "cat"
+        "dmesg"
+        "find"
+        "grep"
+        "gzip"
+        "ifconfig"
+        "init"
+        "kill"
+        "ls"
+        "mdev"
+        "mkdir"
+        "mount"
+        "ntpd"
+        "ping"
+        "ps"
+        "reboot"
+        "route"
+        "stty"
+        "syslogd"
+        "udhcpc"
+        "umount"
+      ];
+    };
 
-    pseudoEtc = mkPseudoFile "pseudo-etc.txt" "/etc/" ({
-      monitrc = {
-        mode = "0400";
-        content = import ./monitrc.nix {
-          lib = lib;
-          inherit (configuration) interfaces services filesystems;
+    monit = pkgs.monit.override { usePAM = false; openssl = null; };
+
+    squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
+      inherit (buildPackages) perl pathsFromGraph squashfsTools;
+      inherit stdenv;
+      storeContents = packages ++ [
+         busybox
+         monit
+         dropbear
+         swconfig
+      ];
+      compression = "xz";
+      compressionFlags = "-Xdict-size 100%";
+    };
+
+    image = stdenv.mkDerivation rec {
+      name = "nixwrt-root";
+
+      pseudoEtc = mkPseudoFile "pseudo-etc.txt" "/etc/" ({
+        monitrc = {
+          mode = "0400";
+          content = import ./monitrc.nix {
+            lib = lib;
+            inherit (configuration) interfaces services filesystems;
+          };
         };
-      };
-      group = {content = ''
-        root:!!:0:
-      '';};
-      hosts = {content = "127.0.0.1 localhost\n"; };
-      fstab = {
-        content = (import ./fstab.nix stdenv) configuration.filesystems;
-      };
-      passwd = {content = (import ./mkpasswd.nix stdenv) configuration.users; };
-      inittab = {content = ''
-        ::askfirst:-/bin/sh
-        ::sysinit:/etc/rc
-        ::respawn:${monit}/bin/monit -I -c /etc/monitrc
-      '';};
-      "mdev.conf" = { content = ''
-        -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
-        [sh]d[a-z] 0:0 660 $/usr/bin/env ${monit}/bin/monit stop vol_\$MDEV
-      ''; };
-      rc = {mode="0755"; content = ''
-        #!${busybox}/bin/sh
-        stty sane < /dev/console
-        mount -a
-        mkdir /dev/pts
-        mount -t devpts none /dev/pts
-        echo /bin/mdev > /proc/sys/kernel/hotplug
-        mdev -s
-      '';};
+        group = {content = ''
+          root:!!:0:
+        '';};
+        hosts = {content = "127.0.0.1 localhost\n"; };
+        fstab = {
+          content = (import ./fstab.nix stdenv) configuration.filesystems;
+        };
+        passwd = {content = (import ./mkpasswd.nix stdenv) configuration.users; };
+        inittab = {content = ''
+          ::askfirst:-/bin/sh
+          ::sysinit:/etc/rc
+          ::respawn:${monit}/bin/monit -I -c /etc/monitrc
+        '';};
+        "mdev.conf" = { content = ''
+          -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
+          [sh]d[a-z] 0:0 660 $/usr/bin/env ${monit}/bin/monit stop vol_\$MDEV
+        ''; };
+        rc = {mode="0755"; content = ''
+          #!${busybox}/bin/sh
+          stty sane < /dev/console
+          mount -a
+          mkdir /dev/pts
+          mount -t devpts none /dev/pts
+          echo /bin/mdev > /proc/sys/kernel/hotplug
+          mdev -s
+        '';};
 
-    } // configuration.etc) ;
+      } // configuration.etc) ;
 
-    # only need enough in /dev to get us to where we can mount devtmpfs,
-    # this can probably be pared down
-    pseudoDev = let newline = "\\n"; in writeText "pseudo-dev.txt" ''
-      /dev d 0755 root root
-      /dev/console c 0600 root root 5 1
-      /dev/null c 0666 root root 1 3
-      /dev/tty c 0777 root root 5 0
-      /dev/zero c 0666 root root 1 5
-      /proc d 0555 root root
-      /root d 0700 root root
-      /root/.ssh d 0700 root root
-      /run d 0755 root root
-      /sys d 0555 root root
-      /tmp d 1777 root root
-      /var d 0755 root root
-      ${lib.strings.concatStringsSep "\n"
-         (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
-           configuration.filesystems)}
-      /etc/dropbear d 0700 root root
-      /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
-      /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
-    '';
-    phases = [ "installPhase" ];
-    nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
-    installPhase =  ''
-    mkdir -p $out/sbin $out/bin $out/nix/store
-    touch $out/.empty
-    ( cd $out/bin; for i in ${busybox}/bin/* ; do ln -s $i . ; done )
-    # mksquashfs has the unhelpful (for us) property that it will
-    # copy /nix/store/$xyz as /$xyz in the image
-    cp ${squashfs} $out/image.squashfs
-    chmod +w $out/image.squashfs
-    # so we need to graft all the directories in the image back onto /nix/store
-    mksquashfs $out/.empty $out/image.squashfs -root-becomes store
-    mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
-     -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
-    chmod a+r $out/image.squashfs
-    '';
-  };
-  tftproot = stdenv.mkDerivation rec {
-    name = "tftproot";
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out
-      cp ${kernel.out}/kernel.image $out/
-      cp ${image}/image.squashfs  $out/rootfs.image
-    '';
+      # only need enough in /dev to get us to where we can mount devtmpfs,
+      # this can probably be pared down
+      pseudoDev = let newline = "\\n"; in writeText "pseudo-dev.txt" ''
+        /dev d 0755 root root
+        /dev/console c 0600 root root 5 1
+        /dev/null c 0666 root root 1 3
+        /dev/tty c 0777 root root 5 0
+        /dev/zero c 0666 root root 1 5
+        /proc d 0555 root root
+        /root d 0700 root root
+        /root/.ssh d 0700 root root
+        /run d 0755 root root
+        /sys d 0555 root root
+        /tmp d 1777 root root
+        /var d 0755 root root
+        ${lib.strings.concatStringsSep "\n"
+           (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
+             configuration.filesystems)}
+        /etc/dropbear d 0700 root root
+        /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
+        /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
+      '';
+      phases = [ "installPhase" ];
+      nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
+      installPhase =  ''
+      mkdir -p $out/sbin $out/bin $out/nix/store
+      touch $out/.empty
+      ( cd $out/bin; for i in ${busybox}/bin/* ; do ln -s $i . ; done )
+      # mksquashfs has the unhelpful (for us) property that it will
+      # copy /nix/store/$xyz as /$xyz in the image
+      cp ${squashfs} $out/image.squashfs
+      chmod +w $out/image.squashfs
+      # so we need to graft all the directories in the image back onto /nix/store
+      mksquashfs $out/.empty $out/image.squashfs -root-becomes store
+      mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
+       -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
+      chmod a+r $out/image.squashfs
+      '';
+    };
+    tftproot = stdenv.mkDerivation rec {
+      name = "tftproot";
+      phases = [ "installPhase" ];
+      installPhase = ''
+        mkdir -p $out
+        cp ${kernel.out}/kernel.image $out/
+        cp ${image}/image.squashfs  $out/rootfs.image
+      '';
+    };
   };
 }

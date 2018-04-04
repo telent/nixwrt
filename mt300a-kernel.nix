@@ -1,4 +1,4 @@
-lib : cfg :
+lib :
 let adds = [
   "CLKSRC_MMIO"
   "CMDLINE_OVERRIDE"
@@ -28,6 +28,9 @@ others = {
   "CPU_LITTLE_ENDIAN" = "y";
   "CMDLINE" = builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,0x2000000,11Mi root=/dev/mtdblock0 memmap=12M\$0x2000000 loglevel=8 rootfstype=squashfs";
 };
-in cfg // (lib.genAttrs adds (name: "y")) //
-          (lib.genAttrs removes (name: "n")) //
-          others
+in {
+  defaultConfig = "ramips/mt7620/config-4.9";
+  overrideConfig = cfg : cfg // (lib.genAttrs adds (name: "y")) //
+                         (lib.genAttrs removes (name: "n")) //
+                         others;
+}
