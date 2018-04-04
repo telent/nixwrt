@@ -1,7 +1,6 @@
 with import <nixpkgs> {};
 let
   platform = {
-    uboot = null;
     endian = "little";
     name = "mt300a";
     kernelArch = "mips";
@@ -15,7 +14,6 @@ let
     kernelArch = "mips";
     gcc = { abi = "32"; } ;
     bfdEmulation = "elf32btsmip";
-    kernelHeadersBaseConfig = "ath79_defconfig";
   };
   myKeys = (stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
   config = { pkgs, stdenv, ... } : {
