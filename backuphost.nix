@@ -1,13 +1,8 @@
-with import ./nixwrt/default.nix {
-  endian = "little";
-  name = "mt300a";
-  kernelArch = "mips";
-  gcc = { abi = "32"; } ;
-  bfdEmulation = "elf32ltsmip";
-};
+let device = import ./devices/mt300a.nix ; in
+with import ./nixwrt/default.nix device.platform;
 let
   myKeys = (stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
-  deviceKernelConfig = import ./mt300a-kernel.nix stdenv.lib;
+  deviceKernelConfig = (device.kernel lib);
   extraKernelFlags = (lib.genAttrs [
     "USB_COMMON"
     "USB_STORAGE"
