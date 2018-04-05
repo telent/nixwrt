@@ -35,19 +35,21 @@ The general principle is that you write a `.nix` file following this
 pattern:
 
     with import ./nixwrt/default.nix targetPlatform;
-    (mkDerivations myConfiguration).tftproot
+    (mkDerivations myConfiguration)
     
 where `targetPlatform` is a NixOS "platform" attrset and
 `myConfiguration` is an attrset with keys such as `interfaces`,
 `users`, `packages`, `services` etc that describe what you want to go
 into the image.  As there is no actual documentation of this attrset,
-the best way to get started right now is to copy `backuphost.nix` 
+the best way to get started right now is to copy `backuphost.nix`.
+The return value of `mkDerivations` is another attrset, and in 96.2%
+of cases you probably want the `tftproot` value from it.
 
-Build the derivation and copy the result into your tftp server data
+So, build the derivation and copy the result into your tftp server data
 directory:
 
     $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/  -A tftproot backuphost.nix  --show-trace 
-    $ rsync -cIa result $TFTP_SERVER_ROOT # make rsync ignore timestamps when comparing
+    $ rsync -cIa result $TFTP_SERVER_ROOT # -I to ignore timestamps when comparing
 
 This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
 
@@ -142,7 +144,7 @@ Once you have the `ar7240>` prompt, run
 substituting your own IP addresses where appropriate.  (This is a bit
 more text than on the GL-MT300A, because that device has a broken
 U-boot install which means we have to bake the command line into the
-image.  Yun has no such restriction)
+image.  The Yun has no such restriction)
 
 The constraints on memory addresses are as follows
 
