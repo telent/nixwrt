@@ -180,5 +180,5 @@ involves more than a line of text, or find me in the
 "Fediverse" [@telent@maston.social](https://mastodon.social/@telent) 
 or on Twitter [@telent_net](https://twitter.com/telent_net) if not
 
-I do occasionally hang out on #nixos IRC as @dan_b@ or as @telent@ but
+I do occasionally hang out on #nixos IRC as `dan_b` or as `telent` but
 not often enough to make it a good way of getting in touch.
