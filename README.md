@@ -31,25 +31,24 @@ Clone the nixwrt repo, and also the nixpkgs fork on which it depends
     $ git clone --branch everything git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
-The general principle is that you write a `.nix` file following this
-pattern:
-
-    with import ./nixwrt/default.nix targetPlatform;
-    (mkDerivations myConfiguration)
-    
-where `targetPlatform` is a NixOS "platform" attrset and
-`myConfiguration` is an attrset with keys such as `interfaces`,
+The best way to get started is to read `backuphost.nix`, which is a
+souple of magic imports followed by an attrset of things that need
+building (kernel, root fs image, anything else you want in your
+image). Most of the work in supporting a new device is probably in the
+`kernel` derivation, and most of the work in supporting new userland
+stuff is in `rootfs`, which generates a squashfs image based on a big
+attrset called `configuration` with keys such as `interfaces`,
 `users`, `packages`, `services` etc that describe what you want to go
-into the image.  As there is no actual documentation of this attrset,
-the best way to get started right now is to copy `backuphost.nix`.
-The return value of `mkDerivations` is another attrset, and in 96.2%
-of cases you probably want the `tftproot` value from it.
+into the image.
 
 So, build the derivation and copy the result into your tftp server data
 directory:
 
-    $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/  -A tftproot backuphost.nix  --show-trace 
-    $ rsync -cIa result $TFTP_SERVER_ROOT # -I to ignore timestamps when comparing
+    $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A tftproot --argstr targetBoard $BOARD -o $BOARD
+    $ rsync -cIa $BOARD $TFTP_SERVER_ROOT # -I to ignore timestamps when comparing
+
+`$BOARD` is currently one of `mt300a` (works), `yun` (doesn't build) or
+`malta` (builds, doesn't fully boot)
 
 This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
 
@@ -112,6 +111,8 @@ and you should see the kernel and rootfs download and boot.
 
 ## On an Arduino Yun
 
+[ This is slightly broken right now but will return ]
+
 Arduino Yun was the initial target for no better reason than that I
 had one to hand, and the USB device interface on the Atmega side makes
 it easy to test with.  The Yun is logically a traditional Arduino
@@ -158,6 +159,18 @@ bootup.  This is because the kernel serial driver is running at a
 different speed to U-Boot, and you need to change it (if using the
 YunSerialTerminal sketch, by pressing `~1` or something along those
 lines).
+
+## On QEMU ("malta")
+
+[ this is also broken right now, but less broken than the Yun: it
+makes a kernel but I haven't figured out how to mount the root fs ]
+
+Something like this but not this exactly:
+
+```
+nix-shell  -p qemu --run "qemu-system-mips  -M malta -m 64 -nographic -kernel malta/kernel.image  -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic"
+```
+
 
 # Troubleshooting
 
