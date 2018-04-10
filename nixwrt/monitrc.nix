@@ -1,4 +1,4 @@
-{ lib, interfaces ? {}, services ? {}, filesystems ? {} } : 
+{ lib, interfaces ? {}, services ? {}, filesystems ? {} } :
 let stanzaForInterface = name : attrs : ''
    check network ${name} interface ${attrs.device}
      start program = "/bin/sh -c '/bin/ifconfig ${attrs.device} ${attrs.address} up ${ lib.optionalString (builtins.hasAttr "defaultRoute" attrs) "&& route add default gw ${attrs.defaultRoute} dev ${attrs.device}"} '"
@@ -14,13 +14,16 @@ let stanzaForInterface = name : attrs : ''
      pidfile = "/run/${name}.pid";
      uid = 0;
      gid = 0;
+     depends = [];
      stop = "/bin/kill \\\$MONIT_PROCESS_PID";
-   } // spec; in ''
+   } // spec;
+     dep = d: if d == [] then ""  else "depends on " + (lib.strings.concatStringsSep ", " d);
+    in ''
     check process ${name} with pidfile ${spec_.pidfile}
       start program = "${lib.strings.escape ["\""] spec_.start}"
         as uid ${toString spec_.uid} gid ${toString spec_.gid}
       stop program = "${lib.strings.escape ["\""] spec_.stop}"
-      depends on ${lib.strings.concatStringsSep ", " spec_.depends}
+      ${dep spec_.depends}
     '');
 in ''
   set init
@@ -33,5 +36,5 @@ in ''
   set statefile /run/monit.state
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForInterface interfaces)}
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForService services)}
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}  
+  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}
   ''

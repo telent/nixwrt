@@ -23,6 +23,10 @@ in rec {
           address = "192.168.0.251";
           defaultRoute = "192.168.0.254";
         };
+        loopback = {
+          device = "lo";
+          address = "127.0.0.1";
+        };
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
@@ -44,6 +48,10 @@ in rec {
                  };
       };
       services = {
+        switch = {
+          start = "/bin/sh -c '${swconfig}/bin/swconfig dev switch0 set enable_vlan 0; ${swconfig}/bin/swconfig dev switch0 set apply'";
+        };
+
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
           depends = [ "wired"];
