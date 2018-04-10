@@ -92,14 +92,16 @@ stdenv.mkDerivation rec {
       make V=1 olddefconfig
     '';
 
-    outputs = [ "dev" "out"];
+    outputs = [ "dev" "out" "vmlinux"];
     buildPhase = ''
       make vmlinux
       objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.stripped
-      cc -o scripts/patch-dtb ${ledeSrc}/tools/patch-image/src/patch-dtb.c
-      cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/ramips/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
-      scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/ramips/dts/  -o vmlinux.dtb dtb.tmp
-      scripts/patch-dtb vmlinux.stripped vmlinux.dtb
+      if test -f board.dts; then
+        cc -o scripts/patch-dtb ${ledeSrc}/tools/patch-image/src/patch-dtb.c
+        cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/ramips/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
+        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/ramips/dts/  -o vmlinux.dtb dtb.tmp
+        scripts/patch-dtb vmlinux.stripped vmlinux.dtb
+      fi
       rm -f vmlinux.stripped.lzma
       ${lzma}/bin/lzma -k -z  vmlinux.stripped
       mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n 'MIPS NixWrt Linux' -d vmlinux.stripped.lzma kernel.image
@@ -109,6 +111,7 @@ stdenv.mkDerivation rec {
       mkdir -p $out
       cp kernel.image $out/
       make headers_install INSTALL_HDR_PATH=$out
+      cp vmlinux $vmlinux
     '';
 
     shellHook = ''

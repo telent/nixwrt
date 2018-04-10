@@ -54,4 +54,10 @@
     };
   };
   yun = { name = "arduino-yun"; endian = "big"; };
+  malta = { name = "qemu-malta"; endian = "big";
+            kernel = lib: {
+              defaultConfig = "malta/config-4.9";
+              extraConfig = { };
+            };
+          };
 }

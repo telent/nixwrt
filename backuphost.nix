@@ -1,4 +1,5 @@
-let device = (import ./nixwrt/devices.nix).mt300a;
+{ targetBoard ? "malta" }:
+let device = (import ./nixwrt/devices.nix).${targetBoard};
     system = (import ./nixwrt/mksystem.nix) device;
     nixpkgs = import <nixpkgs> system; in
 with nixpkgs;
@@ -8,7 +9,7 @@ let
 in rec {
   kernel = let k = (device.kernel lib); in nixwrt.kernel {
     lzma = nixwrt.lzmaLegacy;
-    dtsPath = k.dts nixpkgs;
+    dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
     inherit (k) defaultConfig extraConfig;
   };
 
@@ -64,12 +65,14 @@ in rec {
       };
     };
   };
+
   tftproot = stdenv.mkDerivation rec {
     name = "tftproot";
     phases = [ "installPhase" ];
+    kernelImage = (if targetBoard == "malta" then kernel.vmlinux else "${kernel.out}/kernel.image");
     installPhase = ''
       mkdir -p $out
-      cp ${kernel.out}/kernel.image $out/
+      cp ${kernelImage} $out/kernel.image
       cp ${rootfs}/image.squashfs  $out/rootfs.image
     '';
   };
