@@ -31,7 +31,8 @@ let readConfig = file:
       defaults = lib.foldl (a: b: a // b)
                            {}
                            (builtins.map readConfig configFiles);
-      overridden = defaults // extraConfig;
+      nixwrtConfig = { "TMPFS" = "y"; "DEVTMPFS" = "y"; };
+      overridden = defaults // nixwrtConfig // extraConfig;
       in writeText "nixwrt_config"
         (builtins.concatStringsSep
           "\n"

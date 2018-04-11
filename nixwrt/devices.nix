@@ -6,7 +6,6 @@
                         "CMDLINE_OVERRIDE"
                         "CMDLINE_PARTITION"
                         "DEBUG_INFO"
-                        "DEVTMPFS"
                         "EARLY_PRINTK"
                         "GENERIC_IRQ_IPI"
                         "IP_PNP"
@@ -22,7 +21,6 @@
                         "SQUASHFS_XZ"
                         "SQUASHFS_ZLIB"
                         "SWCONFIG"
-                        "TMPFS"
                       ] ;
                  removes = ["MTD_ROOTFS_ROOT_DEV" "IMAGE_CMDLINE_HACK"
                             "BLK_DEV_INITRD"];
