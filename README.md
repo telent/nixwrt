@@ -168,7 +168,7 @@ makes a kernel but I haven't figured out how to mount the root fs ]
 Something like this but not this exactly:
 
 ```
-nix-shell  -p qemu --run "qemu-system-mips  -M malta -m 64 -nographic -kernel malta/kernel.image  -append 'root=/dev/sr0 console=ttyS0 init=/bin/sh' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic"
+nix-shell  -p qemu --run "qemu-system-mips  -M malta -m 64 -nographic -kernel malta/kernel.image  -append 'root=/dev/sr0 console=ttyS0 init=/bin/init' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic"
 ```
 
 
