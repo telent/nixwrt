@@ -108,6 +108,78 @@ Run these commands :
 
 and you should see the kernel and rootfs download and boot.
 
+### Writing to flash
+
+If you're sure you want to toast a perfectly good OpenWRT installation
+... read on.  I accept no responsibility for anything bad that might
+happen as a result of following these instructions.
+
+I have tried this *once*.  Here is what I did.  If you do not
+understand these instructions, do not follow them.  If you do
+understand them, decide for yourself.
+
+1. look at the uboot `bootcmd` variable to find out where the flash is
+   mapped while U-Boot is running
+
+```
+   bootcmd=bootm 0xbc050000
+   ```
+   
+2. but this probably isn't the start of flash, this is some offset.
+   Look at `dmesg` output to see the mtd partition layout
+   (which we're not going to change)
+   
+
+```
+[    0.620000] m25p80 spi32766.0: w25q128 (16384 Kbytes)
+[    0.630000] 5 ofpart partitions found on MTD device spi32766.0
+[    0.630000] Creating 5 MTD partitions on "spi32766.0":
+[    0.640000] 0x000000000000-0x000000030000 : "u-boot"
+[    0.650000] 0x000000030000-0x000000040000 : "u-boot-env"
+[    0.650000] 0x000000040000-0x000000050000 : "factory"
+[    0.660000] 0x000000050000-0x000000fd0000 : "firmware"
+[    0.780000] 2 uimage-fw partitions found on MTD device firmware
+[    0.790000] 0x000000050000-0x000000174720 : "kernel"
+[    0.790000] 0x000000174720-0x000000fd0000 : "rootfs"
+[    0.800000] mtd: device 5 (rootfs) set to be root filesystem
+[    0.810000] 1 squashfs-split partitions found on MTD device rootfs
+[    0.810000] 0x000000890000-0x000000fd0000 : "rootfs_data"
+[    0.820000] 0x000000ff0000-0x000001000000 : "art"
+```
+
+   Given we know the `firmware` partition starts with a kernel, it
+   seems 98% likely that the flash base address is  `0x0000bc000000`)
+
+3. Get the erase block size by looking in `/proc/mtd` (0x1000)
+
+4. "uimage-fw" partitions are not "real", they are the result of
+   clever (magic) kernel code
+   (./drivers/mtd/mtdsplit/mtdsplit{,_uimage}.c) which understands the
+   kernel uimage format and knows how to seek to the end of this
+   kernel image and find a rootfs on the next erase block boundary
+
+5. therefore our image should consist of a kernel, plus padding to the
+   next erase block boundary, plus the filesystem image.  The
+   `firmwareImage` derivation makes one of these by creative use of `dd`
+
+```
+nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A firmwareImage --argstr targetBoard mt300a -o mt300a.bin -
+cp mt300a.bin /tftp
+```
+
+6.  then run these u-boot commands to put it on the device
+
+```
+setenv serverip 192.168.0.2 
+setenv ipaddr 192.168.0.251 
+tftp 0x80060000 /tftp/mt300a.bin
+erase 0xbc050000 0xbcfd0000
+cp.b 0x80060000 0xbc050000 ${filesize};
+```
+
+7.  reset the device. Wait. Pray, if you are so inclined.
+
+
 
 ## On an Arduino Yun
 

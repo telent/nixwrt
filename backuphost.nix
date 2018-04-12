@@ -7,11 +7,13 @@ let
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
     nixwrt = pkgs.callPackages ./nixwrt/packages.nix {};
 in rec {
-  kernel = let k = (device.kernel lib); in nixwrt.kernel {
+  testKernelAttrs = let k = (device.kernel lib); in {
     lzma = nixwrt.lzmaLegacy;
     dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
     inherit (k) defaultConfig extraConfig;
   };
+
+  kernel = nixwrt.kernel testKernelAttrs;
 
   swconfig = nixwrt.swconfig { inherit kernel; };
 
@@ -75,5 +77,20 @@ in rec {
       cp ${kernelImage} $out/kernel.image
       cp ${rootfs}/image.squashfs  $out/rootfs.image
     '';
+  };
+
+  firmwareImage = stdenv.mkDerivation rec {
+    name = "firmware.bin";
+    phases = [ "installPhase" ];
+    installPhase =
+      let liveKernelAttrs = lib.attrsets.recursiveUpdate testKernelAttrs {
+            extraConfig."CMDLINE" =
+              builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init root=/dev/mtdblock5 rootfstype=squashfs";
+          };
+          kernel = nixwrt.kernel liveKernelAttrs;
+      in ''
+        dd if=${kernel.out}/kernel.image of=$out bs=128k conv=sync
+        dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
+      '';
   };
 }
