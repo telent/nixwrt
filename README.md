@@ -116,7 +116,8 @@ happen as a result of following these instructions.
 
 I have tried this *once*.  Here is what I did.  If you do not
 understand these instructions, do not follow them.  If you do
-understand them, decide for yourself.
+understand them you probably can find perfectly good reasons of your
+own not to follow them without me telling you not to.
 
 1. look at the uboot `bootcmd` variable to find out where the flash is
    mapped while U-Boot is running
@@ -148,23 +149,26 @@ understand them, decide for yourself.
 ```
 
    Given we know the `firmware` partition starts with a kernel, it
-   seems 98% likely that the flash base address is  `0x0000bc000000`)
+   seems 98% likely that this is where the `bootcmd` is jumping to,
+   and therefore the flash base address is  `0x0000bc000000`
 
 3. Get the erase block size by looking in `/proc/mtd` (0x1000)
 
 4. "uimage-fw" partitions are not "real", they are the result of
-   clever (magic) kernel code
-   (./drivers/mtd/mtdsplit/mtdsplit{,_uimage}.c) which understands the
+   kernel code
+   (`drivers/mtd/mtdsplit/mtdsplit{,_uimage}.c`) which understands the
    kernel uimage format and knows how to seek to the end of this
-   kernel image and find a rootfs on the next erase block boundary
-
-5. therefore our image should consist of a kernel, plus padding to the
-   next erase block boundary, plus the filesystem image.  The
-   `firmwareImage` derivation makes one of these by creative use of `dd`
+   kernel image and find a rootfs on the next erase block boundary.
+   Therefore if our image consists of a kernel, plus padding to the
+   next erase block boundary, plus the filesystem image, Linux will
+   find an MTD partition (probably number 5) that starts where the
+   kernel starts.  The `firmwareImage` derivation makes one of these
+   by creative use of `dd`
 
 ```
-nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A firmwareImage --argstr targetBoard mt300a -o mt300a.bin -
-cp mt300a.bin /tftp
+$ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix \
+ -A firmwareImage --argstr targetBoard mt300a -o mt300a.bin
+$ cp mt300a.bin /tftp
 ```
 
 6.  then run these u-boot commands to put it on the device
