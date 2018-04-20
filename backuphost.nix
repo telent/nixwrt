@@ -18,7 +18,7 @@ in rec {
   swconfig = nixwrt.swconfig { inherit kernel; };
 
   rootfs = nixwrt.rootfsImage {
-    monit = nixwrt.monit;
+    inherit (nixwrt) monit busybox;
     configuration = {
       interfaces = {
         wired = {

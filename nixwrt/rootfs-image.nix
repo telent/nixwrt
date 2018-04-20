@@ -39,6 +39,9 @@ let
     "mdev.conf" = { content = ''
       -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
       [sh]d[a-z] 0:0 660 $/usr/bin/env ${monit}/bin/monit stop vol_\$MDEV
+      null 0:0 666
+      zero 0:0 666
+      full 0:0 666
     ''; };
     rc = {mode="0755"; content = ''
       #!${busybox}/bin/sh
