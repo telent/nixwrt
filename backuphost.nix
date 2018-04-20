@@ -10,7 +10,18 @@ in rec {
   testKernelAttrs = let k = (device.kernel lib); in {
     lzma = nixwrt.lzmaLegacy;
     dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
-    inherit (k) defaultConfig extraConfig;
+    inherit (k) defaultConfig;
+    extraConfig = k.extraConfig // {
+      "9P_FS" = "y";
+      "9P_FS_POSIX_ACL" = "y";
+      "9P_FS_SECURITY" = "y";
+      "NET_9P" = "y";
+      "NET_9P_DEBUG" = "y";
+      "VIRTIO" = "y";
+      "VIRTIO_PCI" = "y";
+      "VIRTIO_NET" = "y";
+      "NET_9P_VIRTIO" = "y";
+    };
   };
 
   kernel = nixwrt.kernel testKernelAttrs;
