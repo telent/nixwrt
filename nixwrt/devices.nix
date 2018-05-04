@@ -55,7 +55,7 @@
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";
-              extraConfig = { "BLK_DEV_SR" = "y"; };
+              extraConfig = { "BLK_DEV_SR" = "y"; "E1000" = "y"; "PCI" = "y"; "NET_VENDOR_INTEL" = "y";};
             };
           };
 }

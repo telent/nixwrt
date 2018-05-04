@@ -23,11 +23,11 @@ let defaults = { up= true; routes = []; type = "hw"; depends = [];};
          (setUp name attrs)];
     };
     stanza = name: a@{ routes , type, depends , ... } :
-      let c = (commands.${type}) name a;
+      let c = ["#!/bin/sh"] ++ (commands.${type} name a) ++ ["# FIN\n"];
           start = writeScriptBin "ifup-${name}" (lib.strings.concatStringsSep "\n" c); in
       ''
          check network ${name} interface ${name}
-           start program = "${start}"
+           start program = "${start}/bin/ifup-${name}"
            stop program = "${ip} link set dev ${name} down"
            if failed link then restart
            depends on ${lib.strings.concatStringsSep ", " (depends ++ ["booted"])}
