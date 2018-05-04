@@ -1,10 +1,12 @@
-{ lib, interfaces ? {}, services ? {}, filesystems ? {} } :
-let stanzaForInterface = name : attrs : ''
-   check network ${name} interface ${attrs.device}
-     start program = "/bin/sh -c '/bin/ifconfig ${attrs.device} ${attrs.address} up ${ lib.optionalString (builtins.hasAttr "defaultRoute" attrs) "&& route add default gw ${attrs.defaultRoute} dev ${attrs.device}"} '"
-     stop program = "/bin/ifconfig ${attrs.device} down"
-     if failed link then restart
-   '';
+{ lib
+ , pkgs
+ , iproute
+ , writeText
+ , writeScriptBin
+ , interfaces ? {}, services ? {}, filesystems ? {} } :
+let ip = "${iproute}/bin/ip";
+   stanzaForInterface =
+      import ./monit-for-interface.nix { inherit lib writeScriptBin ip; };
    stanzaForFs = mountpoint: spec : ''
      check filesystem vol_${spec.label} path ${mountpoint}
        start program = "/bin/mount -t ${spec.fstype} LABEL=${spec.label} ${mountpoint}";
@@ -25,7 +27,7 @@ let stanzaForInterface = name : attrs : ''
       stop program = "${lib.strings.escape ["\""] spec_.stop}"
       ${dep spec_.depends}
     '');
-in ''
+in writeText "monitrc" ''
   set init
   set daemon 30
   set httpd port 80
@@ -34,6 +36,8 @@ in ''
     allow 192.168.0.0/24
   set idfile /run/monit.id
   set statefile /run/monit.state
+  check directory booted path /
+
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForInterface interfaces)}
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForService services)}
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}

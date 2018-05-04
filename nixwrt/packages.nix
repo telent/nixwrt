@@ -68,7 +68,6 @@ rec {
       "find"
       "grep"
       "gzip"
-      "ifconfig"
       "init"
       "kill"
       "ls"

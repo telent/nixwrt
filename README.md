@@ -139,8 +139,6 @@ cp.b 0x80060000 0xbc050000 ${filesize};
 Next time you reset the device it *should* come up in NixWRT.  For
 more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
 
-
-
 ## On an Arduino Yun
 
 [ This is slightly broken right now but will return ]

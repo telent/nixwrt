@@ -2,6 +2,7 @@
   busybox
 , buildPackages
 , monit
+, iproute
 , stdenv
 , runCommand
 , writeText
@@ -10,7 +11,17 @@
 , configuration
 , ...}:
 let
-  packagesToInstall = configuration.packages;
+  monitrc = import ./monitrc.nix {
+    inherit lib pkgs iproute;
+    inherit (pkgs) writeScriptBin writeText;
+    inherit (configuration) interfaces services filesystems;
+  };
+  packagesToInstall = configuration.packages ++ [
+    busybox
+    monit
+    monitrc
+    pkgs.dropbear
+  ];
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
       ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
     '';
@@ -18,10 +29,9 @@ let
   pseudoEtc = mkPseudoFile "pseudo-etc.txt" "/etc/" ({
     monitrc = {
       mode = "0400";
-      content = import ./monitrc.nix {
-        lib = lib;
-        inherit (configuration) interfaces services filesystems;
-      };
+      content = ''
+      include ${monitrc}
+      '';
     };
     group = {content = ''
       root:!!:0:
@@ -80,12 +90,7 @@ let
   squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
     inherit (buildPackages) perl pathsFromGraph squashfsTools;
     inherit stdenv;
-    storeContents = packagesToInstall ++ [
-       busybox
-       monit
-       pkgs.dropbear
-#       swconfig
-    ];
+    storeContents = packagesToInstall ;
     compression = "xz";
     compressionFlags = "-Xdict-size 100%";
   };
@@ -93,18 +98,20 @@ in stdenv.mkDerivation rec {
   name = "nixwrt-root";
   phases = [ "installPhase" ];
   nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
-  installPhase =  ''
-    mkdir -p $out/sbin $out/bin $out/nix/store
-    touch $out/.empty
-    ( cd $out/bin; for i in ${busybox}/bin/* ; do ln -s $i . ; done )
-    # mksquashfs has the unhelpful (for us) property that it will
-    # copy /nix/store/$xyz as /$xyz in the image
-    cp ${squashfs} $out/image.squashfs
-    chmod +w $out/image.squashfs
-    # so we need to graft all the directories in the image back onto /nix/store
-    mksquashfs $out/.empty $out/image.squashfs -root-becomes store
-    mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
-     -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
-    chmod a+r $out/image.squashfs
-  '';
+  installPhase =
+    let linkFarm = p : "( cd $out/bin; for i in ${p}/bin/* ; do ln -fs $i . ; done )"; in ''
+      mkdir -p $out/sbin $out/bin $out/nix/store
+      touch $out/.empty
+      '' + (lib.strings.concatStringsSep "\n"
+              (map linkFarm packagesToInstall)) + ''
+      # mksquashfs has the unhelpful (for us) property that it will
+      # copy /nix/store/$xyz as /$xyz in the image
+      cp ${squashfs} $out/image.squashfs
+      chmod +w $out/image.squashfs
+      # so we need to graft all the directories in the image back onto /nix/store
+      mksquashfs $out/.empty $out/image.squashfs -root-becomes store
+      mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
+       -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
+      chmod a+r $out/image.squashfs
+    '';
 }

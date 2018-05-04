@@ -15,6 +15,7 @@ in rec {
       "9P_FS" = "y";
       "9P_FS_POSIX_ACL" = "y";
       "9P_FS_SECURITY" = "y";
+      "BRIDGE_VLAN_FILTERING" = "y";
       "NET_9P" = "y";
       "NET_9P_DEBUG" = "y";
       "VIRTIO" = "y";
@@ -27,20 +28,20 @@ in rec {
   kernel = nixwrt.kernel testKernelAttrs;
 
   swconfig = nixwrt.swconfig { inherit kernel; };
-
+  iproute_ = pkgs.iproute.override {
+    # db cxxSupport causes closure size explosion because it drags in
+    # gcc as runtime dependency.  I don't think it needs it, it's some
+    # kind of rpath problem or similar
+    db = pkgs.db.override { cxxSupport = false;};
+  };
   rootfs = nixwrt.rootfsImage {
     inherit (nixwrt) monit busybox;
+    iproute = iproute_;
     configuration = {
       interfaces = {
-        wired = {
-          device = "eth0";
-          address = "192.168.0.251";
-          defaultRoute = "192.168.0.254";
-        };
-        loopback = {
-          device = "lo";
-          address = "127.0.0.1";
-        };
+        "eth0.1" = { type = "vlan" ;  id = 1; dev = "eth0"; depends = ["switchconfig"];};
+        "eth0" = { } ;
+        lo = { ipv4Address = "127.0.0.1"; };
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
@@ -54,7 +55,7 @@ in rec {
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
       packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
-                 in [ rsyncSansAcls swconfig ];
+                 in [ rsyncSansAcls swconfig iproute_ ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";
@@ -62,19 +63,26 @@ in rec {
                  };
       };
       services = {
-        switch = {
-          start = "/bin/sh -c '${swconfig}/bin/swconfig dev switch0 set enable_vlan 0; ${swconfig}/bin/swconfig dev switch0 set apply'";
+        switchconfig =
+          let vlans = {"2" = "1t 2t 3t 6";
+                       "3" = "0t 6"; };
+               cmd = vlan : ports :
+                 "${swconfig}/bin/swconfig dev switch0 vlan ${vlan} ports '${ports}'";
+               script = lib.strings.concatStringsSep "\n" ((lib.attrsets.mapAttrsToList cmd vlans)  ++ ["${swconfig}/bin/swconfig dev switch0 set apply"]);
+               file = writeScriptBin "switchconfig.sh" script;
+          in {
+            start = "${nixwrt.busybox}/bin/sh ${file}";
+            type = "oneshot";
         };
-
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          depends = [ "wired"];
+          depends = [ "eth0.1"];
           hostKey = ./ssh_host_key;
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
-                    depends = ["wired"]; };
+                    depends = ["eth0.1"]; };
         ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
-                  depends = ["wired"]; };
+                  depends = ["eth0.1"]; };
       };
     };
   };
@@ -104,4 +112,5 @@ in rec {
         dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
       '';
   };
+
 }
