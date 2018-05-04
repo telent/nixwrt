@@ -41,7 +41,7 @@ in rec {
       interfaces = {
         "eth0.1" = { type = "vlan" ;  id = 1; dev = "eth0"; depends = ["switchconfig"];};
         "eth0" = { } ;
-        lo = { ipv4Address = "127.0.0.1"; };
+        lo = { ipv4Address = "127.0.0.1/8"; };
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
