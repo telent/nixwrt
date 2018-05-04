@@ -68,10 +68,14 @@ in rec {
                        "3" = "0t 6"; };
                cmd = vlan : ports :
                  "${swconfig}/bin/swconfig dev switch0 vlan ${vlan} ports '${ports}'";
-               script = lib.strings.concatStringsSep "\n" ((lib.attrsets.mapAttrsToList cmd vlans)  ++ ["${swconfig}/bin/swconfig dev switch0 set apply"]);
+               script = lib.strings.concatStringsSep "\n" ((lib.attrsets.mapAttrsToList cmd vlans)  ++
+               ["${swconfig}/bin/swconfig dev switch0 set apply"
+                "echo $$ > /run/switchconfig.pid"
+                "exec cat >/dev/null"
+               ]);
                file = writeScriptBin "switchconfig.sh" script;
-          in {
-            start = "${nixwrt.busybox}/bin/sh ${file}";
+        in {
+            start = "${nixwrt.busybox}/bin/sh ${file}/bin/switchconfig.sh";
             type = "oneshot";
         };
         dropbear = {
