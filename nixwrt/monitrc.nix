@@ -12,6 +12,28 @@ let ip = "${iproute}/bin/ip";
        start program = "/bin/mount -t ${spec.fstype} LABEL=${spec.label} ${mountpoint}";
        stop program = "/bin/umount ${mountpoint}";
    '';
+   # some "services" are one-off scripts that run to completion and
+   # don't want to be restarted.  we implement these in monit as 'check file'
+   oneshots =
+     lib.attrsets.filterAttrs (k : v: (v.type or "watch") == "oneshot") services;
+   watchables =
+     lib.attrsets.filterAttrs (k : v: (v.type or "watch") != "oneshot") services;
+   stanzaForOneshot = (name: spec : let spec_ = {
+     file = "/run/${name}.stamp";
+     uid = 0;
+     gid = 0;
+     depends = [];
+   } // spec;
+     dep = d: if d == [] then ""  else "depends on " + (lib.strings.concatStringsSep ", " d);
+   touchFile = "/bin/touch ${spec_.file}";
+   in ''
+    check file ${name} with path ${spec_.file}
+      if not exist then exec "${lib.strings.escape ["\""] spec_.start}"
+        as uid ${toString spec_.uid} gid ${toString spec_.gid}
+      if not exist then exec "${lib.strings.escape ["\""] touchFile}"
+        as uid ${toString spec_.uid} gid ${toString spec_.gid}
+      ${dep spec_.depends}
+    '');
    stanzaForService = (name: spec : let spec_ = {
      pidfile = "/run/${name}.pid";
      uid = 0;
@@ -39,6 +61,7 @@ in writeText "monitrc" ''
   check directory booted path /
 
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForInterface interfaces)}
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForService services)}
+  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForService watchables)}
+  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForOneshot oneshots)}
   ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}
   ''

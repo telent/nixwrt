@@ -15,9 +15,9 @@ let defaults = { up= true; routes = []; type = "hw"; depends = [];};
       # more types of interface as we need them: bridges, tunnels,
       # wireless devices, ppp links etc
       vlan = name : attrs@{dev, type, id,  ...} :
-        ["${ip} link add ${dev} name ${name} type ${type} id ${toString id}"
+        ["${ip} link add link ${dev} name ${name} type ${type} id ${toString id}"
          (setAddress name attrs)
-         ];
+         (setUp name attrs)];
       hw = name : attrs :
         [(setAddress name attrs)
          (setUp name attrs)];

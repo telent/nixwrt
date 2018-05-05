@@ -34,12 +34,28 @@ in rec {
     # kind of rpath problem or similar
     db = pkgs.db.override { cxxSupport = false;};
   };
+
+  switchconfig =
+    let vlans = {"2" = "1 2 3 6t";
+                 "3" = "0 6t"; };
+         exe = "${swconfig}/bin/swconfig";
+         cmd = vlan : ports :
+           "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
+         script = lib.strings.concatStringsSep "\n"
+          ((lib.attrsets.mapAttrsToList cmd vlans)  ++
+           ["${exe} dev switch0 set apply"
+           ]); in
+         writeScriptBin "switchconfig.sh" script;
+
   rootfs = nixwrt.rootfsImage {
     inherit (nixwrt) monit busybox;
     iproute = iproute_;
     configuration = {
       interfaces = {
-        "eth0.1" = { type = "vlan" ;  id = 1; dev = "eth0"; depends = ["switchconfig"];};
+        "eth0.2" = {
+          ipv4Address = "192.168.0.251/24";
+          type = "vlan"; id = 2; dev = "eth0"; depends = [];
+        };
         "eth0" = { } ;
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -63,30 +79,19 @@ in rec {
                  };
       };
       services = {
-        switchconfig =
-          let vlans = {"2" = "1t 2t 3t 6";
-                       "3" = "0t 6"; };
-               cmd = vlan : ports :
-                 "${swconfig}/bin/swconfig dev switch0 vlan ${vlan} ports '${ports}'";
-               script = lib.strings.concatStringsSep "\n" ((lib.attrsets.mapAttrsToList cmd vlans)  ++
-               ["${swconfig}/bin/swconfig dev switch0 set apply"
-                "echo $$ > /run/switchconfig.pid"
-                "exec cat >/dev/null"
-               ]);
-               file = writeScriptBin "switchconfig.sh" script;
-        in {
-            start = "${nixwrt.busybox}/bin/sh ${file}/bin/switchconfig.sh";
-            type = "oneshot";
+        switchconfig = {
+          start = "${nixwrt.busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
+          type = "oneshot";
         };
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          depends = [ "eth0.1"];
+          depends = [ "eth0.2"];
           hostKey = ./ssh_host_key;
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
-                    depends = ["eth0.1"]; };
+                    depends = ["eth0.2"]; };
         ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
-                  depends = ["eth0.1"]; };
+                  depends = ["eth0.2"]; };
       };
     };
   };

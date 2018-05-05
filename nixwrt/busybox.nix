@@ -20,6 +20,7 @@ let lib = stdenv.lib; bb = pkgs.busybox.override {
       CONFIG_FEATURE_VOLUMEID_EXT y
       CONFIG_PID_FILE_PATH "/run"
       CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
+      CONFIG_TOUCH y
       '' + builtins.concatStringsSep
               "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") applets);
   }; in lib.overrideDerivation bb (a: {
