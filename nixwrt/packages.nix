@@ -64,6 +64,8 @@ rec {
     applets = [
       "blkid"
       "cat"
+      "chmod"
+      "cp"
       "dmesg"
       "find"
       "grep"
