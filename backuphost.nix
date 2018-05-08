@@ -47,13 +47,36 @@ in rec {
            ]); in
          writeScriptBin "switchconfig.sh" script;
 
+  dhcpscript = writeScriptBin "dhcpscript" ''
+  #!/bin/sh
+  dev=eth0.2
+  deconfig(){
+    ip addr flush dev $dev
+  }
+  bound(){
+    ip addr replace $ip/$mask dev $dev ;
+    ip route add 0.0.0.0/0 via $router;
+  }
+  case $1 in
+    deconfig)
+      deconfig
+      ;;
+    bound|renew)
+      bound
+      ;;
+    *)
+      echo unrecognised command $1
+      ;;
+  esac
+  '';
+
   rootfs = nixwrt.rootfsImage {
     inherit (nixwrt) monit busybox;
     iproute = iproute_;
     configuration = {
       interfaces = {
         "eth0.2" = {
-          ipv4Address = "192.168.0.251/24";
+#          ipv4Address = "192.168.0.251/24";
           type = "vlan"; id = 2; dev = "eth0"; depends = [];
         };
         "eth0" = { } ;
@@ -87,6 +110,10 @@ in rec {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
           depends = [ "eth0.2"];
           hostKey = ./ssh_host_key;
+        };
+        udhcpc = {
+          start = "${nixwrt.busybox}/bin/udhcpc -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+          depends = [ "eth0.2"];
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
                     depends = ["eth0.2"]; };
