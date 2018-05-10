@@ -90,7 +90,8 @@ in rec {
   rootfs = nixwrt.rootfsImage {
     inherit (nixwrt) monit busybox;
     iproute = iproute_;
-    configuration = {
+    configuration = rec {
+      hostname = "snapshto";
       interfaces = {
         "eth0.2" = {
 #          ipv4Address = "192.168.0.251/24";
@@ -129,7 +130,7 @@ in rec {
           hostKey = ./ssh_host_key;
         };
         udhcpc = {
-          start = "${nixwrt.busybox}/bin/udhcpc -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+          start = "${nixwrt.busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
           depends = [ "eth0.2"];
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
