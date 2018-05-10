@@ -66,6 +66,7 @@ rec {
       "cat"
       "chmod"
       "cp"
+      "df"
       "dmesg"
       "find"
       "grep"

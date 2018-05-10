@@ -22,6 +22,23 @@ in rec {
       "VIRTIO_PCI" = "y";
       "VIRTIO_NET" = "y";
       "NET_9P_VIRTIO" = "y";
+      "USB" = "y";
+      "USB_EHCI_HCD" = "y";
+      "USB_EHCI_HCD_PLATFORM" = "y";
+      "USB_OHCI_HCD" = "y";
+      "USB_OHCI_HCD_PLATFORM" = "y";
+      "USB_COMMON" = "y";
+      "USB_STORAGE" = "y";
+      "USB_STORAGE_DEBUG" = "n";
+      "USB_UAS" = "y";
+      "USB_ANNOUNCE_NEW_DEVICES" = "y";
+      "SCSI"  = "y"; "BLK_DEV_SD"  = "y"; "USB_PRINTER" = "y";
+      "PARTITION_ADVANCED" = "y";
+      "MSDOS_PARTITION" = "y"; "EFI_PARTITION" = "y";
+      "EXT4_FS" = "y";
+      "EXT4_USE_FOR_EXT2" = "y";
+      "EXT4_FS_ENCRYPTION" = "y";
+      "EXT4_ENCRYPTION" = "y";
     };
   };
 

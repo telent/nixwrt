@@ -9,13 +9,25 @@ Tomato run on.
 * Milestone 0 ("what I came in for"): backup server on GL-MT300A
 "travel router" (based on Mediatek MT7620A) with attached USB disk.
 
-* Milestone 1: replace the OS on the wireless access point in the
-  study - Trendnet TEW-731BR, based on  Atheros AR9341 
+ ** This is very nearly complete.  It would be nice to have filesystem
+ tools (fdisk, mkfs, fsck and suchlike) for the fs on the USB disk
 
-* Milestone 2: IP camera with motion detection on Raspberry Pi (note this is ARM not MIPS)
+* Milestone 1: replace the OS on the wireless access point in the
+  study - Trendnet TEW-731BR, based on  Atheros AR9341
+  
+ ** Will need wifi support which M0 does/will not have. The architecture is
+ AR71xx, which was working fine the last time I tried running on Yun
+ but may have bitrotted.
+
+* Milestone 2: IP camera with motion detection on Raspberry Pi (note
+  this is ARM not MIPS)
+  
+  ** anybody's guess what is needed here
 
 * Milestone 3: replace the 
   [GL-MT300N router](https://www.gl-inet.com/mt300n/)  attached to my DSL modem
+
+  ** all the stuff in M0, M1 plus PPPoE
 
 # How to build it
 
