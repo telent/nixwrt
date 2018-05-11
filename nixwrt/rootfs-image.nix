@@ -60,6 +60,7 @@ let
       mount -a
       mkdir /dev/pts
       mount -t devpts none /dev/pts
+      echo ${configuration.hostname} > /proc/sys/kernel/hostname
       echo /bin/mdev > /proc/sys/kernel/hotplug
       mdev -s
     '';};
