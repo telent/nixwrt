@@ -1,12 +1,17 @@
 t?=malta
-default: install
+default: tftproot install
+RSYNC_PASSWORD=$(shell sudo cat /var/lib/backupwrt/rsync)
 
 
 tftproot:
 	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A $@ \
 	 --argstr targetBoard $(t) -o $(t) --show-trace 
 
-install: tftproot
+bin:
+	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A firmwareImage \
+	 --argstr targetBoard $(t) -o $(t) --show-trace 
+
+install: 
 	rsync -caAi $(t)/* /tftp/
 
 qemu: tftproot

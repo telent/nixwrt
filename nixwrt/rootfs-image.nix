@@ -35,6 +35,7 @@ let
     };
     group = {content = ''
       root:!!:0:
+      nogroup:x:65534:
     '';};
     hosts = {content = "127.0.0.1 localhost\n"; };
     fstab = {

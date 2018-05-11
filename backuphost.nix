@@ -5,6 +5,7 @@ let device = (import ./nixwrt/devices.nix).${targetBoard};
 with nixpkgs;
 let
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
+    rsyncPassword = (let p = builtins.getEnv( "RSYNC_PASSWORD"); in assert (p != ""); p);
     nixwrt = pkgs.callPackages ./nixwrt/packages.nix {};
 in rec {
   testKernelAttrs = let k = (device.kernel lib); in {
@@ -102,6 +103,17 @@ in rec {
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
+        "rsyncd.conf" = { content = ''
+          pid file = /run/rsyncd.pid
+          uid = store
+          [srv]
+            path = /srv
+            use chroot = yes
+            auth users = backup
+            read only = false
+            secrets file = /etc/rsyncd.secrets
+          ''; };
+        "rsyncd.secrets" = { mode= "0400"; content = "backup:${rsyncPassword}\n" ; };
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
@@ -128,6 +140,10 @@ in rec {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
           depends = [ "eth0.2"];
           hostKey = ./ssh_host_key;
+        };
+        rsyncd = {
+          start = "${pkgs.rsync}/bin/rsync --daemon";
+          depends = [ "eth0.2"];
         };
         udhcpc = {
           start = "${nixwrt.busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
