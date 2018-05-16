@@ -1,7 +1,8 @@
 { targetBoard ? "malta" }:
 let device = (import ./nixwrt/devices.nix).${targetBoard};
     system = (import ./nixwrt/mksystem.nix) device;
-    nixpkgs = import <nixpkgs> system; in
+    overlay = (import ./nixwrt/overlay.nix);
+    nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ;} ); in
 with nixpkgs;
 let
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
@@ -9,7 +10,7 @@ let
     nixwrt = pkgs.callPackages ./nixwrt/packages.nix {};
 in rec {
   testKernelAttrs = let k = (device.kernel lib); in {
-    lzma = nixwrt.lzmaLegacy;
+    inherit lzma;
     dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
     inherit (k) defaultConfig;
     extraConfig = k.extraConfig // {
@@ -182,5 +183,4 @@ in rec {
         dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
       '';
   };
-
 }
