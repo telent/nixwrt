@@ -1,5 +1,5 @@
 { stdenv, pkgs, applets }:
-let lib = stdenv.lib; bb = pkgs.busybox.override {
+pkgs.busybox.override {
     enableStatic = true;
     enableMinimal = true;
     extraConfig = ''
@@ -25,7 +25,5 @@ let lib = stdenv.lib; bb = pkgs.busybox.override {
       CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
       CONFIG_TOUCH y
       '' + builtins.concatStringsSep
-              "\n" (map (n : "CONFIG_${lib.strings.toUpper n} y") applets);
-  }; in lib.overrideDerivation bb (a: {
-#    LDFLAGS = "-L${stdenv.cc.libc.static}/lib";
-  })
+              "\n" (map (n : "CONFIG_${pkgs.lib.strings.toUpper n} y") applets);
+  }
