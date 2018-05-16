@@ -90,8 +90,9 @@ in rec {
   '';
 
   rootfs = nixwrt.rootfsImage {
-    inherit (nixwrt) monit busybox;
+    inherit (nixwrt) busybox;
     iproute = iproute_;
+    inherit monit;
     configuration = rec {
       hostname = "snapshto";
       interfaces = {

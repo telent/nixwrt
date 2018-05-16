@@ -18,4 +18,6 @@ self: super: {
       sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
     };
   };
+
+  monit = super.monit.override { usePAM = false; openssl = null; };
 }

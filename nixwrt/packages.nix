@@ -79,8 +79,6 @@ rec {
     ];
   };
 
-  monit = pkgs.monit.override { usePAM = false; openssl = null; };
-
   rootfsImage = pkgs.callPackage ./rootfs-image.nix ;
 
 }
