@@ -32,4 +32,6 @@ self: super: {
     db = super.db.override { cxxSupport = false;};
   };
 
+  # we had trouble building rsync with acl support, and
+  rsync = super.rsync.override { enableACLs = false; } ;
 }

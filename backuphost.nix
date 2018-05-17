@@ -5,9 +5,9 @@ let device = (import ./nixwrt/devices.nix).${targetBoard};
     nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ;} ); in
 with nixpkgs;
 let
+    rootfsImage = pkgs.callPackage ./nixwrt/rootfs-image.nix ;
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
     rsyncPassword = (let p = builtins.getEnv( "RSYNC_PASSWORD"); in assert (p != ""); p);
-    nixwrt = pkgs.callPackages ./nixwrt/packages.nix {};
 in rec {
   busyboxConfig = let applets = [
      "blkid"
@@ -147,7 +147,7 @@ in rec {
   esac
   '';
 
-  rootfs = nixwrt.rootfsImage {
+  rootfs = rootfsImage {
     inherit busybox;
     inherit (pkgs) monit iproute;
     configuration = rec {
@@ -182,8 +182,7 @@ in rec {
         {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
-                 in [ rsyncSansAcls swconfig pkgs.iproute ];
+      packages = [ pkgs.rsync swconfig pkgs.iproute ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";
