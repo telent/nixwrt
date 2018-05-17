@@ -108,14 +108,14 @@ in rec {
 
   kernel = pkgs.kernel.override testKernelAttrs;
 
-  swconfig_ = pkgs.swconfig.override { inherit kernel; };
+  swconfig = pkgs.swconfig.override { inherit kernel; };
 
-  busybox_ = pkgs.busybox.override busyboxConfig;
+  busybox = pkgs.busybox.override busyboxConfig;
 
   switchconfig =
     let vlans = {"2" = "1 2 3 6t";
                  "3" = "0 6t"; };
-         exe = "${swconfig_}/bin/swconfig";
+         exe = "${swconfig}/bin/swconfig";
          cmd = vlan : ports :
            "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
          script = lib.strings.concatStringsSep "\n"
@@ -148,7 +148,7 @@ in rec {
   '';
 
   rootfs = nixwrt.rootfsImage {
-    busybox = busybox_;
+    inherit busybox;
     inherit (pkgs) monit iproute;
     configuration = rec {
       hostname = "snapshto";
@@ -183,7 +183,7 @@ in rec {
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
       packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
-                 in [ rsyncSansAcls swconfig_ pkgs.iproute ];
+                 in [ rsyncSansAcls swconfig pkgs.iproute ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";
@@ -192,7 +192,7 @@ in rec {
       };
       services = {
         switchconfig = {
-          start = "${busybox_}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
+          start = "${busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
           type = "oneshot";
         };
         dropbear = {
@@ -205,7 +205,7 @@ in rec {
           depends = [ "eth0.2"];
         };
         udhcpc = {
-          start = "${busybox_}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+          start = "${busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
           depends = [ "eth0.2"];
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
@@ -235,7 +235,7 @@ in rec {
             extraConfig."CMDLINE" =
               builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init root=/dev/mtdblock5 rootfstype=squashfs";
           };
-          kernel = nixwrt.kernel liveKernelAttrs;
+          kernel = pkgs.kernel.override liveKernelAttrs;
       in ''
         dd if=${kernel.out}/kernel.image of=$out bs=128k conv=sync
         dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
