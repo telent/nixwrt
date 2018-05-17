@@ -44,9 +44,10 @@ in rec {
     };
   };
 
-  kernel = nixwrt.kernel testKernelAttrs;
+  kernel = pkgs.kernel.override testKernelAttrs;
 
-  swconfig = nixwrt.swconfig { inherit kernel; };
+  swconfig_ = pkgs.swconfig.override { inherit kernel; };
+
   iproute_ = pkgs.iproute.override {
     # db cxxSupport causes closure size explosion because it drags in
     # gcc as runtime dependency.  I don't think it needs it, it's some
@@ -57,7 +58,7 @@ in rec {
   switchconfig =
     let vlans = {"2" = "1 2 3 6t";
                  "3" = "0 6t"; };
-         exe = "${swconfig}/bin/swconfig";
+         exe = "${swconfig_}/bin/swconfig";
          cmd = vlan : ports :
            "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
          script = lib.strings.concatStringsSep "\n"
@@ -126,7 +127,7 @@ in rec {
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
       packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
-                 in [ rsyncSansAcls swconfig iproute_ ];
+                 in [ rsyncSansAcls swconfig_ iproute_ ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";

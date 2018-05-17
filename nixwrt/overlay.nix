@@ -20,4 +20,8 @@ self: super: {
   };
 
   monit = super.monit.override { usePAM = false; openssl = null; };
+
+  kernel = super.callPackage ./kernel/default.nix {};
+
+  swconfig =  super.callPackage ./swconfig.nix {};
 }

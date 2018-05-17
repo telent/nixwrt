@@ -2,7 +2,7 @@
  , lzma
  , buildPackages
  , targetPlatform
- , defaultConfig
+ , defaultConfig ? null
  , extraConfig ? {}
  , runCommand
  , writeText
