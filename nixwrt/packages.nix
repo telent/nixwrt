@@ -14,45 +14,6 @@
 
 { pkgs, stdenv, buildPackages, ... }:
 rec {
-  busybox = import ./busybox.nix {
-    inherit stdenv pkgs;
-    applets = [
-      "blkid"
-      "cat"
-      "chmod"
-      "chown"
-      "cp"
-      "dd"
-      "df"
-      "dmesg"
-      "du"
-      "find"
-      "grep"
-      "gzip"
-      "init"
-      "kill"
-      "ls"
-      "mdev"
-      "mkdir"
-      "mount"
-      "mv"
-      "nc"
-      "ntpd"
-      "ping"
-      "ps"
-      "reboot"
-      "route"
-      "rm"
-      "rmdir"
-      "stty"
-      "syslogd"
-      "tar"
-      "udhcpc"
-      "umount"
-      "zcat"
-    ];
-  };
-
   rootfsImage = pkgs.callPackage ./rootfs-image.nix ;
 
 }

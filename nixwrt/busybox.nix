@@ -1,4 +1,4 @@
-{ stdenv, pkgs, applets }:
+{ stdenv, pkgs, applets ? [] }:
 pkgs.busybox.override {
     enableStatic = true;
     enableMinimal = true;

@@ -9,6 +9,68 @@ let
     rsyncPassword = (let p = builtins.getEnv( "RSYNC_PASSWORD"); in assert (p != ""); p);
     nixwrt = pkgs.callPackages ./nixwrt/packages.nix {};
 in rec {
+  busyboxConfig = let applets = [
+     "blkid"
+     "cat"
+     "chmod"
+     "chown"
+     "cp"
+     "dd"
+     "df"
+     "dmesg"
+     "du"
+     "find"
+     "grep"
+     "gzip"
+     "init"
+     "kill"
+     "ls"
+     "mdev"
+     "mkdir"
+     "mount"
+     "mv"
+     "nc"
+     "ntpd"
+     "ping"
+     "ps"
+     "reboot"
+     "route"
+     "rm"
+     "rmdir"
+     "stty"
+     "syslogd"
+     "tar"
+     "udhcpc"
+     "umount"
+     "zcat"
+  ]; in {
+    enableStatic = true;
+    enableMinimal = true;
+    extraConfig = ''
+      CONFIG_ASH y
+      CONFIG_ASH_ECHO y
+      CONFIG_BASH_IS_NONE y
+      CONFIG_ASH_BUILTIN_ECHO y
+      CONFIG_ASH_BUILTIN_TEST y
+      CONFIG_ASH_OPTIMIZE_FOR_SIZE y
+      CONFIG_FEATURE_BLKID_TYPE y
+      CONFIG_FEATURE_MDEV_CONF y
+      CONFIG_FEATURE_MDEV_EXEC y
+      CONFIG_FEATURE_MOUNT_FLAGS y
+      CONFIG_FEATURE_MOUNT_LABEL y
+      CONFIG_FEATURE_PIDFILE y
+      CONFIG_FEATURE_REMOTE_LOG y
+      CONFIG_FEATURE_USE_INITTAB y
+      CONFIG_FEATURE_VOLUMEID_EXT y
+      CONFIG_NC_SERVER y
+      CONFIG_NC_EXTRA y
+      CONFUG_NC_110_COMPAT y
+      CONFIG_PID_FILE_PATH "/run"
+      CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
+      CONFIG_TOUCH y
+      '' + builtins.concatStringsSep
+              "\n" (map (n : "CONFIG_${pkgs.lib.strings.toUpper n} y") applets);
+  };
   testKernelAttrs = let k = (device.kernel lib); in {
     inherit lzma;
     dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
@@ -55,6 +117,8 @@ in rec {
     db = pkgs.db.override { cxxSupport = false;};
   };
 
+  busybox_ = pkgs.busybox.override busyboxConfig;
+
   switchconfig =
     let vlans = {"2" = "1 2 3 6t";
                  "3" = "0 6t"; };
@@ -91,8 +155,8 @@ in rec {
   '';
 
   rootfs = nixwrt.rootfsImage {
-    inherit (nixwrt) busybox;
     iproute = iproute_;
+    busybox = busybox_;
     inherit monit;
     configuration = rec {
       hostname = "snapshto";
@@ -136,7 +200,7 @@ in rec {
       };
       services = {
         switchconfig = {
-          start = "${nixwrt.busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
+          start = "${busybox_}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
           type = "oneshot";
         };
         dropbear = {
@@ -149,7 +213,7 @@ in rec {
           depends = [ "eth0.2"];
         };
         udhcpc = {
-          start = "${nixwrt.busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+          start = "${busybox_}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
           depends = [ "eth0.2"];
         };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
