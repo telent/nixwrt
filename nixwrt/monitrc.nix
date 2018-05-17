@@ -49,6 +49,7 @@ let ip = "${iproute}/bin/ip";
       stop program = "${lib.strings.escape ["\""] spec_.stop}"
       ${dep spec_.depends}
     '');
+    catLines = lib.strings.concatStringsSep "\n" ;
 in writeText "monitrc" ''
   set init
   set daemon 30
@@ -60,8 +61,8 @@ in writeText "monitrc" ''
   set statefile /run/monit.state
   check directory booted path /
 
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForInterface interfaces)}
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForService watchables)}
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForOneshot oneshots)}
-  ${lib.strings.concatStringsSep "\n" (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}
+  ${catLines (lib.attrsets.mapAttrsToList stanzaForInterface interfaces)}
+  ${catLines (lib.attrsets.mapAttrsToList stanzaForService watchables)}
+  ${catLines (lib.attrsets.mapAttrsToList stanzaForOneshot oneshots)}
+  ${catLines (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}
   ''
