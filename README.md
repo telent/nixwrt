@@ -134,8 +134,8 @@ have the same hardware as I have and almost certainly incorrect if you don't.
 
 ```
 $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix \
- -A firmwareImage --argstr targetBoard mt300a -o mt300a.bin
-$ cp mt300a.bin /tftp
+ -A firmwareImage --argstr targetBoard mt300a -o firmware.bin
+$ cp firmware.bin /tftp
 ```
 
 #### Flash it
@@ -143,7 +143,7 @@ $ cp mt300a.bin /tftp
 ```
 setenv serverip 192.168.0.2 
 setenv ipaddr 192.168.0.251 
-tftp 0x80060000 /tftp/mt300a.bin
+tftp 0x80060000 /tftp/firmware.bin
 erase 0xbc050000 0xbcfd0000
 cp.b 0x80060000 0xbc050000 ${filesize};
 ```
