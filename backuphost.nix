@@ -110,13 +110,6 @@ in rec {
 
   swconfig_ = pkgs.swconfig.override { inherit kernel; };
 
-  iproute_ = pkgs.iproute.override {
-    # db cxxSupport causes closure size explosion because it drags in
-    # gcc as runtime dependency.  I don't think it needs it, it's some
-    # kind of rpath problem or similar
-    db = pkgs.db.override { cxxSupport = false;};
-  };
-
   busybox_ = pkgs.busybox.override busyboxConfig;
 
   switchconfig =
@@ -155,9 +148,8 @@ in rec {
   '';
 
   rootfs = nixwrt.rootfsImage {
-    iproute = iproute_;
     busybox = busybox_;
-    inherit monit;
+    inherit (pkgs) monit iproute;
     configuration = rec {
       hostname = "snapshto";
       interfaces = {
@@ -191,7 +183,7 @@ in rec {
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
       packages = let rsyncSansAcls = pkgs.rsync.override { enableACLs = false; } ;
-                 in [ rsyncSansAcls swconfig_ iproute_ ];
+                 in [ rsyncSansAcls swconfig_ pkgs.iproute ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";

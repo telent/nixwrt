@@ -24,4 +24,12 @@ self: super: {
   kernel = super.callPackage ./kernel/default.nix {};
 
   swconfig =  super.callPackage ./swconfig.nix {};
+
+  iproute = super.iproute.override {
+    # db cxxSupport causes closure size explosion because it drags in
+    # gcc as runtime dependency.  I don't think it needs it, it's some
+    # kind of rpath problem or similar
+    db = super.db.override { cxxSupport = false;};
+  };
+
 }
