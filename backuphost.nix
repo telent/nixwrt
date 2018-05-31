@@ -160,17 +160,6 @@ in rec {
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
-        "rsyncd.conf" = { content = ''
-          pid file = /run/rsyncd.pid
-          uid = store
-          [srv]
-            path = /srv
-            use chroot = yes
-            auth users = backup
-            read only = false
-            secrets file = /etc/rsyncd.secrets
-          ''; };
-        "rsyncd.secrets" = { mode= "0400"; content = "backup:${rsyncPassword}\n" ; };
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
@@ -202,8 +191,12 @@ in rec {
                   depends = ["eth0.2"]; };
       };
     };
+    wantedModules = with modules; [
+      (rsyncd { password = rsyncPassword ; })
+      sshd
+    ];
     applyModules = ms : baseConfig : lib.foldl (c : m: m nixpkgs c) baseConfig ms;
-    configuration = applyModules (with modules; [rsyncd sshd]) baseConfiguration;
+    configuration = applyModules wantedModules baseConfiguration;
   in  rootfsImage {
     inherit busybox configuration;
     inherit (pkgs) monit iproute;
