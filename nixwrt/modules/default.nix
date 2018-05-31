@@ -1,5 +1,5 @@
 {
-  rsyncd = cfg: nixpkgs: configuration:
+  rsyncd = options: nixpkgs: configuration:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services = {
@@ -22,7 +22,7 @@
               secrets file = /etc/rsyncd.secrets
             '';
         };
-        "rsyncd.secrets" = { mode= "0400"; content = "backup:${cfg.password}\n" ; };
+        "rsyncd.secrets" = { mode= "0400"; content = "backup:${options.password}\n" ; };
       };
 
     };
@@ -36,11 +36,11 @@
         };
       };
     };
-  dhcpClient = cfg: nixpkgs: configuration:
+  dhcpClient = options: nixpkgs: configuration:
     with nixpkgs;
     let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
       #!/bin/sh
-      dev=${cfg.interface}
+      dev=${options.interface}
       deconfig(){
         ip addr flush dev $dev
       }
@@ -62,23 +62,23 @@
       '';
     in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services.udhcpc = {
-        start = "${cfg.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
-        depends = [ cfg.interface ];
+        start = "${options.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        depends = [ options.interface ];
       };
     };
-  syslogd = cfg: nixpkgs: configuration:
+  syslogd = options: nixpkgs: configuration:
     with nixpkgs;
     lib.attrsets.recursiveUpdate configuration {
       services.syslogd = {
-        start = "/bin/syslogd -R ${cfg.loghost}";
+        start = "/bin/syslogd -R ${options.loghost}";
         depends = ["eth0.2"];
       };
     };
-  ntpd = cfg: nixpkgs: configuration:
+  ntpd = options: nixpkgs: configuration:
     with nixpkgs;
     lib.attrsets.recursiveUpdate configuration {
       services.ntpd = {
-        start = "/bin/ntpd -p ${cfg.host}";
+        start = "/bin/ntpd -p ${options.host}";
         depends = ["eth0.2"];
       };
     };
