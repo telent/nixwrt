@@ -180,7 +180,7 @@ in rec {
         {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = [ pkgs.rsync swconfig pkgs.iproute ];
+      packages = [ swconfig pkgs.iproute ];
       filesystems = {
         "/srv" = { label = "backup-disk";
                    fstype = "ext4";
