@@ -1,5 +1,6 @@
 { targetBoard ? "malta" }:
 let device = (import ./nixwrt/devices.nix).${targetBoard};
+    modules = (import ./nixwrt/modules/default.nix);
     system = (import ./nixwrt/mksystem.nix) device;
     overlay = (import ./nixwrt/overlay.nix);
     nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ;} ); in
@@ -147,10 +148,7 @@ in rec {
   esac
   '';
 
-  rootfs = rootfsImage {
-    inherit busybox;
-    inherit (pkgs) monit iproute;
-    configuration = rec {
+  rootfs = let baseConfiguration = rec {
       hostname = "snapshto";
       interfaces = {
         "eth0.2" = {
@@ -199,10 +197,6 @@ in rec {
           depends = [ "eth0.2"];
           hostKey = ./ssh_host_key;
         };
-        rsyncd = {
-          start = "${pkgs.rsync}/bin/rsync --daemon";
-          depends = [ "eth0.2"];
-        };
         udhcpc = {
           start = "${busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
           depends = [ "eth0.2"];
@@ -213,6 +207,11 @@ in rec {
                   depends = ["eth0.2"]; };
       };
     };
+    applyModules = ms : baseConfig : (builtins.elemAt ms 0) nixpkgs baseConfig;
+    configuration = applyModules [modules.rsyncd] baseConfiguration;
+  in  rootfsImage {
+    inherit busybox configuration;
+    inherit (pkgs) monit iproute;
   };
 
   tftproot = stdenv.mkDerivation rec {
