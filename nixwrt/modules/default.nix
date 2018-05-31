@@ -62,11 +62,24 @@
       '';
     in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services.udhcpc = {
-        # this won't actually work until/unless we have a second overlay
-        # because it refers to the wrong busybox
-        start = "${pkgs.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        start = "${cfg.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
         depends = [ cfg.interface ];
       };
     };
-
+  syslogd = cfg: nixpkgs: configuration:
+    with nixpkgs;
+    lib.attrsets.recursiveUpdate configuration {
+      services.syslogd = {
+        start = "/bin/syslogd -R ${cfg.loghost}";
+        depends = ["eth0.2"];
+      };
+    };
+  ntpd = cfg: nixpkgs: configuration:
+    with nixpkgs;
+    lib.attrsets.recursiveUpdate configuration {
+      services.ntpd = {
+        start = "/bin/ntpd -p ${cfg.host}";
+        depends = ["eth0.2"];
+      };
+    };
 }

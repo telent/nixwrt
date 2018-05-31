@@ -158,16 +158,14 @@ in rec {
           start = "${busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
           type = "oneshot";
         };
-        syslogd = { start = "/bin/syslogd -R 192.168.0.2";
-                    depends = ["eth0.2"]; };
-        ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
-                  depends = ["eth0.2"]; };
       };
     };
     wantedModules = with modules; [
       (rsyncd { password = rsyncPassword; })
       sshd
-      (dhcpClient { interface = "eth0.2"; })
+      (syslogd { loghost = "192.168.0.2"; })
+      (ntpd { host = "pool.ntp.org"; })
+      (dhcpClient { interface = "eth0.2"; inherit busybox; })
     ];
     configuration = lib.foldl (c: m: m nixpkgs c) baseConfiguration wantedModules;
   in  rootfsImage {
