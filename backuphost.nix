@@ -192,11 +192,6 @@ in rec {
           start = "${busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
           type = "oneshot";
         };
-        dropbear = {
-          start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          depends = [ "eth0.2"];
-          hostKey = ./ssh_host_key;
-        };
         udhcpc = {
           start = "${busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
           depends = [ "eth0.2"];
@@ -207,8 +202,8 @@ in rec {
                   depends = ["eth0.2"]; };
       };
     };
-    applyModules = ms : baseConfig : (builtins.elemAt ms 0) nixpkgs baseConfig;
-    configuration = applyModules [modules.rsyncd] baseConfiguration;
+    applyModules = ms : baseConfig : lib.foldl (c : m: m nixpkgs c) baseConfig ms;
+    configuration = applyModules (with modules; [rsyncd sshd]) baseConfiguration;
   in  rootfsImage {
     inherit busybox configuration;
     inherit (pkgs) monit iproute;
