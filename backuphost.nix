@@ -125,29 +125,6 @@ in rec {
            ]); in
          writeScriptBin "switchconfig.sh" script;
 
-  dhcpscript = writeScriptBin "dhcpscript" ''
-  #!/bin/sh
-  dev=eth0.2
-  deconfig(){
-    ip addr flush dev $dev
-  }
-  bound(){
-    ip addr replace $ip/$mask dev $dev ;
-    ip route add 0.0.0.0/0 via $router;
-  }
-  case $1 in
-    deconfig)
-      deconfig
-      ;;
-    bound|renew)
-      bound
-      ;;
-    *)
-      echo unrecognised command $1
-      ;;
-  esac
-  '';
-
   rootfs = let baseConfiguration = rec {
       hostname = "snapshto";
       interfaces = {
@@ -181,10 +158,6 @@ in rec {
           start = "${busybox}/bin/sh -c '${switchconfig}/bin/switchconfig.sh &'";
           type = "oneshot";
         };
-        udhcpc = {
-          start = "${busybox}/bin/udhcpc -H ${hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
-          depends = [ "eth0.2"];
-        };
         syslogd = { start = "/bin/syslogd -R 192.168.0.2";
                     depends = ["eth0.2"]; };
         ntpd =  { start = "/bin/ntpd -p pool.ntp.org" ;
@@ -192,11 +165,11 @@ in rec {
       };
     };
     wantedModules = with modules; [
-      (rsyncd { password = rsyncPassword ; })
+      (rsyncd { password = rsyncPassword; })
       sshd
+      (dhcpClient { interface = "eth0.2"; })
     ];
-    applyModules = ms : baseConfig : lib.foldl (c : m: m nixpkgs c) baseConfig ms;
-    configuration = applyModules wantedModules baseConfiguration;
+    configuration = lib.foldl (c: m: m nixpkgs c) baseConfiguration wantedModules;
   in  rootfsImage {
     inherit busybox configuration;
     inherit (pkgs) monit iproute;

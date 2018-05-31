@@ -35,5 +35,38 @@
           hostKey = ../../ssh_host_key; # FIXME
         };
       };
-  };
+    };
+  dhcpClient = cfg: nixpkgs: configuration:
+    with nixpkgs;
+    let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
+      #!/bin/sh
+      dev=${cfg.interface}
+      deconfig(){
+        ip addr flush dev $dev
+      }
+      bound(){
+        ip addr replace $ip/$mask dev $dev ;
+        ip route add 0.0.0.0/0 via $router;
+      }
+      case $1 in
+        deconfig)
+          deconfig
+          ;;
+        bound|renew)
+          bound
+          ;;
+        *)
+          echo unrecognised command $1
+          ;;
+      esac
+      '';
+    in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
+      services.udhcpc = {
+        # this won't actually work until/unless we have a second overlay
+        # because it refers to the wrong busybox
+        start = "${pkgs.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        depends = [ cfg.interface ];
+      };
+    };
+
 }
