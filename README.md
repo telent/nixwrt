@@ -8,9 +8,7 @@ Tomato run on.
 
 * Milestone 0 ("what I came in for"): backup server on GL-MT300A
 "travel router" (based on Mediatek MT7620A) with attached USB disk.
-
- ** This is very nearly complete.  It would be nice to have filesystem
- tools (fdisk, mkfs, fsck and suchlike) for the fs on the USB disk
+This works now.
 
 * Milestone 1: replace the OS on the wireless access point in the
   study - Trendnet TEW-731BR, based on  Atheros AR9341
@@ -32,10 +30,10 @@ Tomato run on.
 # How to build it
 
 Please note: for ease of development/testing, the NixWRT build
-presently produces separate kernel image and root fileystem images,
+defaults to producing separate kernel image and root fileystem images,
 which you are expected to load into your device's RAM using TFTP.
-All-in-one flashable images for "production" use are still a TODO
-item.
+It is also possible to create all-in-one flashable images for
+"production" use, but that's still a bit manual/experimental
 
 Clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
