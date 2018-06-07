@@ -4,6 +4,8 @@
  , targetPlatform
  , defaultConfig ? null
  , extraConfig ? {}
+ , loadAddress ? "0x80000000"
+ , entryPoint ? "0x80000000"
  , runCommand
  , writeText
  , dtsPath ? null
@@ -59,8 +61,8 @@ stdenv.mkDerivation rec {
       q_apply ${ledeSrc}/target/linux/generic/backport-4.9/
       q_apply ${ledeSrc}/target/linux/generic/pending-4.9/
       q_apply ${ledeSrc}/target/linux/generic/hack-4.9/
-#      q_apply ${ledeSrc}/target/linux/ar71xx/patches-4.9/
-      q_apply ${ledeSrc}/target/linux/ramips/patches-4.9/
+      q_apply ${ledeSrc}/target/linux/ar71xx/patches-4.9/
+#      q_apply ${ledeSrc}/target/linux/ramips/patches-4.9/
       ${lib.optionalString (! isNull dtsPath)
                        "cp ${dtsPath} board.dts"
                        }
@@ -105,7 +107,7 @@ stdenv.mkDerivation rec {
       fi
       rm -f vmlinux.stripped.lzma
       ${lzma}/bin/lzma -k -z  vmlinux.stripped
-      mkimage -A mips -O linux -T kernel -C lzma -a 0x80000000 -e 0x80000000 -n 'MIPS NixWrt Linux' -d vmlinux.stripped.lzma kernel.image
+      mkimage -A mips -O linux -T kernel -C lzma -a ${loadAddress} -e ${entryPoint} -n 'MIPS NixWrt Linux' -d vmlinux.stripped.lzma kernel.image
     '';
 
     installPhase = ''

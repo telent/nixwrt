@@ -51,7 +51,17 @@
       };
     };
   };
-  yun = { name = "arduino-yun"; endian = "big"; };
+  yun = { name = "arduino-yun"; endian = "big";
+          kernel = lib: {
+	    loadAddress = "0x80060000";
+	    entryPoint = "0x80060000";
+            defaultConfig = "ar71xx/config-4.9";
+            extraConfig = {
+              "ATH79_MACH_ARDUINO_YUN" = "y";
+              "PARTITION_ADVANCED" = "y";
+            };
+          };
+        };
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";

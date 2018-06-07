@@ -75,7 +75,7 @@ in rec {
   testKernelAttrs = let k = (device.kernel lib); in {
     inherit lzma;
     dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
-    inherit (k) defaultConfig;
+    inherit (k) defaultConfig loadAddress entryPoint;
     extraConfig = k.extraConfig // {
       "9P_FS" = "y";
       "9P_FS_POSIX_ACL" = "y";
