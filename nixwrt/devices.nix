@@ -59,6 +59,13 @@
             extraConfig = {
               "ATH79_MACH_ARDUINO_YUN" = "y";
               "PARTITION_ADVANCED" = "y";
+              "CMDLINE_PARTITION" = "y";
+              "MTD_CMDLINE_PART" = "y";
+              "MTD_PHRAM" = "y";
+              "SQUASHFS" = "y";
+              "SQUASHFS_XZ" = "y";
+              "SQUASHFS_ZLIB" = "y";
+              "SWCONFIG" = "y";
             };
           };
         };

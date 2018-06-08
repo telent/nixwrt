@@ -5,7 +5,6 @@
       services = {
         rsyncd = {
           start = "${pkgs.rsync}/bin/rsync --daemon";
-          depends = [ "eth0.2"];
         };
       };
       packages = configuration.packages ++ [ pkgs.rsync ];
@@ -31,7 +30,6 @@
       services = with nixpkgs; {
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          depends = [ "eth0.2"];
           hostKey = ../../ssh_host_key; # FIXME
         };
       };
@@ -71,7 +69,6 @@
     lib.attrsets.recursiveUpdate configuration {
       services.syslogd = {
         start = "/bin/syslogd -R ${options.loghost}";
-        depends = ["eth0.2"];
       };
     };
   ntpd = options: nixpkgs: configuration:
@@ -79,7 +76,6 @@
     lib.attrsets.recursiveUpdate configuration {
       services.ntpd = {
         start = "/bin/ntpd -p ${options.host}";
-        depends = ["eth0.2"];
       };
     };
 }

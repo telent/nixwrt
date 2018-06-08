@@ -175,10 +175,10 @@ Once you have the `ar7240>` prompt, run
     setenv serverip 192.168.0.2 
     setenv ipaddr 192.168.0.251 
     setenv kernaddr 0x81000000
-    setenv rootaddr 1178000
+    setenv rootaddr 1200000
     setenv rootaddr_useg 0x$rootaddr
     setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=rootfs,$rootaddr_ks0,10Mi root=/dev/mtdblock0 memmap=11M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
+    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,$rootaddr_ks0,11Mi root=/dev/mtdblock0 memmap=12M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
     setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
     run bootn
     
