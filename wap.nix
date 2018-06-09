@@ -83,30 +83,36 @@ in rec {
       "9P_FS" = "y";
       "9P_FS_POSIX_ACL" = "y";
       "9P_FS_SECURITY" = "y";
+      "ATH9K" = "y";
+      "ATH9K_AHB" = "y";
       "BRIDGE_VLAN_FILTERING" = "y";
+      "CFG80211" = "y";
+      "EXT4_ENCRYPTION" = "y";
+      "EXT4_FS" = "y";
+      "EXT4_FS_ENCRYPTION" = "y";
+      "EXT4_USE_FOR_EXT2" = "y";
+      "MAC80211" = "y";
+      "MSDOS_PARTITION" = "y"; "EFI_PARTITION" = "y";
       "NET_9P" = "y";
       "NET_9P_DEBUG" = "y";
-      "VIRTIO" = "y";
-      "VIRTIO_PCI" = "y";
-      "VIRTIO_NET" = "y";
       "NET_9P_VIRTIO" = "y";
+      "PARTITION_ADVANCED" = "y";
+      "PCI" = "y";
+      "SCSI"  = "y"; "BLK_DEV_SD"  = "y"; "USB_PRINTER" = "y";
       "USB" = "y";
+      "USB_ANNOUNCE_NEW_DEVICES" = "y";
+      "USB_COMMON" = "y";
       "USB_EHCI_HCD" = "y";
       "USB_EHCI_HCD_PLATFORM" = "y";
       "USB_OHCI_HCD" = "y";
       "USB_OHCI_HCD_PLATFORM" = "y";
-      "USB_COMMON" = "y";
       "USB_STORAGE" = "y";
       "USB_STORAGE_DEBUG" = "n";
       "USB_UAS" = "y";
-      "USB_ANNOUNCE_NEW_DEVICES" = "y";
-      "SCSI"  = "y"; "BLK_DEV_SD"  = "y"; "USB_PRINTER" = "y";
-      "PARTITION_ADVANCED" = "y";
-      "MSDOS_PARTITION" = "y"; "EFI_PARTITION" = "y";
-      "EXT4_FS" = "y";
-      "EXT4_USE_FOR_EXT2" = "y";
-      "EXT4_FS_ENCRYPTION" = "y";
-      "EXT4_ENCRYPTION" = "y";
+      "VIRTIO" = "y";
+      "VIRTIO_NET" = "y";
+      "VIRTIO_PCI" = "y";
+      "WLAN_80211" = "y";
     };
   };
 
@@ -131,7 +137,7 @@ in rec {
         {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = [ swconfig pkgs.iproute ];
+      packages = [ swconfig pkgs.iproute pkgs.iw ];
       filesystems = { };
       services = {
       };

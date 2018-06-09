@@ -233,13 +233,19 @@ If it doesn't work, you could try
   will cause the board to reboot after 21 seconds, which is handy if
   it's wedging during the boot process - especially if you're not
   physically colocated with it.
+* If it can't mount a phram rootfs this is often because you've
+  enabled more kernel options causing the image size to increase,
+  and the end of the kernel is overlapping the start of the rootfs.
+  Check the addresses in your uboot `tftp` commands
+
   
 # Feedback
 
 Is very welcome.  Please open an issue on Github for anything that 
 involves more than a line of text, or find me in the
 "Fediverse" [@telent@maston.social](https://mastodon.social/@telent) 
-or on Twitter [@telent_net](https://twitter.com/telent_net) if not
+or on Twitter [@telent_net](https://twitter.com/telent_net) if not.
 
 I do occasionally hang out on #nixos IRC as `dan_b` or as `telent` but
 not often enough to make it a good way of getting in touch.
+
