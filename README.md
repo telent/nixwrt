@@ -13,16 +13,15 @@ This works now.
 * Milestone 1: replace the OS on the wireless access point in the
   study - Trendnet TEW-731BR, based on  Atheros AR9341
   
- ** Will need wifi support which M0 does/will not have. The architecture is
- AR71xx, which was working fine the last time I tried running on Yun
- but may have bitrotted.
+ ** This works on the Arduino Yun (same AR71xx SoC family) but has not
+     been tried on the actual hardware yet
 
 * Milestone 2: IP camera with motion detection on Raspberry Pi (note
   this is ARM not MIPS)
   
   ** anybody's guess what is needed here
 
-* Milestone 3: replace the 
+* Milestone 3: replace the OS running on the 
   [GL-MT300N router](https://www.gl-inet.com/mt300n/)  attached to my DSL modem
 
   ** all the stuff in M0, M1 plus PPPoE
@@ -42,7 +41,7 @@ Clone the nixwrt repo, and also the nixpkgs fork on which it depends
     $ cd nixwrt
 
 The best way to get started is to read `backuphost.nix`, which is a
-souple of magic imports followed by an attrset of things that need
+couple of magic imports followed by an attrset of things that need
 building (kernel, root fs image, anything else you want in your
 image). Most of the work in supporting a new device is probably in the
 `kernel` derivation, and most of the work in supporting new userland
@@ -151,8 +150,6 @@ more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
 
 ## On an Arduino Yun
 
-[ This is slightly broken right now but will return ]
-
 Arduino Yun was the initial target for no better reason than that I
 had one to hand, and the USB device interface on the Atmega side makes
 it easy to test with.  The Yun is logically a traditional Arduino
@@ -216,8 +213,6 @@ so once booted you can run
 
 which is very handy if you want to rebuild binaries with debug printfs
 inserted.
-
-
 
 
 # Troubleshooting

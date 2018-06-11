@@ -131,7 +131,6 @@ in rec {
         "br0" = {
           type = "bridge";
           members  = [ "eth1" "wlan0" ];
-#          ipv4Address = "192.168.0.251/24";
         };
       };
       etc = {
