@@ -68,7 +68,7 @@ in rec {
       CONFIG_FEATURE_VOLUMEID_EXT y
       CONFIG_NC_SERVER y
       CONFIG_NC_EXTRA y
-      CONFUG_NC_110_COMPAT y
+      CONFIG_NC_110_COMPAT y
       CONFIG_PID_FILE_PATH "/run"
       CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE 256
       CONFIG_TOUCH y
@@ -123,10 +123,16 @@ in rec {
   busybox = pkgs.busybox.override busyboxConfig;
 
   rootfs = let baseConfiguration = rec {
-      hostname = "snapshto";
+      hostname = "uostairs";
       interfaces = {
-       "eth1" = { ipv4Address = "192.168.0.251/24"; };
+        "eth1" = { };
         lo = { ipv4Address = "127.0.0.1/8"; };
+        "wlan0" = { };
+        "br0" = {
+          type = "bridge";
+          members  = [ "eth1" "wlan0" ];
+#          ipv4Address = "192.168.0.251/24";
+        };
       };
       etc = {
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
@@ -137,7 +143,7 @@ in rec {
         {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = [ swconfig pkgs.iproute pkgs.iw ];
+      packages = [ swconfig pkgs.iproute ];
       filesystems = { };
       services = {
       };
@@ -146,7 +152,12 @@ in rec {
       sshd
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })
-#      (dhcpClient { interface = "eth1"; inherit busybox; })
+      (hostapd {
+        config = { interface = "wlan0"; ssid = "testlent"; hw_mode = "g"; channel = 1; };
+        # no suport currently for generating these, use wpa_passphrase
+        psk = builtins.getEnv( "PSK") ;
+      })
+      (dhcpClient { interface = "br0"; inherit busybox; })
     ];
     configuration = lib.foldl (c: m: m nixpkgs c) baseConfiguration wantedModules;
   in  rootfsImage {

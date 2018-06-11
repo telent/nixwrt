@@ -1,4 +1,5 @@
 {
+  hostapd = import ./hostapd.nix;
   rsyncd = options: nixpkgs: configuration:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate configuration  {
@@ -60,7 +61,7 @@
       '';
     in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services.udhcpc = {
-        start = "${options.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        start = "${options.busybox}/bin/udhcpc -H ${configuration.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
         depends = [ options.interface ];
       };
     };
