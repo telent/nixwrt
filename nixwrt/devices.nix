@@ -30,6 +30,7 @@
                         }; in
     {
       defaultConfig = "ramips/mt7620/config-4.9";
+      socFamily = "ramips";
       extraConfig = (lib.genAttrs adds (name: "y")) //
                     (lib.genAttrs removes (name: "n")) //
                     others;
@@ -51,7 +52,25 @@
       };
     };
   };
-  yun = { name = "arduino-yun"; endian = "big"; };
+  yun = { name = "arduino-yun"; endian = "big";
+          kernel = lib: {
+	    loadAddress = "0x80060000";
+	    entryPoint = "0x80060000";
+            defaultConfig = "ar71xx/config-4.9";
+            socFamily = "ar71xx";
+            extraConfig = {
+              "ATH79_MACH_ARDUINO_YUN" = "y";
+              "PARTITION_ADVANCED" = "y";
+              "CMDLINE_PARTITION" = "y";
+              "MTD_CMDLINE_PART" = "y";
+              "MTD_PHRAM" = "y";
+              "SQUASHFS" = "y";
+              "SQUASHFS_XZ" = "y";
+              "SQUASHFS_ZLIB" = "y";
+              "SWCONFIG" = "y";
+            };
+          };
+        };
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";

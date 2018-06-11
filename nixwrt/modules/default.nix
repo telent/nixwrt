@@ -1,11 +1,11 @@
 {
-  rsyncd = cfg: nixpkgs: configuration:
+  hostapd = import ./hostapd.nix;
+  rsyncd = options: nixpkgs: configuration:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services = {
         rsyncd = {
           start = "${pkgs.rsync}/bin/rsync --daemon";
-          depends = [ "eth0.2"];
         };
       };
       packages = configuration.packages ++ [ pkgs.rsync ];
@@ -22,7 +22,7 @@
               secrets file = /etc/rsyncd.secrets
             '';
         };
-        "rsyncd.secrets" = { mode= "0400"; content = "backup:${cfg.password}\n" ; };
+        "rsyncd.secrets" = { mode= "0400"; content = "backup:${options.password}\n" ; };
       };
 
     };
@@ -31,16 +31,15 @@
       services = with nixpkgs; {
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          depends = [ "eth0.2"];
           hostKey = ../../ssh_host_key; # FIXME
         };
       };
     };
-  dhcpClient = cfg: nixpkgs: configuration:
+  dhcpClient = options: nixpkgs: configuration:
     with nixpkgs;
     let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
       #!/bin/sh
-      dev=${cfg.interface}
+      dev=${options.interface}
       deconfig(){
         ip addr flush dev $dev
       }
@@ -62,24 +61,22 @@
       '';
     in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
       services.udhcpc = {
-        start = "${cfg.busybox}/bin/udhcpc -H ${configuration.hostname} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
-        depends = [ cfg.interface ];
+        start = "${options.busybox}/bin/udhcpc -H ${configuration.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        depends = [ options.interface ];
       };
     };
-  syslogd = cfg: nixpkgs: configuration:
+  syslogd = options: nixpkgs: configuration:
     with nixpkgs;
     lib.attrsets.recursiveUpdate configuration {
       services.syslogd = {
-        start = "/bin/syslogd -R ${cfg.loghost}";
-        depends = ["eth0.2"];
+        start = "/bin/syslogd -R ${options.loghost}";
       };
     };
-  ntpd = cfg: nixpkgs: configuration:
+  ntpd = options: nixpkgs: configuration:
     with nixpkgs;
     lib.attrsets.recursiveUpdate configuration {
       services.ntpd = {
-        start = "/bin/ntpd -p ${cfg.host}";
-        depends = ["eth0.2"];
+        start = "/bin/ntpd -p ${options.host}";
       };
     };
 }

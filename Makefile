@@ -1,15 +1,19 @@
 t?=malta
+d?=backuphost
 default: tftproot
-RSYNC_PASSWORD=$(shell sudo cat /var/lib/backupwrt/rsync)
 export RSYNC_PASSWORD
+PHONY = password
+
+password:
+	$(eval RSYNC_PASSWORD := $(shell sudo cat /var/lib/backupwrt/rsync))
 
 tftproot:
-	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A $@ \
+	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ $(d).nix -A $@ \
 	 --argstr targetBoard $(t) -o $(t) --show-trace 
 	rsync -caAi $(t)/* /tftp/
 
 bin:
-	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A firmwareImage \
+	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ $(d).nix -A firmwareImage \
 	 --argstr targetBoard $(t) -o firmware.bin --show-trace 
 	rsync -caAiL firmware.bin /tftp/
 

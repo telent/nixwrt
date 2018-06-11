@@ -13,16 +13,15 @@ This works now.
 * Milestone 1: replace the OS on the wireless access point in the
   study - Trendnet TEW-731BR, based on  Atheros AR9341
   
- ** Will need wifi support which M0 does/will not have. The architecture is
- AR71xx, which was working fine the last time I tried running on Yun
- but may have bitrotted.
+ ** This works on the Arduino Yun (same AR71xx SoC family) but has not
+     been tried on the actual hardware yet
 
 * Milestone 2: IP camera with motion detection on Raspberry Pi (note
   this is ARM not MIPS)
   
   ** anybody's guess what is needed here
 
-* Milestone 3: replace the 
+* Milestone 3: replace the OS running on the 
   [GL-MT300N router](https://www.gl-inet.com/mt300n/)  attached to my DSL modem
 
   ** all the stuff in M0, M1 plus PPPoE
@@ -42,7 +41,7 @@ Clone the nixwrt repo, and also the nixpkgs fork on which it depends
     $ cd nixwrt
 
 The best way to get started is to read `backuphost.nix`, which is a
-souple of magic imports followed by an attrset of things that need
+couple of magic imports followed by an attrset of things that need
 building (kernel, root fs image, anything else you want in your
 image). Most of the work in supporting a new device is probably in the
 `kernel` derivation, and most of the work in supporting new userland
@@ -151,8 +150,6 @@ more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
 
 ## On an Arduino Yun
 
-[ This is slightly broken right now but will return ]
-
 Arduino Yun was the initial target for no better reason than that I
 had one to hand, and the USB device interface on the Atmega side makes
 it easy to test with.  The Yun is logically a traditional Arduino
@@ -175,10 +172,10 @@ Once you have the `ar7240>` prompt, run
     setenv serverip 192.168.0.2 
     setenv ipaddr 192.168.0.251 
     setenv kernaddr 0x81000000
-    setenv rootaddr 1178000
+    setenv rootaddr 1200000
     setenv rootaddr_useg 0x$rootaddr
     setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=rootfs,$rootaddr_ks0,10Mi root=/dev/mtdblock0 memmap=11M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
+    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,$rootaddr_ks0,11Mi root=/dev/mtdblock0 memmap=12M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
     setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
     run bootn
     
@@ -218,8 +215,6 @@ which is very handy if you want to rebuild binaries with debug printfs
 inserted.
 
 
-
-
 # Troubleshooting
 
 If it doesn't work, you could try
@@ -233,13 +228,19 @@ If it doesn't work, you could try
   will cause the board to reboot after 21 seconds, which is handy if
   it's wedging during the boot process - especially if you're not
   physically colocated with it.
+* If it can't mount a phram rootfs this is often because you've
+  enabled more kernel options causing the image size to increase,
+  and the end of the kernel is overlapping the start of the rootfs.
+  Check the addresses in your uboot `tftp` commands
+
   
 # Feedback
 
 Is very welcome.  Please open an issue on Github for anything that 
 involves more than a line of text, or find me in the
 "Fediverse" [@telent@maston.social](https://mastodon.social/@telent) 
-or on Twitter [@telent_net](https://twitter.com/telent_net) if not
+or on Twitter [@telent_net](https://twitter.com/telent_net) if not.
 
 I do occasionally hang out on #nixos IRC as `dan_b` or as `telent` but
 not often enough to make it a good way of getting in touch.
+
