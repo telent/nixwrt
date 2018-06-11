@@ -30,6 +30,7 @@
                         }; in
     {
       defaultConfig = "ramips/mt7620/config-4.9";
+      socFamily = "ramips";
       extraConfig = (lib.genAttrs adds (name: "y")) //
                     (lib.genAttrs removes (name: "n")) //
                     others;
@@ -56,6 +57,7 @@
 	    loadAddress = "0x80060000";
 	    entryPoint = "0x80060000";
             defaultConfig = "ar71xx/config-4.9";
+            socFamily = "ar71xx";
             extraConfig = {
               "ATH79_MACH_ARDUINO_YUN" = "y";
               "PARTITION_ADVANCED" = "y";

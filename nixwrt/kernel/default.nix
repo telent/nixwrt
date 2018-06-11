@@ -1,7 +1,7 @@
 {  stdenv
  , lzma
  , buildPackages
- , targetPlatform
+ , socFamily ? null
  , defaultConfig ? null
  , extraConfig ? {}
  , loadAddress ? "0x80000000"
@@ -61,8 +61,8 @@ stdenv.mkDerivation rec {
       q_apply ${ledeSrc}/target/linux/generic/backport-4.9/
       q_apply ${ledeSrc}/target/linux/generic/pending-4.9/
       q_apply ${ledeSrc}/target/linux/generic/hack-4.9/
-      q_apply ${ledeSrc}/target/linux/ar71xx/patches-4.9/
-#      q_apply ${ledeSrc}/target/linux/ramips/patches-4.9/
+      ${lib.optionalString (! isNull socFamily)
+                           "q_apply ${ledeSrc}/target/linux/${socFamily}/patches-4.9/"}
       ${lib.optionalString (! isNull dtsPath)
                        "cp ${dtsPath} board.dts"
                        }
