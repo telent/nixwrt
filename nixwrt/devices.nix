@@ -75,15 +75,19 @@ in {
           p = "${ledeSrc}/target/linux/";
           stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
           kconfig = stripOpts "ATH79_MACH"
-                      (stripOpts "XZ_"
+                      (stripOpts "XZ_DEC_"
+                       (stripOpts "WLAN_VENDOR_"
                         ((readconf "${p}/generic/config-4.9") //
-                         (readconf "${p}/${socFamily}/config-4.9"))) // {
+                         (readconf "${p}/${socFamily}/config-4.9")))) // {
                            "ATH79_MACH_ARDUINO_YUN" = "y";
+                           "WLAN_VENDOR_ATH" = "y";
                            "ATH79_MACH_TEW_712BR" = "y";
                            "JFFS2" = "n"; "OVERLAYFS" = "n"; "DEBUGFS" = "n";
                            "TMPFS" = "y"; "DEVTMPFS" = "y";
                            "SLUB" = "n";
                            "SLOB" = "y";
+                           "SQUASHFS_ZLIB" = "n";
+                           "SUSPEND" = "n";
                            "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";
                            "VT" = "n";
                            "CRASHLOG" = "n"; # doesn't work after disabling something previous
