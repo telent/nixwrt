@@ -64,6 +64,14 @@ self: super: {
     '';
   });
 
+  busybox = super.busybox.overrideAttrs (o: {
+    # busybox derivation has a postConfigure action conditional on useMusl that
+    # forces linking against musl instead of the system libc.  It does not appear
+    # to be required when musl *is* the system libc, and for me it seems to be
+    # picking up the wrong musl.  So let's get rid of it
+    postConfigure = "true";
+  });
+
   # we had trouble building rsync with acl support, and
   rsync = super.rsync.override { enableACLs = false; } ;
 }

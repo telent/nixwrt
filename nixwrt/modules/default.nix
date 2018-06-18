@@ -1,5 +1,8 @@
 {
   hostapd = import ./hostapd.nix;
+
+  busybox = import ./busybox.nix;
+
   rsyncd = options: nixpkgs: self: super:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate super  {
@@ -62,14 +65,18 @@
       esac
       '';
     in nixpkgs.lib.attrsets.recursiveUpdate super  {
+      busybox.applets = super.busybox.applets ++ [ "udhcpc" ];
       services.udhcpc = {
-        start = "${options.busybox}/bin/udhcpc -H ${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        start = "${self.busybox.package}/bin/udhcpc -H ${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
         depends = [ options.interface ];
       };
     };
   syslogd = options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super {
+      busybox.applets = super.busybox.applets ++ [ "syslogd" ];
+      busybox.config."FEATURE_SYSLOGD_READ_BUFFER_SIZE" = 256;
+      busybox.config."FEATURE_REMOTE_LOG" = "y";
       services.syslogd = {
         start = "/bin/syslogd -R ${options.loghost}";
       };
