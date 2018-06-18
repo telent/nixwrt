@@ -80,6 +80,7 @@ in {
                          (readconf "${p}/${socFamily}/config-4.9"))) // {
                            "ATH79_MACH_ARDUINO_YUN" = "y";
                            "ATH79_MACH_TEW_712BR" = "y";
+                           "JFFS2" = "n"; "OVERLAYFS" = "n"; "DEBUGFS" = "n";
                            "TMPFS" = "y"; "DEVTMPFS" = "y";
                            "SLUB" = "n";
                            "SLOB" = "y";
