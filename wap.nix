@@ -39,6 +39,7 @@ let
     };
     wantedModules = with modules; [
       (nixpkgs: self: super: baseConfiguration)
+      device.hwModule
       (sshd { hostkey = ./ssh_host_key ; })
       busybox
       (syslogd { loghost = "192.168.0.2"; })
@@ -56,49 +57,7 @@ let
       in lib.fix (self: lib.foldl extend {}
                     (map (x: x self) (map (f: f nixpkgs) wantedModules)));
 in rec {
-  testKernelAttrs = let k = (device.kernel lib); in {
-    inherit lzma;
-    dtsPath = if (k ? dts) then (k.dts nixpkgs) else null ;
-    inherit (k) defaultConfig loadAddress entryPoint socFamily;
-    extraConfig = k.extraConfig // {
-      "9P_FS" = "y";
-      "9P_FS_POSIX_ACL" = "y";
-      "9P_FS_SECURITY" = "y";
-      "ATH9K" = "y";
-      "ATH9K_AHB" = "y";
-      "BRIDGE_VLAN_FILTERING" = "y";
-      "CFG80211" = "y";
-      "EXT4_ENCRYPTION" = "y";
-      "EXT4_FS" = "y";
-      "EXT4_FS_ENCRYPTION" = "y";
-      "EXT4_USE_FOR_EXT2" = "y";
-      "MAC80211" = "y";
-      "MSDOS_PARTITION" = "y"; "EFI_PARTITION" = "y";
-      "NET_9P" = "y";
-      "NET_9P_DEBUG" = "y";
-      "NET_9P_VIRTIO" = "y";
-      "PARTITION_ADVANCED" = "y";
-      "PCI" = "y";
-      "SCSI"  = "y"; "BLK_DEV_SD"  = "y"; "USB_PRINTER" = "y";
-      "USB" = "y";
-      "USB_ANNOUNCE_NEW_DEVICES" = "y";
-      "USB_COMMON" = "y";
-      "USB_EHCI_HCD" = "y";
-      "USB_EHCI_HCD_PLATFORM" = "y";
-      "USB_OHCI_HCD" = "y";
-      "USB_OHCI_HCD_PLATFORM" = "y";
-      "USB_STORAGE" = "y";
-      "USB_STORAGE_DEBUG" = "n";
-      "USB_UAS" = "y";
-      "VIRTIO" = "y";
-      "VIRTIO_NET" = "y";
-      "VIRTIO_PCI" = "y";
-      "WLAN_80211" = "y";
-    };
-  };
-
-  kernel = pkgs.kernel.override testKernelAttrs;
-
+  kernel = configuration.kernel.package;
   swconfig = pkgs.swconfig.override { inherit kernel; };
 
   busybox = configuration.busybox.package;

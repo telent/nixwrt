@@ -2,54 +2,25 @@
  , lzma
  , buildPackages
  , socFamily ? null
- , defaultConfig ? null
- , extraConfig ? {}
+ , config ? {}
+ , ledeSrc
+ , kernelSrc
  , loadAddress ? "0x80000000"
  , entryPoint ? "0x80000000"
  , runCommand
  , writeText
  , dtsPath ? null
 } :
-let readConfig = file:
-      let f = runCommand "defconfig.json"  { } ''
-            echo -e "{\n" > $out
-            (source ${file} ; for v in ''${!CONFIG@} ; do printf "  \"%s\": \"%s\",\n" "$v" "''${!v}" ;done ) >> $out
-            echo -e "  \042SWALLOW_COMMA\042: \042n\042 \n}" >> $out
-          '';
-          attrset = builtins.fromJSON ( builtins.readFile f ); in
-        lib.mapAttrs'
-          (n: v: (lib.nameValuePair (lib.removePrefix "CONFIG_" n) v))
-          attrset;
-    ledeSrc = buildPackages.fetchFromGitHub {
-      owner = "lede-project";
-      repo = "source";
-      rev = "57157618d4c25b3f08adf28bad5b24d26b3a368a";
-      sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
-    };
-    configFiles = ["${ledeSrc}/target/linux/generic/config-4.9"
-                   "${ledeSrc}/target/linux/${defaultConfig}"
-                   ];
-    configuration = let
-      defaults = lib.foldl (a: b: a // b)
-                           {}
-                           (builtins.map readConfig configFiles);
-      nixwrtConfig = { "TMPFS" = "y"; "DEVTMPFS" = "y"; };
-      overridden = defaults // nixwrtConfig // extraConfig;
-      in writeText "nixwrt_config"
+let kconfigFile = writeText "nixwrt_kconfig"
         (builtins.concatStringsSep
           "\n"
           (lib.mapAttrsToList
             (name: value: "CONFIG_${name}=${value}")
-            overridden));
-
+            config));
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
     name = "kernel";
-    src = let
-     url = {
-       url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
-       sha256 = "1pl7x1fnyhvwbdxgh0w5fka9dyysi74n8lj9fkgfmapz5hrr8axq";
-     }; in buildPackages.fetchurl url;
+    src = kernelSrc;
 
     prePatch =  ''
       q_apply() {
@@ -91,7 +62,7 @@ stdenv.mkDerivation rec {
     configurePhase = ''
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${buildPackages.pkgs.gawk}/bin/awk
       make V=1 mrproper
-      cp ${configuration} .config
+      cp ${kconfigFile} .config
       make V=1 olddefconfig
     '';
 

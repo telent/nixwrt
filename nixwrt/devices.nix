@@ -1,4 +1,16 @@
-{
+let
+  readDefconfig = import ./util/read_defconfig.nix;
+  kernelSrcLocn = {
+    url = "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.76.tar.xz";
+    sha256 = "1pl7x1fnyhvwbdxgh0w5fka9dyysi74n8lj9fkgfmapz5hrr8axq";
+  };
+  ledeSrcLocn = {
+    owner = "lede-project";
+    repo = "source";
+    rev = "57157618d4c25b3f08adf28bad5b24d26b3a368a";
+    sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
+  };
+in {
   mt300a = {
     name = "gl-mt300a"; endian= "little";
     kernel = lib: let adds = [
@@ -52,25 +64,39 @@
       };
     };
   };
-  yun = { name = "arduino-yun"; endian = "big";
-          kernel = lib: {
-	    loadAddress = "0x80060000";
-	    entryPoint = "0x80060000";
-            defaultConfig = "ar71xx/config-4.9";
-            socFamily = "ar71xx";
-            extraConfig = {
-              "ATH79_MACH_ARDUINO_YUN" = "y";
-              "PARTITION_ADVANCED" = "y";
-              "CMDLINE_PARTITION" = "y";
-              "MTD_CMDLINE_PART" = "y";
-              "MTD_PHRAM" = "y";
-              "SQUASHFS" = "y";
-              "SQUASHFS_XZ" = "y";
-              "SQUASHFS_ZLIB" = "y";
-              "SWCONFIG" = "y";
-            };
-          };
+  yun = rec {
+    name = "arduino-yun"; endian = "big";
+    socFamily = "ar71xx";
+    hwModule = nixpkgs: self: super:
+      with nixpkgs;
+      let kernelSrc = pkgs.fetchurl kernelSrcLocn;
+          ledeSrc = pkgs.fetchFromGitHub ledeSrcLocn;
+          readconf = readDefconfig nixpkgs;
+          p = "${ledeSrc}/target/linux/";
+          stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
+          kconfig = stripOpts "ATH79_MACH"
+                      (stripOpts "XZ_"
+                        ((readconf "${p}/generic/config-4.9") //
+                         (readconf "${p}/${socFamily}/config-4.9"))) // {
+                           "ATH79_MACH_ARDUINO_YUN" = "y";
+                           "ATH79_MACH_TEW_712BR" = "y";
+                           "TMPFS" = "y"; "DEVTMPFS" = "y";
+                           "SLUB" = "n";
+                           "SLOB" = "y";
+                           "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";
+                           "VT" = "n";
+                           "CRASHLOG" = "n"; # doesn't work after disabling something previous
+                         };
+      in lib.attrsets.recursiveUpdate super {
+        kernel.config = kconfig;
+        kernel.package = (callPackage ./kernel/default.nix) {
+          config = self.kernel.config;
+          loadAddress = "0x80060000";
+          entryPoint = "0x80060000";
+          inherit kernelSrc ledeSrc socFamily;
         };
+      };
+    };
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";
