@@ -20,7 +20,6 @@ let
     busybox
     monit
     monitrc
-    pkgs.dropbear
   ];
   dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
       ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out

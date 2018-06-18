@@ -1,4 +1,4 @@
-options: nixpkgs: configuration:
+options: nixpkgs: self: super:
 with nixpkgs;
 let config = {
       driver = "nl80211";
@@ -22,16 +22,11 @@ let config = {
           (name: value: "${name}=${builtins.toString value}")
           config));
 
-in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
-  services = {
-    hostapd = {
-      start = "${pkgs.hostapd}/bin/hostapd -B -P /run/hostapd.pid -S ${hostapdConf}";
-    };
+in nixpkgs.lib.attrsets.recursiveUpdate super  {
+  services.hostapd = {
+    start = "${pkgs.hostapd}/bin/hostapd -B -P /run/hostapd.pid -S ${hostapdConf}";
   };
-  packages = configuration.packages ++ [ pkgs.hostapd  pkgs.iw ];
-  etc = {
-    # this is a separate file so that secrets don't end up in the nix store
-    "hostapd.psk" = { mode= "0400"; content = "00:00:00:00:00:00 ${options.psk}\n" ; };
-  };
-
+  packages = super.packages ++ [ pkgs.hostapd  pkgs.iw ];
+  # this is a separate file so that secrets don't end up in the nix store
+  etc."hostapd.psk" = { mode= "0400"; content = "00:00:00:00:00:00 ${options.psk}\n" ; };
 }

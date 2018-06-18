@@ -1,14 +1,14 @@
 {
   hostapd = import ./hostapd.nix;
-  rsyncd = options: nixpkgs: configuration:
+  rsyncd = options: nixpkgs: self: super:
     with nixpkgs;
-    nixpkgs.lib.attrsets.recursiveUpdate configuration  {
+    nixpkgs.lib.attrsets.recursiveUpdate super  {
       services = {
         rsyncd = {
           start = "${pkgs.rsync}/bin/rsync --daemon";
         };
       };
-      packages = configuration.packages ++ [ pkgs.rsync ];
+      packages = super.packages ++ [ pkgs.rsync ];
       etc = {
         "rsyncd.conf" = {
           content = ''
@@ -26,8 +26,10 @@
       };
 
     };
-  sshd = nixpkgs: configuration:
-    nixpkgs.lib.attrsets.recursiveUpdate configuration  {
+  sshd = nixpkgs: self: super:
+    with nixpkgs;
+    lib.attrsets.recursiveUpdate super  {
+      pkgs = super.packages ++ [pkgs.dropbear];
       services = with nixpkgs; {
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
@@ -35,7 +37,7 @@
         };
       };
     };
-  dhcpClient = options: nixpkgs: configuration:
+  dhcpClient = options: nixpkgs: self: super:
     with nixpkgs;
     let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
       #!/bin/sh
@@ -59,22 +61,22 @@
           ;;
       esac
       '';
-    in nixpkgs.lib.attrsets.recursiveUpdate configuration  {
+    in nixpkgs.lib.attrsets.recursiveUpdate super  {
       services.udhcpc = {
-        start = "${options.busybox}/bin/udhcpc -H ${configuration.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+        start = "${options.busybox}/bin/udhcpc -H ${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
         depends = [ options.interface ];
       };
     };
-  syslogd = options: nixpkgs: configuration:
+  syslogd = options: nixpkgs: self: super:
     with nixpkgs;
-    lib.attrsets.recursiveUpdate configuration {
+    lib.attrsets.recursiveUpdate super {
       services.syslogd = {
         start = "/bin/syslogd -R ${options.loghost}";
       };
     };
-  ntpd = options: nixpkgs: configuration:
+  ntpd = options: nixpkgs: self: super:
     with nixpkgs;
-    lib.attrsets.recursiveUpdate configuration {
+    lib.attrsets.recursiveUpdate super {
       services.ntpd = {
         start = "/bin/ntpd -p ${options.host}";
       };

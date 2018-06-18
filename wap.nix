@@ -148,6 +148,7 @@ in rec {
       };
     };
     wantedModules = with modules; [
+      (nixpkgs: self: super: baseConfiguration)
       sshd
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })
@@ -158,7 +159,12 @@ in rec {
       })
       (dhcpClient { interface = "br0"; inherit busybox; })
     ];
-    configuration = lib.foldl (c: m: m nixpkgs c) baseConfiguration wantedModules;
+    configuration =
+      with nixpkgs.stdenv.lib;
+      let extend = lhs: rhs: lhs // rhs lhs;
+      in lib.fix (self: lib.foldl extend {}
+                    (map (x: x self) (map (f: f nixpkgs) wantedModules)));
+
   in  rootfsImage {
     inherit busybox configuration;
     inherit (pkgs) monit iproute;
