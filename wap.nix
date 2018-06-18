@@ -39,7 +39,7 @@ let
     };
     wantedModules = with modules; [
       (nixpkgs: self: super: baseConfiguration)
-      sshd
+      (sshd { hostkey = ./ssh_host_key ; })
       busybox
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })

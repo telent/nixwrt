@@ -29,14 +29,14 @@
       };
 
     };
-  sshd = nixpkgs: self: super:
+  sshd = options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super  {
       pkgs = super.packages ++ [pkgs.dropbear];
       services = with nixpkgs; {
         dropbear = {
           start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
-          hostKey = ../../ssh_host_key; # FIXME
+          hostKey = options.hostkey;
         };
       };
     };
