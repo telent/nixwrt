@@ -32,6 +32,28 @@ self: super: {
     db = super.db.override { cxxSupport = false;};
   };
 
+  hostapd = let configuration = [
+     "CONFIG_DRIVER_NL80211=y"
+     "CONFIG_IAPP=y"
+     "CONFIG_IEEE80211W=y"
+     "CONFIG_IPV6=y"
+     "CONFIG_LIBNL32=y"
+     "CONFIG_PKCS12=y"
+     "CONFIG_RSN_PREAUTH=y"
+     "CONFIG_TLS=internal"
+     "CONFIG_INTERNAL_LIBTOMMATH=y"
+     "CONFIG_INTERNAL_LIBTOMMATH_FAST=y"
+  ];
+  confFile = super.writeText "hostap.config"
+      (builtins.concatStringsSep "\n" configuration);
+  in (super.hostapd.override { sqlite = null; }).overrideAttrs(o:  {
+      extraConfig = "";
+      configurePhase = ''
+        cp -v ${confFile} hostapd/defconfig
+        ${o.configurePhase}
+      '';
+  });
+
   # we had trouble building rsync with acl support, and
   rsync = super.rsync.override { enableACLs = false; } ;
 }
