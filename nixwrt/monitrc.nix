@@ -1,5 +1,4 @@
 { lib
- , pkgs
  , iproute
  , writeText
  , writeScriptBin
@@ -55,7 +54,6 @@ in writeText "monitrc" ''
   set daemon 30
   set httpd port 80
     allow localhost
-    allow 127.0.0.1/32
     allow 192.168.0.0/24
   set idfile /run/monit.id
   set statefile /run/monit.state

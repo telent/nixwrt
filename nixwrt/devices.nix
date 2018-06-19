@@ -91,7 +91,6 @@ in {
                            "TMPFS" = "y"; "DEVTMPFS" = "y";
                            "SLUB" = "n";
                            "SLOB" = "y";
-                           "MTD_PHRAM" = "y";
                            "SQUASHFS_ZLIB" = "n";
                            "SUSPEND" = "n";
                            "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";

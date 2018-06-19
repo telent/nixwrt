@@ -11,9 +11,7 @@
 , configuration
 , ...}:
 let
-  monitrc = import ./monitrc.nix {
-    inherit lib pkgs iproute;
-    inherit (pkgs) writeScriptBin writeText;
+  monitrc = pkgs.callPackage ./monitrc.nix {
     inherit (configuration) interfaces services filesystems;
   };
   packagesToInstall = configuration.packages ++ [

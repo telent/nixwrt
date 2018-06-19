@@ -1,5 +1,4 @@
-# This is copy-pasted from backuphost.nix but will eventually be a
-# configuration for a wireless access point based on Atheros 9331
+# Configuration for a wireless access point based on Atheros 9331
 # (testing on Arduino Yun, deploying on Trendnet TEW712BR)
 
 { targetBoard ? "yun" }:
@@ -10,7 +9,6 @@ let device = (import ./nixwrt/devices.nix).${targetBoard};
     nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ;} ); in
 with nixpkgs;
 let
-    rootfsImage = pkgs.callPackage ./nixwrt/rootfs-image.nix ;
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
     baseConfiguration = rec {
       hostname = "uostairs";
@@ -34,8 +32,7 @@ let
       ];
       packages = [] ;
       filesystems = { };
-      services = {
-      };
+      services = { };
     };
     wantedModules = with modules; [
       (nixpkgs: self: super: baseConfiguration)
@@ -44,6 +41,7 @@ let
       busybox
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })
+#      tftpboot
       (hostapd {
         config = { interface = "wlan0"; ssid = "testlent"; hw_mode = "g"; channel = 1; };
         # no suport currently for generating these, use wpa_passphrase
@@ -58,13 +56,12 @@ let
                     (map (x: x self) (map (f: f nixpkgs) wantedModules)));
 in rec {
   kernel = configuration.kernel.package;
-  swconfig = pkgs.swconfig.override { inherit kernel; };
+#  swconfig = pkgs.swconfig.override { inherit kernel; };
 
   busybox = configuration.busybox.package;
 
-  rootfs = rootfsImage {
+  rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
     inherit busybox configuration;
-    inherit (pkgs) monit iproute;
   };
 
   tftproot = stdenv.mkDerivation rec {

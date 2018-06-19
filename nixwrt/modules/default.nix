@@ -60,4 +60,11 @@
         start = "/bin/ntpd -p ${options.host}";
       };
     };
+
+  # Add this module when you want separate tftp-bootable images that
+  # run from RAM instead of a single flashable firmware image.  Resulting images
+  # may be bigger, but hopefully your device has more RAM than flash
+  tftpboot = nixpkgs: self: super:
+    nixpkgs.lib.recursiveUpdate super { kernel.config."MTD_PHRAM" = "y"; };
+
 }
