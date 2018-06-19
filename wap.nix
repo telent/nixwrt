@@ -64,8 +64,7 @@ in rec {
 
   rootfs = rootfsImage {
     inherit busybox configuration;
-    inherit (pkgs) monit;
-    iproute = pkgs.iprouteSansBash;
+    inherit (pkgs) monit iproute;
   };
 
   tftproot = stdenv.mkDerivation rec {

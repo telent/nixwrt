@@ -40,37 +40,8 @@
         };
       };
     };
-  dhcpClient = options: nixpkgs: self: super:
-    with nixpkgs;
-    let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
-      #!/bin/sh
-      dev=${options.interface}
-      deconfig(){
-        ip addr flush dev $dev
-      }
-      bound(){
-        ip addr replace $ip/$mask dev $dev ;
-        ip route add 0.0.0.0/0 via $router;
-      }
-      case $1 in
-        deconfig)
-          deconfig
-          ;;
-        bound|renew)
-          bound
-          ;;
-        *)
-          echo unrecognised command $1
-          ;;
-      esac
-      '';
-    in nixpkgs.lib.attrsets.recursiveUpdate super  {
-      busybox.applets = super.busybox.applets ++ [ "udhcpc" ];
-      services.udhcpc = {
-        start = "${self.busybox.package}/bin/udhcpc -H ${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
-        depends = [ options.interface ];
-      };
-    };
+  dhcpClient = import ./dhcp_client.nix;
+
   syslogd = options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super {

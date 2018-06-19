@@ -25,12 +25,6 @@ self: super: {
 
   swconfig =  super.callPackage ./swconfig.nix {};
 
-  iproute = super.iproute.override {
-    # db cxxSupport causes closure size explosion because it drags in
-    # gcc as runtime dependency.  I don't think it needs it, it's some
-    # kind of rpath problem or similar
-    db = super.db.override { cxxSupport = false;};
-  };
 
   hostapd = let configuration = [
      "CONFIG_DRIVER_NL80211=y"
@@ -54,7 +48,8 @@ self: super: {
       '';
   });
 
-  iprouteSansBash = (super.iproute.override {
+  iprouteFull = super.iproute;
+  iproute = (super.iproute.override {
     # db dep is only if we need arpd
     db = null; iptables = null;
   }).overrideAttrs (o: {
@@ -63,6 +58,7 @@ self: super: {
       rm $out/sbin/routef $out/sbin/routel $out/sbin/rtpr $out/sbin/ifcfg
     '';
   });
+
 
   busybox = super.busybox.overrideAttrs (o: {
     # busybox derivation has a postConfigure action conditional on useMusl that
