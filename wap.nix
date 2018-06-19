@@ -32,7 +32,7 @@ let
         {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = [] ; #  [ swconfig ];
+      packages = [] ;
       filesystems = { };
       services = {
       };

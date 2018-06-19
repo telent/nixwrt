@@ -29,6 +29,7 @@ nixpkgs: self: super:
           "init"
           "kill"
           "ls"
+          "mdev"
           "mkdir"
           "mount"
           "mv"
