@@ -90,6 +90,9 @@ in {
                            "SUSPEND" = "n";
                            "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";
                            "VT" = "n";
+                           "INPUT_MOUSE" = "n";
+                           "INPUT_MOUSEDEV" = "n";
+                           "MOUSE_PS2" = "n";
                            "CRASHLOG" = "n"; # doesn't work after disabling something previous
                          };
       in lib.attrsets.recursiveUpdate super {
