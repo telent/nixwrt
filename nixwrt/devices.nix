@@ -83,10 +83,11 @@ in {
                            "ATH79_MACH_TEW_712BR" = "y";
                            "ATH9K" = "y";
                            "ATH9K_AHB" = "y";
+                           "BLK_DEV_INITRD" = "n";
                            "CFG80211" = "y";
                            "CRASHLOG" = "n";
-                           "DEBUG_FS" = "n"; # ?
-                           "DEBUG_KERNEL" = "n"; # ?
+                           "DEBUG_FS" = "n";
+                           "DEBUG_KERNEL" = "n";
                            "DEVTMPFS" = "y";
                            "INPUT_MOUSE" = "n";
                            "INPUT_MOUSEDEV" = "n";
@@ -94,7 +95,7 @@ in {
                            "KALLSYMS" = "n";
                            "MAC80211" = "y";
                            "MOUSE_PS2" = "n";
-                           "OVERLAY_FS" = "n"; # ?
+                           "OVERLAY_FS" = "n";
                            "SLOB" = "y";
                            "SLUB" = "n";
                            "SQUASHFS_ZLIB" = "n";
