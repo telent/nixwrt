@@ -85,7 +85,8 @@ in {
                            "ATH9K_AHB" = "y";
                            "CFG80211" = "y";
                            "CRASHLOG" = "n";
-                           "DEBUGFS" = "n";
+                           "DEBUG_FS" = "n"; # ?
+                           "DEBUG_KERNEL" = "n"; # ?
                            "DEVTMPFS" = "y";
                            "INPUT_MOUSE" = "n";
                            "INPUT_MOUSEDEV" = "n";
@@ -93,7 +94,7 @@ in {
                            "KALLSYMS" = "n";
                            "MAC80211" = "y";
                            "MOUSE_PS2" = "n";
-                           "OVERLAYFS" = "n";
+                           "OVERLAY_FS" = "n"; # ?
                            "SLOB" = "y";
                            "SLUB" = "n";
                            "SQUASHFS_ZLIB" = "n";
