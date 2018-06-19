@@ -15,12 +15,12 @@ let
     baseConfiguration = rec {
       hostname = "uostairs";
       interfaces = {
-        "eth1" = { };
+        "eth0" = { };
         lo = { ipv4Address = "127.0.0.1/8"; };
         "wlan0" = { };
         "br0" = {
           type = "bridge";
-          members  = [ "eth1" "wlan0" ];
+          members  = [ "eth0" "wlan0" ];
         };
       };
       etc = {
