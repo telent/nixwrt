@@ -80,25 +80,29 @@ in {
                         ((readconf "${p}/generic/config-4.9") //
                          (readconf "${p}/${socFamily}/config-4.9")))) // {
                            "ATH79_MACH_ARDUINO_YUN" = "y";
+                           "ATH79_MACH_TEW_712BR" = "y";
                            "ATH9K" = "y";
                            "ATH9K_AHB" = "y";
                            "CFG80211" = "y";
-                           "MAC80211" = "y";
-                           "WLAN_80211" = "y";
-                           "WLAN_VENDOR_ATH" = "y";
-                           "ATH79_MACH_TEW_712BR" = "y";
-                           "JFFS2_FS" = "n"; "OVERLAYFS" = "n"; "DEBUGFS" = "n";
-                           "TMPFS" = "y"; "DEVTMPFS" = "y";
-                           "SLUB" = "n";
-                           "SLOB" = "y";
-                           "SQUASHFS_ZLIB" = "n";
-                           "SUSPEND" = "n";
-                           "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";
-                           "VT" = "n";
+                           "CRASHLOG" = "n";
+                           "DEBUGFS" = "n";
+                           "DEVTMPFS" = "y";
                            "INPUT_MOUSE" = "n";
                            "INPUT_MOUSEDEV" = "n";
+                           "JFFS2_FS" = "n";
+                           "KALLSYMS" = "n";
+                           "MAC80211" = "y";
                            "MOUSE_PS2" = "n";
-                           "CRASHLOG" = "n"; # doesn't work after disabling something previous
+                           "OVERLAYFS" = "n";
+                           "SLOB" = "y";
+                           "SLUB" = "n";
+                           "SQUASHFS_ZLIB" = "n";
+                           "SUSPEND" = "n";
+                           "SWAP" = "n";
+                           "TMPFS" = "y";
+                           "VT" = "n";
+                           "WLAN_80211" = "y";
+                           "WLAN_VENDOR_ATH" = "y";
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
