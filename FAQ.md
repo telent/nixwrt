@@ -39,8 +39,7 @@ and a domestic PPPoE router) to get it right.
 
 ## Why not "just" use OpenWRT?
 
-I have an [uneasy relationship with OpenWRT](https://ww.telent.net/2011/6/22/openwrt_backfire_first_impressions)
-- anything I want to achieve with it tends to involve a lot of "maybe
+I have an [uneasy relationship with OpenWRT](https://ww.telent.net/2011/6/22/openwrt_backfire_first_impressions) - anything I want to achieve with it tends to involve a lot of "maybe
 I'll flash a newer version" and "what if I edit that file" and "I'll
 just change that thing in the web thing", with the result that
 generally by the time I have the system performing the specified task
