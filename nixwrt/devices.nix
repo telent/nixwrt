@@ -80,12 +80,18 @@ in {
                         ((readconf "${p}/generic/config-4.9") //
                          (readconf "${p}/${socFamily}/config-4.9")))) // {
                            "ATH79_MACH_ARDUINO_YUN" = "y";
+                           "ATH9K" = "y";
+                           "ATH9K_AHB" = "y";
+                           "CFG80211" = "y";
+                           "MAC80211" = "y";
+                           "WLAN_80211" = "y";
                            "WLAN_VENDOR_ATH" = "y";
                            "ATH79_MACH_TEW_712BR" = "y";
-                           "JFFS2" = "n"; "OVERLAYFS" = "n"; "DEBUGFS" = "n";
+                           "JFFS2_FS" = "n"; "OVERLAYFS" = "n"; "DEBUGFS" = "n";
                            "TMPFS" = "y"; "DEVTMPFS" = "y";
                            "SLUB" = "n";
                            "SLOB" = "y";
+                           "MTD_PHRAM" = "y";
                            "SQUASHFS_ZLIB" = "n";
                            "SUSPEND" = "n";
                            "KALLSYMS" = "n"; "SWAP" = "n"; # "MODULES" = "n";
