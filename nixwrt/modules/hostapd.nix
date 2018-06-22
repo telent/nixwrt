@@ -26,7 +26,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super  {
   services.hostapd = {
     start = "${pkgs.hostapd}/bin/hostapd -B -P /run/hostapd.pid -S ${hostapdConf}";
   };
-  packages = super.packages ++ [ pkgs.hostapd  pkgs.iw ];
+  packages = super.packages ++ [ pkgs.hostapd ];
   # this is a separate file so that secrets don't end up in the nix store
   etc."hostapd.psk" = { mode= "0400"; content = "00:00:00:00:00:00 ${options.psk}\n" ; };
 }
