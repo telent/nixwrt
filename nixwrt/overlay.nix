@@ -25,6 +25,13 @@ self: super: {
 
   swconfig =  super.callPackage ./swconfig.nix {};
 
+  libnl = super.libnl.overrideAttrs (o: {
+    outputs = [ "dev" "out" "man" ];
+    preConfigure = ''
+      configureFlagsArray+=(--enable-cli=no --disable-pthreads --disable-debug)
+    '';
+  });
+
   dropbearSmall = super.dropbear.overrideAttrs (o: {
     PROGRAMS = "dropbear";
     LDFLAGS="-Wl,--gc-sections";
