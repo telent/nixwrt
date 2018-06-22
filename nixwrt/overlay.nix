@@ -25,6 +25,36 @@ self: super: {
 
   swconfig =  super.callPackage ./swconfig.nix {};
 
+  dropbearSmall = super.dropbear.overrideAttrs (o: {
+    PROGRAMS = "dropbear";
+    LDFLAGS="-Wl,--gc-sections";
+    CFLAGS="-ffunction-sections -fdata-sections";
+    preConfigure =
+      let undefs = ["NON_INETD_MODE"
+                    "ENABLE_X11FWD"
+                    "ENABLE_SVR_LOCALTCPFWD"
+                    "ENABLE_SVR_REMOTETCPFWD"
+                    "ENABLE_SVR_AGENTFWD"
+                    "ENABLE_USER_ALGO_LIST"
+                    "DROPBEAR_3DES"
+                    "DROPBEAR_TWOFISH256"
+                    "DROPBEAR_ENABLE_CBC_MODE"
+                    "DROPBEAR_TWOFISH128"
+                    "DROPBEAR_ECDSA"
+                    "DROPBEAR_DELAY_HOSTKEY"
+                    "DROPBEAR_DH_GROUP14"
+                    "ENABLE_SVR_PASSWORD_AUTH"
+                    "DROPBEAR_PASSWORD_ENV"
+                    "SFTPSERVER_PATH"];
+      toInsert = builtins.concatStringsSep "\n"
+                  (map (n: "#undef ${n}") undefs);
+      in ''
+        cp options.h options.h.in
+        ( sed '$d' < options.h.in ; echo "${toInsert}" ; echo '#endif' ) > options.h
+      '';
+
+
+  });
 
   hostapd = let configuration = [
      "CONFIG_DRIVER_NL80211=y"

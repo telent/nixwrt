@@ -32,10 +32,10 @@
   sshd = options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super  {
-      pkgs = super.packages ++ [pkgs.dropbear];
+      pkgs = super.packages ++ [pkgs.dropbearSmall];
       services = with nixpkgs; {
         dropbear = {
-          start = "${pkgs.dropbear}/bin/dropbear -s -P /run/dropbear.pid";
+          start = "${pkgs.dropbearSmall}/bin/dropbear -s -P /run/dropbear.pid";
           hostKey = options.hostkey;
         };
       };
