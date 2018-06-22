@@ -96,6 +96,7 @@ in {
                            "MAC80211" = "y";
                            "MOUSE_PS2" = "n";
                            "OVERLAY_FS" = "n";
+                           "SCHED_DEBUG" = "n";
                            "SLOB" = "y";
                            "SLUB" = "n";
                            "SQUASHFS_ZLIB" = "n";
