@@ -37,7 +37,7 @@ self: super: {
     LDFLAGS="-Wl,--gc-sections";
     CFLAGS="-ffunction-sections -fdata-sections";
     preConfigure =
-      let undefs = ["NON_INETD_MODE"
+      let undefs = ["INETD_MODE"
                     "ENABLE_X11FWD"
                     "ENABLE_SVR_LOCALTCPFWD"
                     "ENABLE_SVR_REMOTETCPFWD"
