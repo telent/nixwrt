@@ -41,7 +41,6 @@ let
       busybox
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })
-#      tftpboot
       (hostapd {
         config = { interface = "wlan0"; ssid = "testlent"; hw_mode = "g"; channel = 1; };
         # no support currently for generating these, use wpa_passphrase
@@ -49,42 +48,45 @@ let
       })
       (dhcpClient { interface = "br0"; })
     ];
-    configuration =
-      with nixpkgs.stdenv.lib;
+    mergeModules = ms:
       let extend = lhs: rhs: lhs // rhs lhs;
       in lib.fix (self: lib.foldl extend {}
-                    (map (x: x self) (map (f: f nixpkgs) wantedModules)));
-in rec {
-  kernel = configuration.kernel.package;
-#  swconfig = pkgs.swconfig.override { inherit kernel; };
+                    (map (x: x self) (map (f: f nixpkgs) ms)));
+    configuration = mergeModules wantedModules;
+in {
+  tftproot =
+    let configuration = mergeModules (wantedModules ++ [ modules.tftpboot ]);
+       rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
+         busybox = configuration.busybox.package;
+         inherit configuration;
+       };
+       kernel = configuration.kernel.package;
+     in stdenv.mkDerivation rec {
+       name = "tftproot";
+       phases = [ "installPhase" ];
+       kernelImage = (if targetBoard == "malta" then kernel.vmlinux else "${kernel.out}/kernel.image");
+       installPhase = ''
+         mkdir -p $out
+         cp ${kernelImage} $out/kernel.image
+         cp ${rootfs}/image.squashfs  $out/rootfs.image
+       '';
+    };
 
-  busybox = configuration.busybox.package;
-
-  rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
-    inherit busybox configuration;
-  };
-
-  tftproot = stdenv.mkDerivation rec {
-    name = "tftproot";
-    phases = [ "installPhase" ];
-    kernelImage = (if targetBoard == "malta" then kernel.vmlinux else "${kernel.out}/kernel.image");
-    installPhase = ''
-      mkdir -p $out
-      cp ${kernelImage} $out/kernel.image
-      cp ${rootfs}/image.squashfs  $out/rootfs.image
-    '';
-  };
-
-  firmwareImage = stdenv.mkDerivation rec {
-    name = "firmware.bin";
-    phases = [ "installPhase" ];
-    installPhase =
-      let liveKernelAttrs = lib.attrsets.recursiveUpdate testKernelAttrs {
-            extraConfig."CMDLINE" =
-              builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init root=/dev/mtdblock5 rootfstype=squashfs";
-          };
-          kernel = pkgs.kernel.override liveKernelAttrs;
-      in ''
+  firmware =
+    let kernelExtra = nixpkgs: self: super:
+      nixpkgs.lib.recursiveUpdate super {
+        kernel.config."CMDLINE" = builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init root=/dev/mtdblock6 rootfstype=squashfs";
+      };
+    configuration = mergeModules (wantedModules ++ [kernelExtra]);
+    rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
+      busybox = configuration.busybox.package;
+      inherit configuration;
+    };
+    kernel = configuration.kernel.package;
+    in stdenv.mkDerivation rec {
+      name = "firmware.bin";
+      phases = [ "installPhase" ];
+      installPhase = ''
         dd if=${kernel.out}/kernel.image of=$out bs=128k conv=sync
         dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
       '';
