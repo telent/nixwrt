@@ -90,6 +90,7 @@ let
     inherit (buildPackages) perl pathsFromGraph squashfsTools;
     inherit stdenv;
     storeContents = packagesToInstall ;
+    options = "-wildcards -e '... lib\*.a' -e '... man[1-9]'";
     compression = "xz";
     compressionFlags = "-Xdict-size 100%";
   };
