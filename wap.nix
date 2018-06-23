@@ -44,7 +44,7 @@ let
 #      tftpboot
       (hostapd {
         config = { interface = "wlan0"; ssid = "testlent"; hw_mode = "g"; channel = 1; };
-        # no suport currently for generating these, use wpa_passphrase
+        # no support currently for generating these, use wpa_passphrase
         psk = builtins.getEnv( "PSK") ;
       })
       (dhcpClient { interface = "br0"; })

@@ -35,7 +35,7 @@
       pkgs = super.packages ++ [pkgs.dropbearSmall];
       services = with nixpkgs; {
         dropbear = {
-          start = "${pkgs.dropbearSmall}/bin/dropbear -s -P /run/dropbear.pid";
+          start = "${pkgs.dropbearSmall}/bin/dropbear -P /run/dropbear.pid";
           hostKey = options.hostkey;
         };
       };
