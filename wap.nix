@@ -11,7 +11,7 @@ with nixpkgs;
 let
     myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
     baseConfiguration = rec {
-      hostname = "uostairs";
+      hostname = "upstaisr";
       interfaces = {
         "eth0" = { };
         lo = { ipv4Address = "127.0.0.1/8"; };
@@ -27,8 +27,6 @@ let
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = myKeys;}
-        {name="dan"; uid=1000; gid=1000; gecos="Daniel"; dir="/home/dan";
-         shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
       packages = [] ;
       filesystems = { };
@@ -42,7 +40,7 @@ let
       (syslogd { loghost = "192.168.0.2"; })
       (ntpd { host = "pool.ntp.org"; })
       (hostapd {
-        config = { interface = "wlan0"; ssid = "testlent"; hw_mode = "g"; channel = 1; };
+        config = { interface = "wlan0"; ssid = "telent"; hw_mode = "g"; channel = 1; };
         # no support currently for generating these, use wpa_passphrase
         psk = builtins.getEnv( "PSK") ;
       })
