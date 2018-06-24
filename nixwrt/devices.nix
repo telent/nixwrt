@@ -85,6 +85,8 @@ in {
                            "ATH9K_AHB" = "y";
                            "BLK_DEV_INITRD" = "n";
                            "CFG80211" = "y";
+                           "CMDLINE_OVERRIDE" = "y";
+                           "CMDLINE_PARTITION" = "y";
                            "CRASHLOG" = "n";
                            "DEBUG_FS" = "n";
                            "DEBUG_KERNEL" = "n";
@@ -94,8 +96,12 @@ in {
                            "JFFS2_FS" = "n";
                            "KALLSYMS" = "n";
                            "MAC80211" = "y";
+                           "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
+                           "MSDOS_PARTITION" = "n";
+                           "MTD_CMDLINE_PART" = "y";
                            "MOUSE_PS2" = "n";
                            "OVERLAY_FS" = "n";
+                           "PARTITION_ADVANCED" = "y";
                            "SCHED_DEBUG" = "n";
                            "SLOB" = "y";
                            "SLUB" = "n";
@@ -109,6 +115,7 @@ in {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
+        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init  rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         kernel.package = (callPackage ./kernel/default.nix) {
           config = self.kernel.config;
           loadAddress = "0x80060000";

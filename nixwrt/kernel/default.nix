@@ -3,6 +3,7 @@
  , buildPackages
  , socFamily ? null
  , config ? {}
+ , commandLine ? ""
  , ledeSrc
  , kernelSrc
  , loadAddress ? "0x80000000"
@@ -16,7 +17,8 @@ let kconfigFile = writeText "nixwrt_kconfig"
           "\n"
           (lib.mapAttrsToList
             (name: value: "CONFIG_${name}=${value}")
-            config));
+            (config // { "CMDLINE" = builtins.toJSON commandLine; } )
+            ));
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
     name = "kernel";

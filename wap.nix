@@ -51,9 +51,16 @@ let
       in lib.fix (self: lib.foldl extend {}
                     (map (x: x self) (map (f: f nixpkgs) ms)));
     configuration = mergeModules wantedModules;
+    kernelExtra = nixpkgs: self: super:
+      nixpkgs.lib.recursiveUpdate super {
+        kernel.config."MTD_SPLIT" = "y";
+        kernel.config."MTD_SPLIT_UIMAGE_FW" = "y";
+        kernel.commandLine = "${super.kernel.commandLine} mtdparts=spi0.0:64k(u-boot),64k(ART),64k(mac),64k(nvram),192k(language),3648k(firmware)";
+      };
+
 in {
   tftproot =
-    let configuration = mergeModules (wantedModules ++ [ modules.tftpboot ]);
+    let configuration = mergeModules (wantedModules ++ [ modules.tftpboot kernelExtra ]);
        rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
          busybox = configuration.busybox.package;
          inherit configuration;
@@ -69,12 +76,8 @@ in {
          cp ${rootfs}/image.squashfs  $out/rootfs.image
        '';
     };
-
-  firmware =
-    let kernelExtra = nixpkgs: self: super:
-      nixpkgs.lib.recursiveUpdate super {
-        kernel.config."CMDLINE" = builtins.toJSON "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init root=/dev/mtdblock6 rootfstype=squashfs";
-      };
+  k = (mergeModules (wantedModules ++ [kernelExtra])).kernel.package;
+  firmware = let
     configuration = mergeModules (wantedModules ++ [kernelExtra]);
     rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
       busybox = configuration.busybox.package;
