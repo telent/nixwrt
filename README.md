@@ -1,173 +1,139 @@
+![status: works on my machine](https://img.shields.io/badge/status-works%20on%20my%20machine-green.svg)
+
 # What is it?
 
 An experiment, currently, to see if Nixpkgs is a good way to build an
 OS for a domestic wifi router of the kind that OpenWRT or DD-WRT or
 Tomato run on.
 
-# Milestones/initial use cases
+## What does it (will it) do?
 
 * Milestone 0 ("what I came in for"): backup server on GL-MT300A
 "travel router" (based on Mediatek MT7620A) with attached USB disk.
 This works now.
 
 * Milestone 1: replace the OS on the wireless access point in the
-  study - Trendnet TEW-731BR, based on  Atheros AR9341
+  study - Trendnet TEW-731BR, based on  Atheros AR9341.  This works now.
   
- ** This works on the Arduino Yun (same AR71xx SoC family) but has not
-     been tried on the actual hardware yet
+* Milestone 2: replace the OS running on the 
+  [GL-MT300N router](https://www.gl-inet.com/mt300n/) attached to my DSL modem
 
-* Milestone 2: IP camera with motion detection on Raspberry Pi (note
+  ** all the stuff in M0, M1 plus PPPoE
+
+* Milestone 3: IP camera with motion detection on Raspberry Pi (note
   this is ARM not MIPS)
   
   ** anybody's guess what is needed here
 
-* Milestone 3: replace the OS running on the 
-  [GL-MT300N router](https://www.gl-inet.com/mt300n/)  attached to my DSL modem
+* Milestone 4: put a lot of GPIOs in my cheap robot vacuum and turn
+  it into a smart robot vacuum cleaner.  Probably never get to this.
 
-  ** all the stuff in M0, M1 plus PPPoE
+
+# How it works
+
+This is not NixOS.  This is using the Nix language and the Nix package
+collection to create an immutable "turnkey" image that can be flashed
+onto a router (or other IoT device) and never modified thereafter.
+The ingredients are
+
+## Nixpkgs
+
+As of June 2018 it requires a lightly forked nixpkgs, but I am working
+to feed changes back upstream.
+
+## a Nixpkgs overlay 
+
+In `nixwrt/overlay.nix` we create a couple of new derivations that
+don't exist in nixpkgs, and customize a few others for smaller size or
+to fix cross-compilation bugs.  Where possible and when time is
+available these changes will be pushed upstream.
+
+## a module-based configuration system 
+
+A NixWRT image is created by passing a `configuration` attrset to a
+derivation that creates a root filesystem image based on that
+configuration, then does further work to build a suitable kernel and
+glue it all together into a binary that you can flash onto your
+router.
+
+Conventionally, you create that configuration by starting with a
+fairly bare bones attrset that defines a few files and network
+interface names, then pass it in turn to a number of _modules_ which
+augment it with the features your application needs.  There are a
+number of pre-written modules to add support for things like ntpd and
+ssh server, more will be added over time (that's not a promise, but
+somewhere between a prediction and a prophecy), and you can write your
+own (details later).  If you write your own and then send pull
+requests, you will have helped fulfill the prophecy.
+
 
 # How to build it
 
-Please note: for ease of development/testing, the NixWRT build
-defaults to producing separate kernel image and root fileystem images,
-which you are expected to load into your device's RAM using TFTP.
-It is also possible to create all-in-one flashable images for
-"production" use, but that's still a bit manual/experimental
+## Setting up (you will need ...)
 
-Clone the nixwrt repo, and also the nixpkgs fork on which it depends
+First, set up a TFTP server.
+
+Then, allocate yourself (or request from your IT support) a static IP
+address on your local network.  It need not be globally reachable, it
+just has to be something that will let your device see its TFTP
+server.  If your router boot monitor has DHCP support you won't even
+need one, but I haven't yet seen a device that does this.  In the
+examples that follow, we will use 192.168.0.251 for the device and
+192.168.0.2 for the TFTP server.
+
+Then, find out how to get into your router's boot monitor.  This will
+very often involve opening it up and attaching a USB serial convertor
+to some header pins: sometimes it involves soldering those pins into
+holes.  On other machines it's not nearly as complicated as you can
+access u-boot across the network.  The OpenWRT wiki is often very helpful here.
+
+Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
     $ git clone git@github.com:telent/nixwrt
     $ git clone --branch everything git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
-The best way to get started is to read `backuphost.nix`, which is a
-couple of magic imports followed by an attrset of things that need
-building (kernel, root fs image, anything else you want in your
-image). Most of the work in supporting a new device is probably in the
-`kernel` derivation, and most of the work in supporting new userland
-stuff is in `rootfs`, which generates a squashfs image based on a big
-attrset called `configuration` with keys such as `interfaces`,
-`users`, `packages`, `services` etc that describe what you want to go
-into the image.
+The best way to get started is to read `wap.nix`, which consists of
+(a) boilerplate, (b) a base `configuration`, (c) an array of
+`wantedModules`, and (d) two targets `tftproot` and `firmware`.  The
+former is for experimentation and the latter is for when you are ready
+to write to the router's permanent flash storage.
 
-So, build the derivation and copy the result into your tftp server data
-directory:
 
-    $ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix -A tftproot --argstr targetBoard $BOARD -o $BOARD
-    $ rsync -cIa $BOARD $TFTP_SERVER_ROOT # -I to ignore timestamps when comparing
+## Build the tftproot target
 
-`$BOARD` is currently one of `mt300a` (works), `yun` (doesn't build) or
-`malta` (works, but no networking)
+This variant of NixWRT runs from RAM and doesn't need the router to be
+flashed.  This is great when you're testing things and don't want to
+keep erasing the flash (because it takes a long time and because it
+has limited write cycles).  It's not great when you want to do a
+permanent installation because the router RAM contents don't survive a
+reset.  It uses
+the
+[phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140) to
+emulate flash using system RAM.
+
+So, build the `tftproot` derivation and copy the result into your tftp
+server data directory: there is a Makefile which Works For Me but you
+may need to adjust pathnames and stuff.
+
+    $ wpa_passphrase 'my wifi ssid' 'my wifi password'
+    network={
+        ssid="my wifi ssid"
+        #psk="my wifi password"
+        psk=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
+    }
+    $ make t=yun d=wap tftproot PSK=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
 
 This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
 
+## Run it
 
-# How to run it
+This will vary depending on your device, but on my TrendNET TEW712BR I
+reset the router, hit RETURN when it says
 
-## General tips
-
-To avoid having to reflash the device every time we make a change, we
-use
-the
-[phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140) to
-emulate flash using system RAM, and read the kernel/root file system
-into memory over TFTP.  This means you will need
-
-* a TFTP server
-* a way to get into the bootloader (which is probably some variety of
-  U-Boot) on your device 
-* enough RAM on the device that it's still functional even after 4MB
-  or so is eaten by the filesystem and kernel image
-* static IP addresses (on your local network - not necessarily
-  globally reachable).  In the examples that follow, we will use 
-  192.168.0.251 for the device and 192.168.0.2 for the TFTP server
-
-## On a GL-Inet GL-MT300A
-
-The GL-Inet pocket router range makes nice cheap hardware for playing
-with NixWRT or similar projects.  The manufacturers seem open to the
-DIY market, and the devices have a reasonable amount of RAM and are
-much easier to get serial connections than many COTS routers.
-GL-MT300A is my current platform for NixWRT development.
-
-Wire up the serial connection: this probably involves opening the box, locating
-the serial header pins (TX, RX and GND) and connecting a USB TTL
-converter - e.g. a PL2303 based device - to it.  The
-[defunct OpenWRT wiki](https://wiki.openwrt.org/toh/gl-inet/gl-mt300a#opening_the_case) has
-a guide with some pictures.  (If you don't have a USB TTL converter to
-hand, other options are available.  For example, use the GPIO pins on
-a Raspberry Pi)
-  
-Run a terminal emulator such as Minicom on whatever is on the other
-end of the link. I use 115200 8N1 and find it also helps to set
-"Character tx delay" to 1ms, "backspace sends DEL" and "lineWrap on".
-
-When you turn the router on you should be greeted with some messages
-from U-Boot and a little bit of ASCII art, followed by the instruction
-to hit SPACE to stop autoboot.  Do this and you will get a
-`gl-mt300a>` prompt.
-
-Run these commands :
-
-    gl-mt300a> setenv serverip 192.168.0.2
-    gl-mt300a> setenv ipaddr 192.168.0.251
-    gl-mt300a> setenv kernaddr 0x81000000
-    gl-mt300a> setenv rootaddr 0x2000000
-    gl-mt300a> tftp ${rootaddr} /tftp/rootfs.image ; tftp ${kernaddr} /tftp/kernel.image ; bootm  ${kernaddr}
-
-and you should see the kernel and rootfs download and boot.
-
-### Writing to flash
-
-If you're sure you want to toast a perfectly good OpenWRT installation
-... read on.  I accept no responsibility for anything bad that might
-happen as a result of following these instructions.
-
-This procedure is new and experimental and works on my machine.  There
-are a number of magic numbers which are most likely correct if you
-have the same hardware as I have and almost certainly incorrect if you don't.
-
-#### Build a flashable image
-
-```
-$ nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ backuphost.nix \
- -A firmwareImage --argstr targetBoard mt300a -o firmware.bin
-$ cp firmware.bin /tftp
-```
-
-#### Flash it
-
-```
-setenv serverip 192.168.0.2 
-setenv ipaddr 192.168.0.251 
-tftp 0x80060000 /tftp/firmware.bin
-erase 0xbc050000 0xbcfd0000
-cp.b 0x80060000 0xbc050000 ${filesize};
-```
-
-Next time you reset the device it *should* come up in NixWRT.  For
-more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
-
-## On an Arduino Yun
-
-Arduino Yun was the initial target for no better reason than that I
-had one to hand, and the USB device interface on the Atmega side makes
-it easy to test with.  The Yun is logically a traditional Arduino
-bolted onto an Atheros 9331 by means of a two-wire serial connection:
-we target the Atheros SoC and use the Arduino MCU as a USB/serial
-converter.
-
-* In order to talk to the Atheros over a serial connection, upload
-https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your Yun using
-the standard Arduino IDE.  Once the sketch is running, rather than
-using the Arduino serial monitor as it suggests, I run Minicom on
-`/dev/ttyACM0`
-
-On a serial connection to the Yun, get into the U-Boot monitor
-(hit YUN RST button, then press RET a couple of times - or in newer
-U-Boot versions you need to type `ard` very quickly -
-https://www.arduino.cc/en/Tutorial/YunUBootReflash may help)
-Once you have the `ar7240>` prompt, run
+    Hit any key to stop autoboot: 2
+    
+and then type the following commands at the `ar7240>` prompt:
 
     setenv serverip 192.168.0.2 
     setenv ipaddr 192.168.0.251 
@@ -175,47 +141,65 @@ Once you have the `ar7240>` prompt, run
     setenv rootaddr 1200000
     setenv rootaddr_useg 0x$rootaddr
     setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,$rootaddr_ks0,11Mi root=/dev/mtdblock0 memmap=12M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=30 ethaddr=90:A2:DA:F9:07:5A machtype=AP121
+    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,$rootaddr_ks0,4Mi root=/dev/mtdblock0 memmap=4M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=20  loglevel=8 rootfstype=squashfs ethaddr=90:A2:DA:F9:07:5A machtype=TEW-712BR
     setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
     run bootn
-    
-substituting your own IP addresses where appropriate.  (This is a bit
-more text than on the GL-MT300A, because that device has a broken
-U-boot install which means we have to bake the command line into the
-image.  The Yun has no such restriction)
 
 The constraints on memory addresses are as follows
 
-* the kernel and root images don't overlap, nor does anything encroach
+* the kernel and root images must not  overlap, nor should anything encroach
   on the area starting at 0x8006000 where the kernel will be
   uncompressed to
 * the memmap parameter in bootargs should cover the whole rootfs image
 
-The output most probably will change to gibberish partway through
-bootup.  This is because the kernel serial driver is running at a
-different speed to U-Boot, and you need to change it (if using the
-YunSerialTerminal sketch, by pressing `~1` or something along those
-lines).
-
-## On QEMU ("malta")
-
-Once you've built the nix `tftproot` derivation, start Qemu:
-
-```
-nix-shell  -p qemu --run "qemu-system-mips  -M malta -m 128 -nographic -kernel malta/kernel.image -virtfs local,path=`pwd`,mount_tag=host0,security_model=passthrough,id=host0   -append 'root=/dev/sr0 console=ttyS0 init=/bin/init' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic"
-```
-
-This shares the current directory with the virtual MIPS system via 9p,
-so once booted you can run
-
-    mkdir /run/mnt
-    mount -t 9p -o trans=virtio,version=9p2000.L host0 /run/mnt
-
-which is very handy if you want to rebuild binaries with debug printfs
-inserted.
 
 
-# Troubleshooting
+## Make it permanent (flashable image)
+
+If you're sure you want to toast a perfectly good OpenWRT installation
+... read on.  I accept no responsibility for anything bad that might
+happen as a result of following these instructions.
+
+_This procedure is fairly new and experimental, but it works on my
+machine.  Do not follow it blindly without making some attempt to
+understand if it'll work for you_.  There are a number of magic
+numbers which are most likely correct if you have the same hardware as
+I have and almost certainly incorrect if you don't.
+
+### Find the flash address
+
+You will need to find the address of your flash chip.  If you don't
+know you can probably make a reasonable guess: my suggestion is to
+look at the boot log for a line of the form `Booting image at
+9f070000` and then double check by lookin at the output of `cat
+/proc/mtd` in OpenWRT and see if there's a partition starting at
+`0x70000`.  If you get this wrong you may brick your device, of course.
+
+### Build the image
+
+    $ make t=yun d=wap firmware PSK=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
+
+### Flash it
+
+Get into u-boot, then do something like this
+
+    setenv serverip 192.168.0.2 
+    setenv ipaddr 192.168.0.251 
+    erase 0x9f070000 0x9f400000
+    tftp 0x80060000 /tftp/firmware_yun.bin
+    cp.b 0x80060000 0x9f070000 ${filesize}
+
+The magic numbers here are 
+
+- 0x80060000 : somewhere in RAM, not critical
+- 0x9f070000 : flash memory address for "firmware" partition (kernel plus root fs)
+- 0x9f400000 : end of flash firmware partition image
+
+If that looked like it worked, type `reset` to find out if you were right.
+
+
+
+## Troubleshooting
 
 If it doesn't work, you could try
 
