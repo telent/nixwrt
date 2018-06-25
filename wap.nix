@@ -60,7 +60,10 @@ let
 
 in {
   tftproot =
-    let configuration = mergeModules (wantedModules ++ [ modules.tftpboot kernelExtra ]);
+    let configuration = mergeModules (wantedModules ++ [
+     (modules.tftpboot {rootOffset="0x1200000"; rootSizeMB="4"; })
+     # kernelExtra
+     ]);
        rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
          busybox = configuration.busybox.package;
          inherit configuration;

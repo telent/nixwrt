@@ -118,6 +118,7 @@ in {
         kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init  rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         kernel.package = (callPackage ./kernel/default.nix) {
           config = self.kernel.config;
+          commandLine = self.kernel.commandLine;
           loadAddress = "0x80060000";
           entryPoint = "0x80060000";
           inherit kernelSrc ledeSrc socFamily;
