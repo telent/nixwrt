@@ -11,6 +11,37 @@ let
     sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
   };
 in {
+    # GL-Inet GL-MT300A
+
+    # The GL-Inet pocket router range makes nice cheap hardware for
+    # playing with NixWRT or similar projects. The manufacturers seem
+    # open to the DIY market, and the devices have a reasonable amount
+    # of RAM and are much easier to get serial connections than many
+    # COTS routers. GL-MT300A is my current platform for NixWRT
+    # development.
+
+    # Wire up the serial connection: this probably involves opening
+    # the box, locating the serial header pins (TX, RX and GND) and
+    # connecting a USB TTL converter - e.g. a PL2303 based device - to
+    # it. The defunct OpenWRT wiki has a guide with some pictures. (If
+    # you don't have a USB TTL converter to hand, other options are
+    # available. For example, use the GPIO pins on a Raspberry Pi)
+
+    # Run a terminal emulator such as Minicom on whatever is on the
+    # other end of the link. I use 115200 8N1 and find it also helps
+    # to set "Character tx delay" to 1ms, "backspace sends DEL" and
+    # "lineWrap on".
+
+    # When you turn the router on you should be greeted with some
+    # messages from U-Boot and a little bit of ASCII art, followed by
+    # the instruction to hit SPACE to stop autoboot. Do this and you
+    # will get a gl-mt300a> prompt.
+
+    # For flashing from uboot, the firmware partition is from
+    # 0xbc050000 to 0xbcfd0000
+
+    # For more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
+
   mt300a = {
     name = "gl-mt300a"; endian= "little";
     kernel = lib: let adds = [
@@ -64,6 +95,28 @@ in {
       };
     };
   };
+
+  # The Arduino Yun is a handy (although pricey) way to get an AR9331
+  # target without any soldering: it's a MIPS SoC glued to an Arduino,
+  # so you can use Arduino tools to talk to it.
+
+  # In order to talk to the Atheros over a serial connection, upload
+  # https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your
+  # Yun using the standard Arduino IDE. Once the sketch is
+  # running, rather than using the Arduino serial monitor as it
+  # suggests, I run Minicom on /dev/ttyACM0
+
+  # On a serial connection to the Yun, to get into the U-Boot monitor
+  # you hit YUN RST button, then press RET a couple of times - or in
+  # newer U-Boot versions you need to type ard very quickly.
+  # https://www.arduino.cc/en/Tutorial/YunUBootReflash may help
+
+  # The output most probably will change to gibberish partway through
+  # bootup. This is because the kernel serial driver is running at a
+  # different speed to U-Boot, and you need to change it (if using the
+  # YunSerialTerminal sketch, by pressing ~1 or something along those
+  # lines).
+
   yun = rec {
     name = "arduino-yun"; endian = "big";
     socFamily = "ar71xx";
@@ -115,6 +168,9 @@ in {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
+        # ACHTUNG! XXX! we're temporarily abusing this configuration
+        # for a TrendNET TEW712BR.  The only change you'd have to make
+        # to go back to a Yun is the `board` and `machtype` below.
         kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init  rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         kernel.package = (callPackage ./kernel/default.nix) {
           config = self.kernel.config;
@@ -125,6 +181,7 @@ in {
         };
       };
     };
+  # see QEMU.md
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";
