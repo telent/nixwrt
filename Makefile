@@ -8,12 +8,12 @@ password:
 	$(eval RSYNC_PASSWORD := $(shell sudo cat /var/lib/backupwrt/rsync))
 
 tftproot:
-	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ $(d).nix -A $@ \
+	nix-build  -I nixpkgs=../nixpkgs $(d).nix -A $@ \
 	 --argstr targetBoard $(t) -o $(t) --show-trace 
 	rsync -caAi $(t)/* /tftp/
 
 firmware:
-	nix-build -I nixpkgs=../nixpkgs-for-nixwrt/ $(d).nix -A firmware \
+	nix-build -I nixpkgs=../nixpkgs $(d).nix -A firmware \
 	 --argstr targetBoard $(t) -o firmware_$(t).bin --show-trace 
 	rsync -caAiL firmware_$(t).bin /tftp/
 

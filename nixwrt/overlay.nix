@@ -1,4 +1,6 @@
-self: super: {
+self: super:
+let stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
+in {
 
   # we need to build real lzma instead of using xz, because the lzma
   # decoder in u-boot doesn't understand streaming lzma archives
@@ -19,49 +21,66 @@ self: super: {
     };
   };
 
-  monit = super.monit.override { usePAM = false; openssl = null; };
+  monit = stripped (super.monit.override { usePAM = false; openssl = null; });
 
-  kernel = super.callPackage ./kernel/default.nix {};
+  # temporary until patchelf#151 is applied upstream and nixpkgs gets new revision
+  patchelf = super.patchelf.overrideAttrs(o@{patches ? [], ...} :
+    let u = self.fetchurl {
+      url = "https://patch-diff.githubusercontent.com/raw/NixOS/patchelf/pull/151.diff" ;
+      sha256 = "12bzxf9ijqdkiqb9ljy4cra67hlmkyswd0yp88h8s06n3yc9d8gj";
+    }; in {
+      patches = patches ++ [u];
+  });
 
-  swconfig =  super.callPackage ./swconfig.nix {};
 
-  libnl = super.libnl.overrideAttrs (o: {
+  kernel = self.callPackage ./kernel/default.nix {};
+
+  swconfig =  stripped (self.callPackage ./swconfig.nix {});
+
+  libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];
     preConfigure = ''
       configureFlagsArray+=(--enable-cli=no --disable-pthreads --disable-debug)
     '';
   });
 
-  dropbearSmall = super.dropbear.overrideAttrs (o: {
+  dropbearSmall = stripped (super.dropbear.overrideAttrs (o: {
     PROGRAMS = "dropbear";
     LDFLAGS="-Wl,--gc-sections";
     CFLAGS="-ffunction-sections -fdata-sections";
+
     preConfigure =
-      let undefs = ["INETD_MODE"
-                    "ENABLE_X11FWD"
-                    "ENABLE_SVR_LOCALTCPFWD"
-                    "ENABLE_SVR_REMOTETCPFWD"
-                    "ENABLE_SVR_AGENTFWD"
-                    "ENABLE_USER_ALGO_LIST"
+      let undefs = [
+                    "DO_MOTD"
                     "DROPBEAR_3DES"
-                    "DROPBEAR_TWOFISH256"
-                    "DROPBEAR_ENABLE_CBC_MODE"
-                    "DROPBEAR_TWOFISH128"
-                    "DROPBEAR_ECDSA"
+                    "DROPBEAR_CURVE25519"
                     "DROPBEAR_DELAY_HOSTKEY"
-                    "DROPBEAR_DH_GROUP14"
-                    "ENABLE_SVR_PASSWORD_AUTH"
+                    "DROPBEAR_DH_GROUP1"
+                    "DROPBEAR_DH_GROUP16"
+                    "DROPBEAR_DSS"
+                    "DROPBEAR_ECDSA"
+                    "DROPBEAR_ECDH"
+                    "DROPBEAR_ENABLE_CBC_MODE"
                     "DROPBEAR_PASSWORD_ENV"
+                    "DROPBEAR_SHA1_96_HMAC"
+                    "DROPBEAR_TWOFISH128"
+                    "DROPBEAR_TWOFISH256"
+                    "ENABLE_SVR_AGENTFWD"
+                    "ENABLE_SVR_LOCALTCPFWD"
+                    "DROPBEAR_SVR_PASSWORD_AUTH"
+                    "ENABLE_SVR_REMOTETCPFWD"
+                    "ENABLE_USER_ALGO_LIST"
+                    "ENABLE_X11FWD"
+                    "INETD_MODE"
                     "SFTPSERVER_PATH"];
       toInsert = builtins.concatStringsSep "\n"
                   (map (n: "#undef ${n}") undefs);
       in ''
-        cp options.h options.h.in
-        ( sed '$d' < options.h.in ; echo "${toInsert}" ; echo '#endif' ) > options.h
+         echo "${toInsert}"  > localoptions.h
       '';
 
 
-  });
+  }));
 
   hostapd = let configuration = [
      "CONFIG_DRIVER_NL80211=y"
@@ -77,34 +96,35 @@ self: super: {
   ];
   confFile = super.writeText "hostap.config"
       (builtins.concatStringsSep "\n" configuration);
-  in (super.hostapd.override { sqlite = null; }).overrideAttrs(o:  {
+  in stripped ((super.hostapd.override { sqlite = null; }).overrideAttrs(o:  {
       extraConfig = "";
       configurePhase = ''
         cp -v ${confFile} hostapd/defconfig
         ${o.configurePhase}
       '';
-  });
+  }));
 
   iprouteFull = super.iproute;
-  iproute = (super.iproute.override {
+  iproute = stripped ((super.iproute.override {
     # db dep is only if we need arpd
     db = null; iptables = null;
   }).overrideAttrs (o: {
     # we don't need these and they depend on bash
-    postInstall = ''
+    postInstall = o.postInstall + ''
       rm $out/sbin/routef $out/sbin/routel $out/sbin/rtpr $out/sbin/ifcfg
+
     '';
-  });
+  }));
 
-
-  busybox = super.busybox.overrideAttrs (o: {
+  busybox = stripped (super.busybox.overrideAttrs (o: {
     # busybox derivation has a postConfigure action conditional on useMusl that
     # forces linking against musl instead of the system libc.  It does not appear
     # to be required when musl *is* the system libc, and for me it seems to be
     # picking up the wrong musl.  So let's get rid of it
     postConfigure = "true";
-  });
+  }));
 
   # we had trouble building rsync with acl support, and
-  rsync = super.rsync.override { enableACLs = false; } ;
+  rsync = stripped (super.rsync.override { enableACLs = false; } );
+
 }

@@ -90,7 +90,7 @@ access u-boot across the network.  The OpenWRT wiki is often very helpful here.
 Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
     $ git clone git@github.com:telent/nixwrt
-    $ git clone --branch everything git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
+    $ git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
 The best way to get started is to read `wap.nix`, which consists of

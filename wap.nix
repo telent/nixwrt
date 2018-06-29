@@ -28,7 +28,7 @@ let
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = myKeys;}
       ];
-      packages = [] ;
+      packages = [ ];
       filesystems = { };
       services = { };
     };
@@ -79,7 +79,7 @@ in {
          cp ${rootfs}/image.squashfs  $out/rootfs.image
        '';
     };
-  k = (mergeModules (wantedModules ++ [kernelExtra])).kernel.package;
+
   firmware = let
     configuration = mergeModules (wantedModules ++ [kernelExtra]);
     rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {

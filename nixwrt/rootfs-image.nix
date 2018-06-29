@@ -14,6 +14,7 @@ let
   monitrc = pkgs.callPackage ./monitrc.nix {
     inherit (configuration) interfaces services filesystems;
   };
+
   packagesToInstall = configuration.packages ++ [
     busybox
     monit
@@ -86,13 +87,9 @@ let
     /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
     /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
   '';
-  squashfs = import <nixpkgs/nixos/lib/make-squashfs.nix> {
-    inherit (buildPackages) perl pathsFromGraph squashfsTools;
-    inherit stdenv;
+  squashfs = pkgs.callPackage <nixpkgs/nixos/lib/make-squashfs.nix> {
     storeContents = packagesToInstall ;
-    options = "-wildcards -e '... lib\*.a' -e '... man[1-9]'";
-    compression = "xz";
-    compressionFlags = "-Xdict-size 100%";
+    excludeWildcards = [ "... lib*.a" "... man/man[1-9]" ];
   };
 in stdenv.mkDerivation rec {
   name = "nixwrt-root";
