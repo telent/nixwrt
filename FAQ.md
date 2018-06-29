@@ -20,8 +20,8 @@ and maybe try it on some ARM devices as well.
 
 Right now it's definitely a bit raw, and the truthful but unappealing answer is "not a lot unless you know Nix quite well".  I use it 
 
-* on a GL.Inet GL-MT300A, plugged into an external USB2 disk drive, to back up my home server over rsync.  This involves Linux USB support, wired ethernet (with dhcp client, vlans) and an rsync daemon
-* on a TrendNET TEW-712BR, to extend the range of my home wifi so I can reliably get a signal upstairs.  This involves wifi infrastructure mode (with WPA2) via hostapd plus, linux bridge support, and  some of the stuff in the previous case
+* on a [GL.Inet GL-MT300A](https://www.gl-inet.com/products/gl-mt300a/) plugged into an external USB2 disk drive, to back up my home server over rsync.  This involves Linux USB support, wired ethernet (with dhcp client, vlans) and an rsync daemon
+* on a [TrendNET TEW-712BR](https://wiki.openwrt.org/toh/trendnet/tew-712br), to extend the range of my home wifi so I can reliably get a signal upstairs.  This involves wifi infrastructure mode (with WPA2) via hostapd, plus linux bridge support, and  some of the stuff in the previous case.
 
 It should be noted that the former of those two use cases is broken as of June 2018 and you will need to go backwards in Git history to make it work.
 
