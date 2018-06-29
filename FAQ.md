@@ -18,24 +18,13 @@ and maybe try it on some ARM devices as well.
 
 ## What can I use it for?
 
-Right now, if you have
+Right now it's definitely a bit raw, and the truthful but unappealing answer is "not a lot unless you know Nix quite well".  I use it 
 
-* a GL.Inet GL-MT300A which you are prepared to open up and attach cables to
-* a PL-2303 or similar to translate three wire 3.3v serial signal into USB or something else that's useful to you
-* a USB2 disk drive with an ext[234]fs filesystem on it labelled `backup-disk`
-* a NixOS build system on which your username is `dan`
+* on a GL.Inet GL-MT300A, plugged into an external USB2 disk drive, to back up my home server over rsync.  This involves Linux USB support, wired ethernet (with dhcp client, vlans) and an rsync daemon
+* on a TrendNET TEW-712BR, to extend the range of my home wifi so I can reliably get a signal upstairs.  This involves wifi infrastructure mode (with WPA2) via hostapd plus, linux bridge support, and  some of the stuff in the previous case
 
-then you should be able to use my NixWRT configuration unchanged to
-build a firmware image on the first of those that runs an rsync daemon to
-make the second accessible, such that you can back up the third using
-duplicity.  Or use the rsync daemon for anything else you choose.
+It should be noted that the former of those two use cases is broken as of June 2018 and you will need to go backwards in Git history to make it work.
 
-To the extent that your hardware or your use case or your name is
-different, then your scope of work will differ proportionately. Or if
-you are unfortunate, disproportionately.  Some attempt has been made
-towards a sensible separation of concerns but it's going to take one
-or two more use cases (next two projects planned: a wireless extender
-and a domestic PPPoE router) to get it right.
 
 ## Why not "just" use OpenWRT?
 
@@ -106,10 +95,9 @@ are up and how many Mb/second the network is moving.
 
 ## Do you have wireless?
 
-Not yet but I plan to add it next.
+Wireless support for the AR933x SoC is present, though has only been tested in "Access Point" mode - i.e. you can set up a network for others to connect to but i haven't yet needed to make it connect to anyone else's network yet.
 
-
-## Wired ethernet at least?
+## And wired ethernet?
 
 Yes, certainly.  DHCP or static addresses, and some support for
 configuring the switch too.
