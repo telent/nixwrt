@@ -5,7 +5,8 @@
 let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
 let
-    myKeys = stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" );
+    myKeys = stdenv.lib.splitString "\n"
+              (builtins.readFile ("/etc/ssh/authorized_keys.d/" + builtins.getEnv( "USER"))) ;
     baseConfiguration = rec {
       hostname = "upstaisr";
       interfaces = {
@@ -18,6 +19,8 @@ let
         };
       };
       etc = {
+        # We take these settings from the build machine.  This works for me but
+        # you might wnt to do it differently
         "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
       };
       users = [
@@ -29,7 +32,7 @@ let
       services = { };
     };
     wantedModules = with nixwrt.modules; [
-      (nixpkgs: self: super: baseConfiguration)
+      (_ : _ : _ : baseConfiguration)
       nixwrt.device.hwModule
       (sshd { hostkey = ./ssh_host_key ; })
       busybox
@@ -37,7 +40,7 @@ let
       (ntpd { host = "pool.ntp.org"; })
       (hostapd {
         config = { interface = "wlan0"; ssid = "telent"; hw_mode = "g"; channel = 1; };
-        # no support currently for generating these, use wpa_passphrase
+        # no support for creating PSK from passphrase in nixwrt, so use wpa_passphrase
         psk = builtins.getEnv( "PSK") ;
       })
       (dhcpClient { interface = "br0"; })
