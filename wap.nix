@@ -2,14 +2,10 @@
 # (testing on Arduino Yun, deploying on Trendnet TEW712BR)
 
 { targetBoard ? "yun" }:
-let device = (import ./nixwrt/devices.nix).${targetBoard};
-    modules = (import ./nixwrt/modules/default.nix);
-    system = (import ./nixwrt/mksystem.nix) device;
-    overlay = (import ./nixwrt/overlay.nix);
-    nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ;} ); in
-with nixpkgs;
+let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
+with nixwrt.nixpkgs;
 let
-    myKeys = (nixpkgs.stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" ) );
+    myKeys = stdenv.lib.splitString "\n" ( builtins.readFile "/etc/ssh/authorized_keys.d/dan" );
     baseConfiguration = rec {
       hostname = "upstaisr";
       interfaces = {
@@ -32,9 +28,9 @@ let
       filesystems = { };
       services = { };
     };
-    wantedModules = with modules; [
+    wantedModules = with nixwrt.modules; [
       (nixpkgs: self: super: baseConfiguration)
-      device.hwModule
+      nixwrt.device.hwModule
       (sshd { hostkey = ./ssh_host_key ; })
       busybox
       (syslogd { loghost = "192.168.0.2"; })
@@ -46,11 +42,6 @@ let
       })
       (dhcpClient { interface = "br0"; })
     ];
-    mergeModules = ms:
-      let extend = lhs: rhs: lhs // rhs lhs;
-      in lib.fix (self: lib.foldl extend {}
-                    (map (x: x self) (map (f: f nixpkgs) ms)));
-    configuration = mergeModules wantedModules;
     kernelExtra = nixpkgs: self: super:
       nixpkgs.lib.recursiveUpdate super {
         kernel.config."MTD_SPLIT" = "y";
@@ -60,39 +51,11 @@ let
 
 in {
   tftproot =
-    let configuration = mergeModules (wantedModules ++ [
-     (modules.tftpboot {rootOffset="0x1200000"; rootSizeMB="4"; })
-     # kernelExtra
+    let configuration = nixwrt.mergeModules (wantedModules ++ [
+     (nixwrt.modules.tftpboot {rootOffset="0x1200000"; rootSizeMB="4"; })
      ]);
-       rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
-         busybox = configuration.busybox.package;
-         inherit configuration;
-       };
-       kernel = configuration.kernel.package;
-     in stdenv.mkDerivation rec {
-       name = "tftproot";
-       phases = [ "installPhase" ];
-       kernelImage = (if targetBoard == "malta" then kernel.vmlinux else "${kernel.out}/kernel.image");
-       installPhase = ''
-         mkdir -p $out
-         cp ${kernelImage} $out/kernel.image
-         cp ${rootfs}/image.squashfs  $out/rootfs.image
-       '';
-    };
-
+    in nixwrt.tftproot configuration;
   firmware = let
-    configuration = mergeModules (wantedModules ++ [kernelExtra]);
-    rootfs = pkgs.callPackage ./nixwrt/rootfs-image.nix {
-      busybox = configuration.busybox.package;
-      inherit configuration;
-    };
-    kernel = configuration.kernel.package;
-    in stdenv.mkDerivation rec {
-      name = "firmware.bin";
-      phases = [ "installPhase" ];
-      installPhase = ''
-        dd if=${kernel.out}/kernel.image of=$out bs=128k conv=sync
-        dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
-      '';
-  };
+    configuration = nixwrt.mergeModules (wantedModules ++ [kernelExtra]);
+    in nixwrt.firmware configuration;
 }
