@@ -29,6 +29,7 @@ with nixpkgs; rec {
         cp ${rootfs}/image.squashfs  $out/rootfs.image
       '';
    };
+
   firmware = configuration:
     let rootfs = pkgs.callPackage ./rootfs-image.nix {
                    busybox = configuration.busybox.package;
@@ -39,8 +40,9 @@ with nixpkgs; rec {
       name = "firmware.bin";
       phases = [ "installPhase" ];
       installPhase = ''
-        dd if=${kernel.out}/kernel.image of=$out bs=128k conv=sync
-        dd if=${rootfs}/image.squashfs of=$out bs=128k conv=sync,nocreat,notrunc oflag=append
+        mkdir -p $out
+        dd if=${kernel.out}/kernel.image of=$out/firmware.bin bs=128k conv=sync
+        dd if=${rootfs}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
       '';
   };
 }

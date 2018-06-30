@@ -169,11 +169,13 @@ I have and almost certainly incorrect if you don't.
 ### Find the flash address
 
 You will need to find the address of your flash chip.  If you don't
-know you can probably make a reasonable guess: my suggestion is to
-look at the boot log for a line of the form `Booting image at
+know you can probably make a reasonable guess: either use the U-boot
+`flinfo` command if your router has it, or otherwise my suggestion is
+to look at the boot log for a line of the form `Booting image at
 9f070000` and then double check by lookin at the output of `cat
 /proc/mtd` in OpenWRT and see if there's a partition starting at
-`0x70000`.  If you get this wrong you may brick your device, of course.
+`0x70000`.  If you get this wrong you may brick your device, of
+course.
 
 ### Build the image
 

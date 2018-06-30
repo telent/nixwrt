@@ -33,9 +33,7 @@ in {
   });
 
 
-  kernel = self.callPackage ./kernel/default.nix {};
-
-  swconfig =  stripped (self.callPackage ./swconfig.nix {});
+  swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];

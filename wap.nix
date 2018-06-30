@@ -31,20 +31,19 @@ let
       filesystems = { };
       services = { };
     };
-    wantedModules = with nixwrt.modules; [
-      (_ : _ : _ : baseConfiguration)
-      nixwrt.device.hwModule
-      (sshd { hostkey = ./ssh_host_key ; })
-      busybox
-      (syslogd { loghost = "192.168.0.2"; })
-      (ntpd { host = "pool.ntp.org"; })
-      (hostapd {
-        config = { interface = "wlan0"; ssid = "telent"; hw_mode = "g"; channel = 1; };
-        # no support for creating PSK from passphrase in nixwrt, so use wpa_passphrase
-        psk = builtins.getEnv( "PSK") ;
-      })
-      (dhcpClient { interface = "br0"; })
-    ];
+    wantedModules = with nixwrt.modules;
+      [  (_ : _ : _ : baseConfiguration) ] ++
+      nixwrt.device.hwModules ++
+      [ (sshd { hostkey = ./ssh_host_key ; })
+        busybox
+        (syslogd { loghost = "192.168.0.2"; })
+        (ntpd { host = "pool.ntp.org"; })
+        (hostapd {
+          config = { interface = "wlan0"; ssid = "telent"; hw_mode = "g"; channel = 1; };
+          # no support for creating PSK from passphrase in nixwrt, so use wpa_passphrase
+          psk = builtins.getEnv( "PSK") ;
+        })
+        (dhcpClient { interface = "br0"; })] ;
     kernelExtra = nixpkgs: self: super:
       nixpkgs.lib.recursiveUpdate super {
         kernel.config."MTD_SPLIT" = "y";

@@ -61,6 +61,78 @@
       };
     };
 
+  virtio9p = options: nixpkgs: self: super:
+    with nixpkgs;
+    lib.attrsets.recursiveUpdate super {
+      kernel.config = super.kernel.config // {
+        "9P_FS" = "y";
+        "9P_FS_POSIX_ACL" = "y";
+        "9P_FS_SECURITY" = "y";
+        "NET_9P" = "y";
+        "NET_9P_DEBUG" = "y";
+        "VIRTIO" = "y";
+        "VIRTIO_PCI" = "y";
+        "VIRTIO_NET" = "y";
+        "NET_9P_VIRTIO" = "y";
+      };
+    };
+
+  usbdisk =  options: nixpkgs: self: super:
+    with nixpkgs;
+    lib.attrsets.recursiveUpdate super {
+      busybox.applets = super.busybox.applets ++ [
+       "blkid"
+       "tar"
+      ];
+
+      busybox.config = super.busybox.config // {
+        "FEATURE_BLKID_TYPE" = "y";
+        "FEATURE_MOUNT_FLAGS" = "y";
+        "FEATURE_MOUNT_LABEL" = "y";
+        "FEATURE_VOLUMEID_EXT" = "y";
+      };
+
+      kernel.config = super.kernel.config // {
+        "USB" = "y";
+        "USB_EHCI_HCD" = "y";
+        "USB_EHCI_HCD_PLATFORM" = "y";
+        "USB_OHCI_HCD" = "y";
+        "USB_OHCI_HCD_PLATFORM" = "y";
+        "USB_COMMON" = "y";
+        "USB_STORAGE" = "y";
+        "USB_STORAGE_DEBUG" = "n";
+        "USB_UAS" = "y";
+        "USB_ANNOUNCE_NEW_DEVICES" = "y";
+        "SCSI"  = "y"; "BLK_DEV_SD"  = "y"; "USB_PRINTER" = "y";
+        "PARTITION_ADVANCED" = "y";
+        "MSDOS_PARTITION" = "y"; "EFI_PARTITION" = "y";
+        "EXT4_FS" = "y";
+        "EXT4_USE_FOR_EXT2" = "y";
+        "EXT4_FS_ENCRYPTION" = "y";
+        "EXT4_ENCRYPTION" = "y";
+      };
+    };
+
+  switchconfig =  { vlans }: nixpkgs: self: super:
+    with nixpkgs;
+    let exe = "${pkgs.swconfig}/bin/swconfig";
+        pkg =  pkgs.swconfig.override { kernel = pkgs.linuxHeaders; };
+        cmd = vlan : ports :
+           "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
+        script = lib.strings.concatStringsSep "\n"
+          ((lib.attrsets.mapAttrsToList cmd vlans)  ++
+           ["${exe} dev switch0 set apply"
+           ]);
+        scriptFile = writeScriptBin "switchconfig.sh" script;
+    in lib.attrsets.recursiveUpdate super {
+      packages = super.packages ++ [ pkg ];
+      kernel.config."BRIDGE_VLAN_FILTERING" = "y";
+      services.switchconfig = {
+        start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh &'";
+        type = "oneshot";
+      };
+    };
+
   # Add this module when you want separate tftp-bootable images that
   # run from RAM instead of a single flashable firmware image.  Resulting images
   # may be bigger, but hopefully your device has more RAM than flash

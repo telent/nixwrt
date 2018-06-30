@@ -1,6 +1,8 @@
 {  stdenv
  , lzma
  , buildPackages
+ , runCommand
+ , writeText
  , socFamily ? null
  , config ? {}
  , commandLine ? ""
@@ -8,8 +10,6 @@
  , kernelSrc
  , loadAddress ? "0x80000000"
  , entryPoint ? "0x80000000"
- , runCommand
- , writeText
  , dtsPath ? null
 } :
 let kconfigFile = writeText "nixwrt_kconfig"
