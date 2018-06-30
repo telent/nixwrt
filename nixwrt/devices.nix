@@ -10,7 +10,7 @@ let
     rev = "57157618d4c25b3f08adf28bad5b24d26b3a368a";
     sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
   };
-in {
+in rec {
     # GL-Inet GL-MT300A
 
     # The GL-Inet pocket router range makes nice cheap hardware for
@@ -96,31 +96,12 @@ in {
     };
   };
 
-  # The Arduino Yun is a handy (although pricey) way to get an AR9331
-  # target without any soldering: it's a MIPS SoC glued to an Arduino,
-  # so you can use Arduino tools to talk to it.
-
-  # In order to talk to the Atheros over a serial connection, upload
-  # https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your
-  # Yun using the standard Arduino IDE. Once the sketch is
-  # running, rather than using the Arduino serial monitor as it
-  # suggests, I run Minicom on /dev/ttyACM0
-
-  # On a serial connection to the Yun, to get into the U-Boot monitor
-  # you hit YUN RST button, then press RET a couple of times - or in
-  # newer U-Boot versions you need to type ard very quickly.
-  # https://www.arduino.cc/en/Tutorial/YunUBootReflash may help
-
-  # The output most probably will change to gibberish partway through
-  # bootup. This is because the kernel serial driver is running at a
-  # different speed to U-Boot, and you need to change it (if using the
-  # YunSerialTerminal sketch, by pressing ~1 or something along those
-  # lines).
-
-  yun = rec {
-    name = "arduino-yun"; endian = "big";
+  # this is not a target, this is a family of SoCs on which
+  # a bunch of different targets are based
+  ar71xx = rec {
     socFamily = "ar71xx";
-    hwModule = nixpkgs: self: super:
+    endian = "big";
+    socHwModule = nixpkgs: self: super:
       with nixpkgs;
       let kernelSrc = pkgs.fetchurl kernelSrcLocn;
           ledeSrc = pkgs.fetchFromGitHub ledeSrcLocn;
@@ -132,8 +113,6 @@ in {
                        (stripOpts "WLAN_VENDOR_"
                         ((readconf "${p}/generic/config-4.9") //
                          (readconf "${p}/${socFamily}/config-4.9")))) // {
-                           "ATH79_MACH_ARDUINO_YUN" = "y";
-                           "ATH79_MACH_TEW_712BR" = "y";
                            "ATH9K" = "y";
                            "ATH9K_AHB" = "y";
                            "BLK_DEV_INITRD" = "n";
@@ -168,10 +147,6 @@ in {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
-        # ACHTUNG! XXX! we're temporarily abusing this configuration
-        # for a TrendNET TEW712BR.  The only change you'd have to make
-        # to go back to a Yun is the `board` and `machtype` below.
-        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init  rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         kernel.package = (callPackage ./kernel/default.nix) {
           config = self.kernel.config;
           commandLine = self.kernel.commandLine;
@@ -181,6 +156,55 @@ in {
         };
       };
     };
+
+  # The Arduino Yun is a handy (although pricey) way to get an AR9331
+  # target without any soldering: it's a MIPS SoC glued to an Arduino,
+  # so you can use Arduino tools to talk to it.
+
+  # In order to talk to the Atheros over a serial connection, upload
+  # https://www.arduino.cc/en/Tutorial/YunSerialTerminal to your
+  # Yun using the standard Arduino IDE. Once the sketch is
+  # running, rather than using the Arduino serial monitor as it
+  # suggests, I run Minicom on /dev/ttyACM0
+
+  # On a serial connection to the Yun, to get into the U-Boot monitor
+  # you hit YUN RST button, then press RET a couple of times - or in
+  # newer U-Boot versions you need to type ard very quickly.
+  # https://www.arduino.cc/en/Tutorial/YunUBootReflash may help
+
+  # The output most probably will change to gibberish partway through
+  # bootup. This is because the kernel serial driver is running at a
+  # different speed to U-Boot, and you need to change it (if using the
+  # YunSerialTerminal sketch, by pressing ~1 or something along those
+  # lines).
+
+  yun =
+    ar71xx // rec {
+      name = "arduino-yun";
+      hwModules = [ar71xx.socHwModule] ++
+        [(nixpkgs: self: super:
+          nixpkgs.lib.recursiveUpdate super {
+            kernel.config."ATH79_MACH_ARDUINO_YUN" = "y";
+            kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=Yun machtype=Yun";
+          })];
+    };
+
+  # The TrendNET TEW712BR is another Atheros AR9330 device, but has
+  # only 4MB of flash.  In 2018 this means it essentially nothing to
+  # recommend it as a NixWRT or OpenWRT target, but I happened to have
+  # one lying around and wanted to use it
+
+  tew712br =
+    ar71xx // rec {
+      name = "trendnet-tew712br";
+      hwModules = [ar71xx.socHwModule] ++
+        [(nixpkgs: self: super:
+          nixpkgs.lib.recursiveUpdate super {
+            kernel.config."ATH79_MACH_TEW_712BR" = "y";
+            kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
+          })];
+    };
+
   # see QEMU.md
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {

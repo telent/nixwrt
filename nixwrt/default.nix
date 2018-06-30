@@ -29,6 +29,7 @@ with nixpkgs; rec {
         cp ${rootfs}/image.squashfs  $out/rootfs.image
       '';
    };
+
   firmware = configuration:
     let rootfs = pkgs.callPackage ./rootfs-image.nix {
                    busybox = configuration.busybox.package;
