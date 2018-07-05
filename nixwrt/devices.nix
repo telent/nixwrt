@@ -11,42 +11,11 @@ let
     sha256 = "0jbkzrvalwxq7sjj58r23q3868nvs7rrhf8bd2zi399vhdkz7sfw";
   };
 in rec {
-    # GL-Inet GL-MT300A
 
-    # The GL-Inet pocket router range makes nice cheap hardware for
-    # playing with NixWRT or similar projects. The manufacturers seem
-    # open to the DIY market, and the devices have a reasonable amount
-    # of RAM and are much easier to get serial connections than many
-    # COTS routers. GL-MT300A is my current platform for NixWRT
-    # development.
-
-    # Wire up the serial connection: this probably involves opening
-    # the box, locating the serial header pins (TX, RX and GND) and
-    # connecting a USB TTL converter - e.g. a PL2303 based device - to
-    # it. The defunct OpenWRT wiki has a guide with some pictures. (If
-    # you don't have a USB TTL converter to hand, other options are
-    # available. For example, use the GPIO pins on a Raspberry Pi)
-
-    # Run a terminal emulator such as Minicom on whatever is on the
-    # other end of the link. I use 115200 8N1 and find it also helps
-    # to set "Character tx delay" to 1ms, "backspace sends DEL" and
-    # "lineWrap on".
-
-    # When you turn the router on you should be greeted with some
-    # messages from U-Boot and a little bit of ASCII art, followed by
-    # the instruction to hit SPACE to stop autoboot. Do this and you
-    # will get a gl-mt300a> prompt.
-
-    # For flashing from uboot, the firmware partition is from
-    # 0xbc050000 to 0xbcfd0000
-
-    # For more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
-
-  mt300a = rec {
-    name = "gl-mt300a";
+  mt7620 = rec {
     endian= "little";
     socFamily = "ramips";
-    hwModule = nixpkgs: self: super:
+    hwModule = {dts}: nixpkgs: self: super:
       with nixpkgs;
       let kernelSrc = pkgs.fetchurl kernelSrcLocn;
           ledeSrc = pkgs.fetchFromGitHub ledeSrcLocn;
@@ -86,25 +55,84 @@ in rec {
           commandLine = self.kernel.commandLine;
           loadAddress = "0x80000000";
           entryPoint = "0x80000000";
+          dtsPath = dts;
           inherit kernelSrc ledeSrc socFamily;
-          dtsPath = stdenv.mkDerivation rec {
-            name = "gl-mt300a.dts";
-            version = "1";
-            src = nixpkgs.buildPackages.fetchurl {
-              url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300A.dts";
-              sha256 = "17nc31hii74hz10gfsg2v4vz5y8k91n9znyydvbnfsax7swrzlnw";
-            };
-            patchFile = ./kernel/kernel-dts-enable-eth0.patch;
-            phases = [ "installPhase" ];
-            installPhase = ''
-              cp $src ./board.dts
-              echo patching from ${patchFile}
-              ${nixpkgs.buildPackages.patch}/bin/patch -p1 < ${patchFile}
-              cp ./board.dts $out
-            '';
-          };
         };
       };
+    };
+
+  # GL-Inet GL-MT300A
+
+  # The GL-Inet pocket router range makes nice cheap hardware for
+  # playing with NixWRT or similar projects. The manufacturers seem
+  # open to the DIY market, and the devices have a reasonable amount
+  # of RAM and are much easier to get serial connections than many
+  # COTS routers. GL-MT300A is my current platform for NixWRT
+  # development.
+
+  # Wire up the serial connection: this probably involves opening
+  # the box, locating the serial header pins (TX, RX and GND) and
+  # connecting a USB TTL converter - e.g. a PL2303 based device - to
+  # it. The defunct OpenWRT wiki has a guide with some pictures. (If
+  # you don't have a USB TTL converter to hand, other options are
+  # available. For example, use the GPIO pins on a Raspberry Pi)
+
+  # Run a terminal emulator such as Minicom on whatever is on the
+  # other end of the link. I use 115200 8N1 and find it also helps
+  # to set "Character tx delay" to 1ms, "backspace sends DEL" and
+  # "lineWrap on".
+
+  # When you turn the router on you should be greeted with some
+  # messages from U-Boot and a little bit of ASCII art, followed by
+  # the instruction to hit SPACE to stop autoboot. Do this and you
+  # will get a gl-mt300a> prompt.
+
+  # For flashing from uboot, the firmware partition is from
+  # 0xbc050000 to 0xbcfd0000
+
+  # For more details refer to https://ww.telent.net/2018/4/16/flash_ah_ah
+
+  mt300a = mt7620 // rec {
+      name = "glinet-mt300a";
+      hwModule = nixpkgs: self: super:
+        with nixpkgs;
+        let dtsPath = stdenv.mkDerivation rec {
+          name = "gl-mt300a.dts";
+          version = "1";
+          src = buildPackages.fetchurl {
+            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300A.dts";
+            sha256 = "17nc31hii74hz10gfsg2v4vz5y8k91n9znyydvbnfsax7swrzlnw";
+          };
+          patchFile = ./kernel/kernel-dts-enable-eth0.patch;
+          phases = [ "installPhase" ];
+          installPhase = ''
+            cp $src ./board.dts
+            echo patching from ${patchFile}
+            ${buildPackages.patch}/bin/patch -p1 < ${patchFile}
+            cp ./board.dts $out
+          '';
+        };
+        in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
+    };
+
+  mt300n = mt7620 // rec {
+      name = "glinet-mt300n";
+      hwModule = nixpkgs: self: super:
+        with nixpkgs;
+        let dtsPath = stdenv.mkDerivation rec {
+          name = "gl-mt300n.dts";
+          version = "1";
+          src = buildPackages.fetchurl {
+            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300N.dts";
+            sha256 = "0crcpi40v7c9bx8k1whr5408rm7a5qm07d7gy9d5qyvagbaggjsi";
+          };
+          phases = [ "installPhase" ];
+          installPhase = ''
+            cp $src ./board.dts
+            cp ./board.dts $out
+          '';
+        };
+        in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
     };
 
   # this is not a target, this is a family of SoCs on which

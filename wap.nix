@@ -32,9 +32,9 @@ let
       services = { };
     };
     wantedModules = with nixwrt.modules;
-      [  (_ : _ : _ : baseConfiguration) ] ++
-      nixwrt.device.hwModules ++
-      [ (sshd { hostkey = ./ssh_host_key ; })
+      [(_ : _ : _ : baseConfiguration)
+       nixwrt.device.hwModule
+       (sshd { hostkey = ./ssh_host_key ; })
         busybox
         (syslogd { loghost = "192.168.0.2"; })
         (ntpd { host = "pool.ntp.org"; })
