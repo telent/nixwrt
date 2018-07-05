@@ -33,9 +33,9 @@ let
     };
 
     wantedModules = with nixwrt.modules;
-      [(_ : _ : _ : baseConfiguration) ] ++
-      nixwrt.device.hwModules ++
-      [(rsyncd { password = rsyncPassword; })
+      [(_ : _ : _ : baseConfiguration)
+       nixwrt.device.hwModule
+       (rsyncd { password = rsyncPassword; })
        (sshd { hostkey = ./ssh_host_key ; })
        busybox
        (usbdisk {})

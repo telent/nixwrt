@@ -46,7 +46,6 @@ in rec {
     name = "gl-mt300a";
     endian= "little";
     socFamily = "ramips";
-    hwModules = [hwModule];
     hwModule = nixpkgs: self: super:
       with nixpkgs;
       let kernelSrc = pkgs.fetchurl kernelSrcLocn;
@@ -113,7 +112,7 @@ in rec {
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
-    socHwModule = nixpkgs: self: super:
+    hwModule = nixpkgs: self: super:
       with nixpkgs;
       let kernelSrc = pkgs.fetchurl kernelSrcLocn;
           ledeSrc = pkgs.fetchFromGitHub ledeSrcLocn;
@@ -193,12 +192,12 @@ in rec {
   yun =
     ar71xx // rec {
       name = "arduino-yun";
-      hwModules = [ar71xx.socHwModule] ++
-        [(nixpkgs: self: super:
-          nixpkgs.lib.recursiveUpdate super {
-            kernel.config."ATH79_MACH_ARDUINO_YUN" = "y";
-            kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=Yun machtype=Yun";
-          })];
+      hwModule = nixpkgs: self: super:
+        let super' = (ar71xx.hwModule nixpkgs self super);
+        in nixpkgs.lib.recursiveUpdate super' {
+          kernel.config."ATH79_MACH_ARDUINO_YUN" = "y";
+          kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=Yun machtype=Yun";
+        };
     };
 
   # The TrendNET TEW712BR is another Atheros AR9330 device, but has
@@ -209,12 +208,12 @@ in rec {
   tew712br =
     ar71xx // rec {
       name = "trendnet-tew712br";
-      hwModules = [ar71xx.socHwModule] ++
-        [(nixpkgs: self: super:
-          nixpkgs.lib.recursiveUpdate super {
-            kernel.config."ATH79_MACH_TEW_712BR" = "y";
-            kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
-          })];
+      hwModule = nixpkgs: self: super:
+        let super' = (ar71xx.hwModule nixpkgs self super);
+        in nixpkgs.lib.recursiveUpdate super' {
+          kernel.config."ATH79_MACH_TEW_712BR" = "y";
+          kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
+        };
     };
 
   # see QEMU.md
