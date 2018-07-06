@@ -73,13 +73,13 @@ stdenv.mkDerivation rec {
       objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.stripped
       if test -f board.dts; then
         cc -o scripts/patch-dtb ${ledeSrc}/tools/patch-image/src/patch-dtb.c
-        cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/ramips/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
-        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/ramips/dts/  -o vmlinux.dtb dtb.tmp
+        cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/${socFamily}/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
+        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
         scripts/patch-dtb vmlinux.stripped vmlinux.dtb
       fi
       rm -f vmlinux.stripped.lzma
       ${lzma}/bin/lzma -k -z  vmlinux.stripped
-      mkimage -A mips -O linux -T kernel -C lzma -a ${loadAddress} -e ${entryPoint} -n 'MIPS NixWrt Linux' -d vmlinux.stripped.lzma kernel.image
+      mkimage -A mips -O linux -T kernel -C lzma -a ${loadAddress} -e ${entryPoint} -n 'MIPS NixWrt Linux ${socFamily}' -d vmlinux.stripped.lzma kernel.image
     '';
 
     installPhase = ''

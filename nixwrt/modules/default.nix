@@ -129,6 +129,7 @@
         scriptFile = writeScriptBin "switchconfig.sh" script;
     in lib.attrsets.recursiveUpdate super {
       packages = super.packages ++ [ pkg ];
+      busybox.applets = super.busybox.applets ++ [ "touch" ];
       kernel.config."BRIDGE_VLAN_FILTERING" = "y";
       services.switchconfig = {
         start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh &'";

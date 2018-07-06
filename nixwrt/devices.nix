@@ -18,19 +18,23 @@ in rec {
   mt7620 = rec {
     endian= "little";
     socFamily = "ramips";
-    hwModule = {dts}: nixpkgs: self: super:
+    hwModule = {dts, soc ? "mt7620" } : nixpkgs: self: super:
       with nixpkgs;
       let kernelSrc = pkgs.fetchurl kernelSrcLocn;
           ledeSrc = pkgs.fetchFromGitHub ledeSrcLocn;
           readconf = readDefconfig nixpkgs;
           stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
           kconfig = {
+            "BLK_DEV_INITRD" = "n";
             "CLKSRC_MMIO" = "y";
-            "CMDLINE_OVERRIDE" = "y";
+            "CLKSRC_OF" = "y";
             "CMDLINE_PARTITION" = "y";
+            "CPU_LITTLE_ENDIAN" = "y";
+            "DEVTMPFS" = "y";
             "DEBUG_INFO" = "y";
             "EARLY_PRINTK" = "y";
             "GENERIC_IRQ_IPI" = "y";
+            "IMAGE_CMDLINE_HACK" = "n";
             "IP_PNP" = "y";
             "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
             "MTD_CMDLINE_PART" = "y";
@@ -38,19 +42,14 @@ in rec {
             "NET_MEDIATEK_MT7620" = "y";
             "PARTITION_ADVANCED" = "y";
             "PRINTK_TIME" = "y";
-            "SOC_MT7620" = "y";
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
             "SWCONFIG" = "y";
-            "MTD_ROOTFS_ROOT_DEV" = "n";
-            "IMAGE_CMDLINE_HACK" = "n";
-            "BLK_DEV_INITRD" = "n";
-            "CPU_LITTLE_ENDIAN" = "y";
           };
           p = "${ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {
         kernel.config = (readconf "${p}/generic/config-4.9") //
-                        (readconf "${p}/${socFamily}/mt7620/config-4.9") //
+                        (readconf "${p}/${socFamily}/${soc}/config-4.9") //
                         kconfig;
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.package = (callPackage ./kernel/default.nix) {
@@ -115,31 +114,26 @@ in rec {
             cp ./board.dts $out
           '';
         };
-        in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
+        super' = (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
+        in super';
     };
 
-  # Another GL-Inet product: the MT300N has half the RAM and a slightly different chipset
-  # than the 300A, its case is yellow not blue, and at the time I bought it it was a tenner
-  # cheaper than the A variant.  In other respects it's pretty similar.
+  # Another GL-Inet product: the MT300N v2 has a slightly different
+  # chipset than the 300A, and comes in a yellow case not a blue one.
+  # At the time I bought it it was a tenner cheaper than the A
+  # variant.  In other respects it's pretty similar.
 
-  mt300n = mt7620 // rec {
-      name = "glinet-mt300n";
+  mt300n_v2 = mt7620 // rec {
+      name = "glinet-mt300n_v2";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = stdenv.mkDerivation rec {
-          name = "gl-mt300n.dts";
-          version = "1";
-          src = buildPackages.fetchurl {
-            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300N.dts";
-            sha256 = "0crcpi40v7c9bx8k1whr5408rm7a5qm07d7gy9d5qyvagbaggjsi";
+        let
+          dts = buildPackages.fetchurl {
+            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300N-V2.dts";
+            sha256 = "1xfqays38pqh1qmzcf6753by9xac2jmyiglpv79p8d60b7qma8n4";
           };
-          phases = [ "installPhase" ];
-          installPhase = ''
-            cp $src ./board.dts
-            cp ./board.dts $out
-          '';
-        };
-        in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
+          super' = (mt7620.hwModule {dts = dts; soc="mt76x8"; } nixpkgs self super);
+        in super';
     };
 
   # generic config for boards/products based on Atheros AR7x and AR9x SoCs,

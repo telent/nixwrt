@@ -59,7 +59,6 @@ in {
        (nixwrt.modules.tftpboot { rootOffset="0x2000000"; rootSizeMB="12"; })
      ]);
     in nixwrt.tftproot configuration;
-  s = pkgs.swconfig;
   firmware = let configuration = nixwrt.mergeModules (wantedModules ++ [kernelMtdOpts]);
     in nixwrt.firmware configuration;
 }
