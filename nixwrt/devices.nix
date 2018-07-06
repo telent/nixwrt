@@ -12,6 +12,9 @@ let
   };
 in rec {
 
+  # generic config for boards/products based on the mt7620, which uses the "ramips"
+  # soc family in Linux.  Board-specific config for systems based on this (at least, all the
+  # ones I've seen so far) is based on device tree, so they need .dts files
   mt7620 = rec {
     endian= "little";
     socFamily = "ramips";
@@ -115,6 +118,10 @@ in rec {
         in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
     };
 
+  # Another GL-Inet product: the MT300N has half the RAM and a slightly different chipset
+  # than the 300A, its case is yellow not blue, and at the time I bought it it was a tenner
+  # cheaper than the A variant.  In other respects it's pretty similar.
+
   mt300n = mt7620 // rec {
       name = "glinet-mt300n";
       hwModule = nixpkgs: self: super:
@@ -135,8 +142,12 @@ in rec {
         in (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
     };
 
-  # this is not a target, this is a family of SoCs on which
-  # a bunch of different targets are based
+  # generic config for boards/products based on Atheros AR7x and AR9x SoCs,
+  # which corresponds to the "ath79" soc family in Linux (but the "ar71xx" designator
+  # in OpenWRT, just liven things up).  There are some boards that use device tree
+  # but all the ones I've built for so far use the older configuration style that
+  # requires a bord-specific kconfig option.  So: if you're using a dts file in this
+  # soc family you're the first in nnixwrt to do so.
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
@@ -229,9 +240,9 @@ in rec {
     };
 
   # The TrendNET TEW712BR is another Atheros AR9330 device, but has
-  # only 4MB of flash.  In 2018 this means it essentially nothing to
-  # recommend it as a NixWRT or OpenWRT target, but I happened to have
-  # one lying around and wanted to use it
+  # only 4MB of flash.  In 2018 this means it has essentially nothing
+  # to recommend it as a NixWRT or OpenWRT target, but I happened to
+  # have one lying around and wanted to use it.
 
   tew712br =
     ar71xx // rec {
@@ -244,7 +255,7 @@ in rec {
         };
     };
 
-  # see QEMU.md
+  # this is bitrotted code for running on Qemu.  See QEMU.md
   malta = { name = "qemu-malta"; endian = "big";
             kernel = lib: {
               defaultConfig = "malta/config-4.9";

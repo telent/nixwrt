@@ -45,7 +45,6 @@ stdenv.mkDerivation rec {
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
                 ./kernel-memmap-param.patch
-#                ./kernel-dts-enable-eth0.patch
                 ];
 
     patchFlags = [ "-p1" ];
