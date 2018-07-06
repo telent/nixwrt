@@ -80,6 +80,9 @@
   usbdisk =  options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super {
+      filesystems = super.filesystems // {
+        ${options.mountpoint} = { inherit (options) label fstype options ; };
+      };
       busybox.applets = super.busybox.applets ++ [
        "blkid"
        "tar"

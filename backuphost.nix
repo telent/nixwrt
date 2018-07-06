@@ -1,4 +1,4 @@
-{ targetBoard ? "malta" }:
+{ targetBoard }:
 let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
 let
@@ -6,8 +6,10 @@ let
               (builtins.readFile ("/etc/ssh/authorized_keys.d/" + builtins.getEnv( "USER"))) ;
     rsyncPassword = (let p = builtins.getEnv( "RSYNC_PASSWORD"); in assert (p != ""); p);
     baseConfiguration = {
-      hostname = "snapshto";
+      hostname = "arhcive";
       interfaces = {
+        # this is set up for a GL.inet router, you'd have to edit it for another
+        # target that has its LAN port somewhere else
         "eth0.2" = {
           type = "vlan"; id = 2; dev = "eth0"; depends = [];
         };
@@ -24,12 +26,7 @@ let
          shell="/dev/null"; authorizedKeys = [];}
       ];
       packages = [ pkgs.iproute ];
-      filesystems = {
-        "/srv" = { label = "backup-disk";
-                   fstype = "ext4";
-                   options = "rw";
-                 };
-      };
+      filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;
@@ -38,7 +35,12 @@ let
        (rsyncd { password = rsyncPassword; })
        (sshd { hostkey = ./ssh_host_key ; })
        busybox
-       (usbdisk {})
+       (usbdisk {
+         label = "backup-disk";
+         mountpoint = "/srv";
+         fstype = "ext4";
+         options = "rw";
+       })
        (switchconfig {
          vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
         })
