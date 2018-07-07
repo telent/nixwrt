@@ -123,9 +123,10 @@
         cmd = vlan : ports :
            "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
         script = lib.strings.concatStringsSep "\n"
-          ((lib.attrsets.mapAttrsToList cmd vlans)  ++
-           ["${exe} dev switch0 set apply"
-           ]);
+          (["${exe} dev switch0 set enable_vlan 1"] ++
+           (lib.attrsets.mapAttrsToList cmd vlans)  ++
+           ["${exe} dev switch0 set apply"]
+           );
         scriptFile = writeScriptBin "switchconfig.sh" script;
     in lib.attrsets.recursiveUpdate super {
       packages = super.packages ++ [ pkg ];
