@@ -26,7 +26,7 @@ let dhcpscript = nixpkgs.writeScriptBin "dhcpscript" ''
 in nixpkgs.lib.attrsets.recursiveUpdate super  {
   busybox.applets = super.busybox.applets ++ [ "udhcpc" ];
   services.udhcpc = {
-    start = "${self.busybox.package}/bin/udhcpc -H ${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
+    start = "${self.busybox.package}/bin/udhcpc -x hostname:${self.hostname} -i ${options.interface} -p /run/udhcpc.pid -s '${dhcpscript}/bin/dhcpscript'";
     depends = [ options.interface ];
   };
 }
