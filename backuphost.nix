@@ -11,7 +11,7 @@ let
         # this is set up for a GL.inet router, you'd have to edit it for another
         # target that has its LAN port somewhere else
         "eth0.2" = {
-          type = "vlan"; id = 2; dev = "eth0"; depends = [];
+          type = "vlan"; id = 2; parent = "eth0"; depends = [];
         };
         "eth0" = { } ;
         lo = { ipv4Address = "127.0.0.1/8"; };
@@ -42,6 +42,8 @@ let
          options = "rw";
        })
        (switchconfig {
+         name = "switch0";
+         interface = "eth0";
          vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
         })
        (syslogd { loghost = "192.168.0.2"; })

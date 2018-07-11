@@ -116,23 +116,24 @@
       };
     };
 
-  switchconfig =  { vlans }: nixpkgs: self: super:
+  switchconfig =  { name, interface, vlans }: nixpkgs: self: super:
     with nixpkgs;
     let exe = "${pkgs.swconfig}/bin/swconfig";
-        pkg =  pkgs.swconfig.override { kernel = pkgs.linuxHeaders; };
         cmd = vlan : ports :
-           "${exe} dev switch0 vlan ${vlan} set ports '${ports}'";
+           "${exe} dev ${name} vlan ${vlan} set ports '${ports}'";
         script = lib.strings.concatStringsSep "\n"
-          (["${exe} dev switch0 set enable_vlan 1"] ++
+          (["${exe} dev ${name} set reset 1"
+            "${exe} dev ${name} set apply 1"
+            "${exe} dev ${name} set enable_vlan 1"] ++
            (lib.attrsets.mapAttrsToList cmd vlans)  ++
-           ["${exe} dev switch0 set apply"]
+           ["${exe} dev ${name} set apply"]
            );
         scriptFile = writeScriptBin "switchconfig.sh" script;
     in lib.attrsets.recursiveUpdate super {
-      packages = super.packages ++ [ pkg ];
       busybox.applets = super.busybox.applets ++ [ "touch" ];
       kernel.config."BRIDGE_VLAN_FILTERING" = "y";
-      services.switchconfig = {
+      interfaces.${interface}.depends =  [ name ];
+      services.${name} = {
         start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh &'";
         type = "oneshot";
       };
