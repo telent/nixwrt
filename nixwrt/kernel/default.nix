@@ -8,6 +8,7 @@
  , commandLine ? ""
  , ledeSrc
  , kernelSrc
+ , version
  , loadAddress ? "0x80000000"
  , entryPoint ? "0x80000000"
  , dtsPath ? null
@@ -19,33 +20,37 @@ let kconfigFile = writeText "nixwrt_kconfig"
             (name: value: "CONFIG_${name}=${value}")
             (config // { "CMDLINE" = builtins.toJSON commandLine; } )
             ));
+    versionScalar = v :
+      let nth = n : builtins.elemAt v n;
+      in (nth 2) + ((nth 1) * 1000) + ((nth 0) * 1000000);
+    versionExceeds = a : b : (versionScalar a) > (versionScalar b) ;
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
     name = "kernel";
     src = kernelSrc;
-
+    majmin = "${toString (builtins.elemAt version 0)}.${toString (builtins.elemAt version 1)}";
     prePatch =  ''
       q_apply() {
         find $1 -type f | sort | xargs  -n1 patch -N -p1 -i
       }
-      cp -dRv ${ledeSrc}/target/linux/generic/files/* .   # */
-      cp -dRv ${ledeSrc}/target/linux/ramips/files-4.9/* .  # */
-      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .  # */
-      q_apply ${ledeSrc}/target/linux/generic/backport-4.9/
-      q_apply ${ledeSrc}/target/linux/generic/pending-4.9/
-      q_apply ${ledeSrc}/target/linux/generic/hack-4.9/
+      cp -dRv ${ledeSrc}/target/linux/generic/files/* .
+      cp -dRv ${ledeSrc}/target/linux/ramips/files-${majmin}/* .
+      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .
+      q_apply ${ledeSrc}/target/linux/generic/backport-${majmin}/
+      q_apply ${ledeSrc}/target/linux/generic/pending-${majmin}/
+      q_apply ${ledeSrc}/target/linux/generic/hack-${majmin}/
       ${lib.optionalString (! isNull socFamily)
-                           "q_apply ${ledeSrc}/target/linux/${socFamily}/patches-4.9/"}
+                           "q_apply ${ledeSrc}/target/linux/${socFamily}/patches-${majmin}/"}
       ${lib.optionalString (! isNull dtsPath)
                        "cp ${dtsPath} board.dts"
                        }
-      chmod -R +w .
+      chmod -R +w .       # */
+
     '';
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
-                ./kernel-memmap-param.patch
-                ];
+              ] ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch;
 
     patchFlags = [ "-p1" ];
 
