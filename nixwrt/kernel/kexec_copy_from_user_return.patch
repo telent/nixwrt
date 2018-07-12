@@ -1,0 +1,11 @@
+--- linux-4.14.53/arch/mips/kernel/machine_kexec.c~	2018-07-08 21:16:50.000000000 +0000
++++ linux-4.14.53/arch/mips/kernel/machine_kexec.c	2018-07-12 21:19:29.715676466 +0000
+@@ -73,7 +73,7 @@
+ 		pr_warn("kexec command line truncated to %zd bytes\n", size);
+ 
+ 	/* Copy to kernel space */
+-	copy_from_user(kexec_argv_buf, buf, size);
++	if(copy_from_user(kexec_argv_buf, buf, size)) return;
+ 	kexec_argv_buf[size - 1] = 0;
+ }
+ 

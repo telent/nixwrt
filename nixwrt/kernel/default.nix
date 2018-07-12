@@ -50,6 +50,7 @@ stdenv.mkDerivation rec {
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
+                ./kexec_copy_from_user_return.patch
               ] ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch;
 
     patchFlags = [ "-p1" ];

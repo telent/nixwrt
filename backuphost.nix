@@ -32,6 +32,7 @@ let
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        nixwrt.device.hwModule
+       (kexec {})
        (rsyncd { password = rsyncPassword; })
        (sshd { hostkey = ./ssh_host_key ; })
        busybox

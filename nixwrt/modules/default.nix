@@ -148,4 +148,10 @@
       kernel.commandLine = "${super.kernel.commandLine}  phram.phram=rootfs,${rootOffset},${rootSizeMB}Mi memmap=${rootSizeMB}M\$${rootOffset}";
     };
 
+  kexec = _: nixpkgs: self: super:
+    with nixpkgs;
+    lib.recursiveUpdate super {
+      packages = super.packages ++ [ pkgs.kexectools ];
+      kernel.config."KEXEC" = "y";
+    };
 }
