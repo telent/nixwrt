@@ -52,7 +52,6 @@ in rec {
             "PRINTK_TIME" = "y";
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
-            "SWCONFIG" = "y";
           };
           p = "${ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {

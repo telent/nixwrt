@@ -132,6 +132,7 @@
     in lib.attrsets.recursiveUpdate super {
       busybox.applets = super.busybox.applets ++ [ "touch" ];
       kernel.config."BRIDGE_VLAN_FILTERING" = "y";
+      kernel.config."SWCONFIG" = "y";
       interfaces.${interface}.depends =  [ name ];
       services.${name} = {
         start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh &'";
