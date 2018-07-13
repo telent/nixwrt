@@ -267,11 +267,43 @@ in rec {
     };
 
   # this is bitrotted code for running on Qemu.  See QEMU.md
-  malta = { name = "qemu-malta"; endian = "big";
-            kernel = lib: {
-              defaultConfig = "malta/config-4.9";
-              extraConfig = { "BLK_DEV_SR" = "y"; "E1000" = "y"; "PCI" = "y";
-                              "NET_VENDOR_INTEL" = "y";};
-            };
+  malta = rec {
+    name = "qemu-malta"; endian = "little";
+    socFamily = "malta";
+    hwModule = nixpkgs: self: super:
+      with nixpkgs;
+      let p = "${ledeSrc}/target/linux/";
+          version = [4 14 53];
+          kernelSrc = pkgs.fetchurl {
+            url = (kernelSrcUrl (mmp version));
+            sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
           };
+          ledeSrc = pkgs.fetchFromGitHub {
+            owner = "lede-project";
+            repo = "source";
+            rev = "e204717ef2445fc848b0a70374b03b1c8484d176";
+            sha256 = "1db9ynjnf29yc3sz7gn358hy6bm34gwpvbw1ydsxjqsg8njqpzf9";
+          };
+          readconf = readDefconfig nixpkgs;
+      in
+        lib.recursiveUpdate super {
+          kernel.config = (readconf "${p}/generic/config-${majmin version}") //
+                          (readconf "${p}/${socFamily}/config-${majmin version}") //
+                          {
+                            "BLK_DEV_SR" = "y";
+                            "E1000" = "y";
+                            "PCI" = "y";
+                            "NET_VENDOR_INTEL" = "y";
+                          };
+          kernel.commandLine = "root=/dev/sr0 console=ttyS0 init=/bin/init";
+          kernel.package = (callPackage ./kernel/default.nix) {
+            config = self.kernel.config;
+            commandLine = self.kernel.commandLine;
+            loadAddress = "0x80000000";
+            entryPoint = "0x80000000";
+#            dtsPath = dts;
+            inherit version kernelSrc ledeSrc socFamily;
+          };
+        };
+  };
 }
