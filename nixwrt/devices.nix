@@ -36,12 +36,13 @@ in rec {
             "CLKSRC_OF" = "y";
             "CMDLINE_PARTITION" = "y";
             "CPU_LITTLE_ENDIAN" = "y";
-            "DEVTMPFS" = "y";
             "DEBUG_INFO" = "y";
+            "DEVTMPFS" = "y";
             "EARLY_PRINTK" = "y";
             "GENERIC_IRQ_IPI" = "y";
             "IMAGE_CMDLINE_HACK" = "n";
             "IP_PNP" = "y";
+            "JFFS2_FS" = "n";
             "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
             "MTD_CMDLINE_PART" = "y";
             "NETFILTER"= "y";   # mtk_eth_soc.c won't build without this
