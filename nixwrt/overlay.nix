@@ -21,6 +21,37 @@ in {
     };
   };
 
+  kexectools = let ovr = o @ {patches ? []
+                              , buildInputs ? []
+                              , nativeBuildInputs ? []
+                              , ...}: {
+    patches = patches ++ [
+      (self.buildPackages.fetchpatch {
+        name = "mips-uimage.patch";
+        url = "https://github.com/telent/kexec-tools/compare/f1c610f3e3f5e773295bf15764b391055f5cabfe.diff";
+        sha256 = "1b5yilvvinic33y9l2wqbxx5b7j6dva8d4kgv658fm8xvskqiap9";
+      })
+    ];
+    buildInputs = buildInputs ++ [self.xz];
+  }; in super.kexectools.overrideAttrs ovr;
+
+  # we keep this around for hacking kexec-tools but really we should move it into that
+  # repo not clutter this one
+  kexectoolsDev = super.kexectools.overrideAttrs (o: {
+    nativeBuildInputs = [self.autoreconfHook self.autoconf] ++ o.nativeBuildInputs;
+    preConfigure = [ ''
+        aclocal -I config
+        autoheader
+        autoconf
+    ''];
+    src = self.fetchFromGitHub {
+      owner = "telent";
+      repo = "kexec-tools";
+      rev = "6afa341c88c3594963dba4c3a75a98f361475e39";
+      sha256 = "0xcnlpwl33s426277zbckkkbh8qp3kk0nqlld2qmmkcn7b8z6rp7";
+    };
+    buildInputs = o.buildInputs ++ [self.xz];
+  });
   monit = stripped (super.monit.override { usePAM = false; openssl = null; });
 
   # temporary until patchelf#151 is applied upstream and nixpkgs gets new revision
