@@ -52,6 +52,14 @@ in {
     };
     buildInputs = o.buildInputs ++ [self.xz];
   });
+
+  ubootMalta = self.pkgs.buildUBoot rec {
+    name = "uboot-malta";
+    defconfig = "qemu_mipsel_defconfig";
+    extraMeta.platforms = self.stdenv.lib.platforms.linux;# ["mipsel-unknown-linux-musl"];
+    filesToInstall = ["u-boot.bin"];
+  };
+
   monit = stripped (super.monit.override { usePAM = false; openssl = null; });
 
   # temporary until patchelf#151 is applied upstream and nixpkgs gets new revision

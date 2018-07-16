@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
     majmin = "${toString (builtins.elemAt version 0)}.${toString (builtins.elemAt version 1)}";
     prePatch =  ''
       q_apply() {
-        find $1 -type f | sort | xargs  -n1 patch -N -p1 -i
+        if test -d $1 ; then find $1 -type f | sort | xargs  -n1 patch -N -p1 -i  ;fi
       }
       cp -dRv ${ledeSrc}/target/linux/generic/files/* .
       cp -dRv ${ledeSrc}/target/linux/ramips/files-${majmin}/* .
