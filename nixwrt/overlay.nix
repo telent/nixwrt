@@ -35,24 +35,6 @@ in {
     buildInputs = buildInputs ++ [self.xz];
   }; in super.kexectools.overrideAttrs ovr;
 
-  # we keep this around for hacking kexec-tools but really we should move it into that
-  # repo not clutter this one
-  kexectoolsDev = super.kexectools.overrideAttrs (o: {
-    nativeBuildInputs = [self.autoreconfHook self.autoconf] ++ o.nativeBuildInputs;
-    preConfigure = [ ''
-        aclocal -I config
-        autoheader
-        autoconf
-    ''];
-    src = self.fetchFromGitHub {
-      owner = "telent";
-      repo = "kexec-tools";
-      rev = "6afa341c88c3594963dba4c3a75a98f361475e39";
-      sha256 = "0xcnlpwl33s426277zbckkkbh8qp3kk0nqlld2qmmkcn7b8z6rp7";
-    };
-    buildInputs = o.buildInputs ++ [self.xz];
-  });
-
   ubootMalta = self.pkgs.buildUBoot rec {
     name = "uboot-malta";
     defconfig = "qemu_mipsel_defconfig";
