@@ -28,8 +28,8 @@ in {
     patches = patches ++ [
       (self.buildPackages.fetchpatch {
         name = "mips-uimage.patch";
-        url = "https://github.com/telent/kexec-tools/compare/f1c610f3e3f5e773295bf15764b391055f5cabfe.diff";
-        sha256 = "1b5yilvvinic33y9l2wqbxx5b7j6dva8d4kgv658fm8xvskqiap9";
+        url = "https://github.com/telent/kexec-tools/compare/5aaa7b33d48b72e804509ebb47e250f1fc851a26.diff";
+        sha256 = "1anx4rbswc6928d4z0wsrqf8x02s3r10pz08x01q6g3dwfcn7q2x";
       })
     ];
     buildInputs = buildInputs ++ [self.xz];

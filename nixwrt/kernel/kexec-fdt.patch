@@ -1,0 +1,117 @@
+diff -x '*.o' -urw linux-4.14.53/arch/mips/generic/kexec.c linux-mine/arch/mips/generic/kexec.c
+--- linux-4.14.53/arch/mips/generic/kexec.c	2018-07-03 09:25:05.000000000 +0000
++++ linux-mine/arch/mips/generic/kexec.c	2018-07-25 08:05:36.976505706 +0000
+@@ -12,6 +12,7 @@
+ #include <linux/libfdt.h>
+ #include <linux/uaccess.h>
+ 
++/* FIXME we do this in machine_kexec_find_fdt now, shouldn't need to do it here too */
+ static int generic_kexec_prepare(struct kimage *image)
+ {
+ 	int i;
+diff -x '*.o' -urw linux-4.14.53/arch/mips/kernel/machine_kexec.c linux-mine/arch/mips/kernel/machine_kexec.c
+--- linux-4.14.53/arch/mips/kernel/machine_kexec.c	2018-07-25 07:56:22.534797547 +0000
++++ linux-mine/arch/mips/kernel/machine_kexec.c	2018-07-25 08:27:29.383624975 +0000
+@@ -10,6 +10,11 @@
+ #include <linux/mm.h>
+ #include <linux/delay.h>
+ 
++#ifdef CONFIG_USE_OF
++#include <linux/libfdt.h>
++#include <linux/uaccess.h>
++#endif
++
+ #include <asm/bootinfo.h>
+ #include <asm/cacheflush.h>
+ #include <asm/page.h>
+@@ -27,14 +32,17 @@
+ 
+ static void machine_kexec_print_args(void)
+ {
+-	unsigned long argc = (int)kexec_args[0];
++	long argc = (int)kexec_args[0];
+ 	int i;
+ 
+-	pr_info("kexec_args[0] (argc): %lu\n", argc);
++	pr_info("kexec_args[0] (argc): %ld\n", argc);
+ 	pr_info("kexec_args[1] (argv): %p\n", (void *)kexec_args[1]);
+ 	pr_info("kexec_args[2] (env ): %p\n", (void *)kexec_args[2]);
+ 	pr_info("kexec_args[3] (desc): %p\n", (void *)kexec_args[3]);
+ 
++        if(argc < 0)       /* indicates a dtb was passed as args[1] */
++                return;
++
+ 	for (i = 0; i < argc; i++) {
+ 		pr_info("kexec_argv[%d] = %p, %s\n",
+ 				i, kexec_argv[i], kexec_argv[i]);
+@@ -138,6 +146,39 @@
+ 	}
+ }
+ 
++static int
++machine_kexec_find_fdt(struct kimage *image)
++{
++	int i;
++        pr_debug("finding fdt\n");
++	for (i = 0; i < image->nr_segments; i++) {
++		struct fdt_header fdt;
++
++		if (image->segment[i].memsz <= sizeof(fdt))
++			continue;
++
++		if (copy_from_user(&fdt, image->segment[i].buf, sizeof(fdt)))
++			continue;
++
++		if (fdt_check_header(&fdt)) {
++                        pr_info("seg %d has no fdt header\n", i);
++			continue;
++                } else {
++                        pr_info("seg %d has fdt header\n", i);
++                }
++
++		kexec_args[0] = -2;
++		kexec_args[1] = (unsigned long)
++			phys_to_virt((unsigned long)image->segment[i].mem);
++		break;
++	}
++        if(kexec_args[0] < 0)
++          pr_debug("found fdt\n");
++        else
++          pr_debug("not found\n");
++	return 0;
++}
++
+ int
+ machine_kexec_prepare(struct kimage *kimage)
+ {
+@@ -154,7 +195,9 @@
+ 
+ 	machine_kexec_init_argv(kimage);
+ 	machine_kexec_parse_argv(kimage);
+-
++#ifdef CONFIG_USE_OF
++        machine_kexec_find_fdt(kimage);
++#endif
+ 	if (_machine_kexec_prepare)
+ 		return _machine_kexec_prepare(kimage);
+ 	return 0;
+diff -x '*.o' -urw linux-4.14.53/arch/mips/ralink/of.c linux-mine/arch/mips/ralink/of.c
+--- linux-4.14.53/arch/mips/ralink/of.c	2018-07-25 07:56:18.784813771 +0000
++++ linux-mine/arch/mips/ralink/of.c	2018-07-25 08:09:16.102635955 +0000
+@@ -90,12 +90,14 @@
+ 	 * parsed resulting in our memory appearing. fw_passed_dtb is used
+ 	 * by CONFIG_MIPS_APPENDED_RAW_DTB as well.
+ 	 */
++        pr_debug("dtbs: firmware %p, start %p, end %lx, __image %p\n", fw_passed_dtb, __dtb_start, __dtb_end, &__image_dtb);
+ 	if (fw_passed_dtb)
+ 		dtb = (void *)fw_passed_dtb;
+ 	else if (__dtb_start != __dtb_end)
+ 		dtb = (void *)__dtb_start;
+-
+-	__dt_setup_arch(&__image_dtb);
++        else
++                dtb = (void *) &__image_dtb;
++	__dt_setup_arch(dtb);
+ 
+ 	of_scan_flat_dt(early_init_dt_find_chosen, NULL);
+ 	if (chosen_dtb)

@@ -18,8 +18,10 @@ let kconfigFile = writeText "nixwrt_kconfig"
           "\n"
           (lib.mapAttrsToList
             (name: value: "CONFIG_${name}=${value}")
-            (config // { "CMDLINE" = builtins.toJSON commandLine; } )
-            ));
+            (config // {
+              "MIPS_CMDLINE_FROM_DTB" = "y";
+            } )
+          ));
     versionScalar = v :
       let nth = n : builtins.elemAt v n;
       in (nth 2) + ((nth 1) * 1000) + ((nth 0) * 1000000);
@@ -50,6 +52,7 @@ stdenv.mkDerivation rec {
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
+                ./kexec-fdt.patch
                 ./kexec_copy_from_user_return.patch
               ] ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch;
 
@@ -70,18 +73,23 @@ stdenv.mkDerivation rec {
       substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${buildPackages.pkgs.gawk}/bin/awk
       make V=1 mrproper
       cp ${kconfigFile} .config
+      cp ${kconfigFile} .config.orig
       make V=1 olddefconfig
     '';
 
     outputs = [ "dev" "out" "vmlinux"];
+    fixDts = ''
+        cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/${socFamily}/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
+        echo '/{ chosen { bootargs = ${builtins.toJSON commandLine}; }; };'  >> dtb.tmp
+        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
+        scripts/patch-dtb vmlinux.stripped vmlinux.dtb
+    '';
     buildPhase = ''
       make vmlinux
       objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.stripped
       if test -f board.dts; then
         cc -o scripts/patch-dtb ${ledeSrc}/tools/patch-image/src/patch-dtb.c
-        cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/${socFamily}/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
-        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
-        scripts/patch-dtb vmlinux.stripped vmlinux.dtb
+        eval "$fixDts"
       fi
       rm -f vmlinux.stripped.lzma
       ${lzma}/bin/lzma -k -z  vmlinux.stripped
