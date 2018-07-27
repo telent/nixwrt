@@ -1,3 +1,6 @@
+let apps = { backuphost = ./backuphost.nix; wap = ./wap.nix; };
+in
 {
-  firmware = { targetBoard } : (import ./backuphost.nix { inherit targetBoard; } ).firmware;
+  firmware = { targetBoard, application } :
+             (import (apps.${application}) { inherit targetBoard; } ).firmware;
 }
