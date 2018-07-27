@@ -3,9 +3,12 @@ d?=wap
 default: tftproot
 export RSYNC_PASSWORD
 PHONY = password
+ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 tftproot firmware:
 	nix-build  -I nixpkgs=../nixpkgs $(d).nix -A $@ \
+	 --argstr rsyncPassword $(RSYNC_PASSWORD) \
+	 --argstr myKeys "$(shell cat $(ssh_public_key_file))" \
 	 --argstr targetBoard $(t) -o $(t)_$(d) --show-trace 
 	rsync -caAiL  $(t)_$(d) /tftp/
 

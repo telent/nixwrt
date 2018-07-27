@@ -1,10 +1,7 @@
-{ targetBoard }:
+{ targetBoard, rsyncPassword ? "urbancookie", myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org" }:
 let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
 let
-    myKeys = stdenv.lib.splitString "\n"
-              (builtins.readFile ("/etc/ssh/authorized_keys.d/" + builtins.getEnv( "USER"))) ;
-    rsyncPassword = (let p = builtins.getEnv( "RSYNC_PASSWORD"); in assert (p != ""); p);
     baseConfiguration = {
       hostname = "arhcive";
       interfaces = {
@@ -21,7 +18,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = myKeys;}
+         shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
         {name="store"; uid=500; gid=500; gecos="Storage owner"; dir="/srv";
          shell="/dev/null"; authorizedKeys = [];}
       ];
