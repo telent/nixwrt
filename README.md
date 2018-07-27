@@ -123,6 +123,10 @@ may need to adjust pathnames and stuff.
         psk=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
     }
     $ make t=yun d=wap tftproot PSK=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
+             ^      ^
+             |      +--- use file "wap.nix"          }  change to match
+             +---------- use "yun" from devices.nix  }  your setup
+
 
 This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
 
