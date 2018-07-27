@@ -10,8 +10,8 @@ tftproot firmware:
 	 --argstr rsyncPassword $(RSYNC_PASSWORD) \
 	 --argstr myKeys "$(shell cat $(ssh_public_key_file))" \
 	 --argstr targetBoard $(t) \
-	 --argstr sshHostKey ./ssh_host_key \
-	 -o $(t)_$(d) --show-trace \
+	 --arg sshHostKey ./ssh_host_key \
+	 -o $(t)_$(d) --show-trace 
 	rsync -caAiL  $(t)_$(d) /tftp/
 
 # this is for the backuphost target
