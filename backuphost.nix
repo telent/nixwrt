@@ -17,7 +17,7 @@ let
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
       etc = {
-        "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
+#        "resolv.conf" = { content = ( stdenv.lib.readFile "/etc/resolv.conf" );};
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
