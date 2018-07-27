@@ -10,6 +10,7 @@
  , kernelSrc
  , version
  , patchDtb
+ , dtc
  , loadAddress ? "0x80000000"
  , entryPoint ? "0x80000000"
  , dtsPath ? null
@@ -53,15 +54,16 @@ stdenv.mkDerivation rec {
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
-                ./kexec-fdt.patch
                 ./kexec_copy_from_user_return.patch
-              ] ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch;
+              ] ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch
+                ++ lib.optional (versionExceeds version [4 10 0]) ./kexec-fdt.patch;
 
     patchFlags = [ "-p1" ];
 
     hardeningDisable = ["all"];
     nativeBuildInputs = [buildPackages.pkgs.bc
      patchDtb
+     dtc
      lzma buildPackages.stdenv.cc
      buildPackages.pkgs.ubootTools];
     CC = "${stdenv.cc.bintools.targetPrefix}gcc";
@@ -79,18 +81,16 @@ stdenv.mkDerivation rec {
       make V=1 olddefconfig
     '';
 
-    outputs = [ "dev" "out" "vmlinux"];
     fixDts = ''
         cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/${socFamily}/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
         echo '/{ chosen { bootargs = ${builtins.toJSON commandLine}; }; };'  >> dtb.tmp
-        scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
+        dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
         patch-dtb vmlinux.stripped vmlinux.dtb
     '';
     buildPhase = ''
       make vmlinux
       objcopy -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S vmlinux vmlinux.stripped
       if test -f board.dts; then
-        cc -o scripts/patch-dtb ${ledeSrc}/tools/patch-image/src/patch-dtb.c
         eval "$fixDts"
       fi
       rm -f vmlinux.stripped.lzma
@@ -101,8 +101,8 @@ stdenv.mkDerivation rec {
     installPhase = ''
       mkdir -p $out
       cp kernel.image $out/
-      make headers_install INSTALL_HDR_PATH=$out
-      cp vmlinux $vmlinux
+#      make headers_install INSTALL_HDR_PATH=$out
+#      cp vmlinux $vmlinux
     '';
 
     shellHook = ''
