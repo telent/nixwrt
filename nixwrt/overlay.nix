@@ -1,5 +1,12 @@
 self: super:
-let stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
+let
+  stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
+  ledeSrc = self.fetchFromGitHub {
+    owner = "lede-project";
+    repo = "source";
+    rev = "e204717ef2445fc848b0a70374b03b1c8484d176";
+    sha256 = "1db9ynjnf29yc3sz7gn358hy6bm34gwpvbw1ydsxjqsg8njqpzf9";
+  };
 in {
 
   # we need to build real lzma instead of using xz, because the lzma
@@ -20,6 +27,8 @@ in {
       sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
     };
   };
+
+  inherit ledeSrc;
 
   kexectools = let ovr = o @ {patches ? []
                               , buildInputs ? []

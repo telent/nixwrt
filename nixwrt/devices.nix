@@ -22,12 +22,6 @@ in rec {
             url = (kernelSrcUrl (mmp version));
             sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
           };
-          ledeSrc = pkgs.fetchFromGitHub {
-            owner = "lede-project";
-            repo = "source";
-            rev = "e204717ef2445fc848b0a70374b03b1c8484d176";
-            sha256 = "1db9ynjnf29yc3sz7gn358hy6bm34gwpvbw1ydsxjqsg8njqpzf9";
-          };
           readconf = readDefconfig nixpkgs;
           stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
           kconfig = {
@@ -53,7 +47,7 @@ in rec {
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
           };
-          p = "${ledeSrc}/target/linux/";
+          p = "${pkgs.ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {
         kernel.config = (readconf "${p}/generic/config-${majmin version}") //
                         (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
@@ -65,7 +59,8 @@ in rec {
           loadAddress = "0x80000000";
           entryPoint = "0x80000000";
           dtsPath = dts;
-          inherit version kernelSrc ledeSrc socFamily;
+          inherit (pkgs) ledeSrc;
+          inherit version kernelSrc socFamily;
         };
       };
     };
@@ -160,12 +155,6 @@ in rec {
             url = (kernelSrcUrl (mmp version));
             sha256 = "0clqndkj24a9752bc8x7cwdrdl38yarpvwx2yqkc98czxi9agjk0";
           };
-          ledeSrc = pkgs.fetchFromGitHub  {
-            owner = "lede-project";
-            repo = "source";
-            rev = "804952e7ef045e2ed68a1434dbc7371057495968";
-            sha256 = "0jyjzsm0zkngzz04wmsygs7lycyjvqjj73zjcaxmxcdxd9x9f0ap";
-          };
           readconf = readDefconfig nixpkgs;
           p = "${ledeSrc}/target/linux/";
           stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
@@ -213,7 +202,8 @@ in rec {
           commandLine = self.kernel.commandLine;
           loadAddress = "0x80060000";
           entryPoint = "0x80060000";
-          inherit kernelSrc ledeSrc socFamily version;
+          inherit (pkgs) ledeSrc;
+          inherit kernelSrc socFamily version;
         };
       };
     };
@@ -278,12 +268,6 @@ in rec {
             url = (kernelSrcUrl (mmp version));
             sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
           };
-          ledeSrc = pkgs.fetchFromGitHub {
-            owner = "lede-project";
-            repo = "source";
-            rev = "e204717ef2445fc848b0a70374b03b1c8484d176";
-            sha256 = "1db9ynjnf29yc3sz7gn358hy6bm34gwpvbw1ydsxjqsg8njqpzf9";
-          };
           readconf = readDefconfig nixpkgs;
       in
         lib.recursiveUpdate super {
@@ -302,7 +286,8 @@ in rec {
             loadAddress = "0x80000000";
             entryPoint = "0x80000000";
 #            dtsPath = dts;
-            inherit version kernelSrc ledeSrc socFamily;
+            inherit (pkgs) ledeSrc;
+            inherit version kernelSrc socFamily;
           };
         };
   };
