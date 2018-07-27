@@ -30,6 +30,19 @@ in {
 
   inherit ledeSrc;
 
+  patchDtb = self.stdenv.mkDerivation {
+    name = "patch-dtb";
+    src = ledeSrc;
+    configurePhase = "true";
+    buildPhase = ''
+      $CC -o patch-dtb tools/patch-image/src/patch-dtb.c
+    '';
+    installPhase = ''
+      mkdir -p $out/bin
+      cp patch-dtb $out/bin
+    '';
+  };
+
   kexectools = let ovr = o @ {patches ? []
                               , buildInputs ? []
                               , nativeBuildInputs ? []

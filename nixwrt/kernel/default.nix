@@ -9,6 +9,7 @@
  , ledeSrc
  , kernelSrc
  , version
+ , patchDtb
  , loadAddress ? "0x80000000"
  , entryPoint ? "0x80000000"
  , dtsPath ? null
@@ -60,6 +61,7 @@ stdenv.mkDerivation rec {
 
     hardeningDisable = ["all"];
     nativeBuildInputs = [buildPackages.pkgs.bc
+     patchDtb
      lzma buildPackages.stdenv.cc
      buildPackages.pkgs.ubootTools];
     CC = "${stdenv.cc.bintools.targetPrefix}gcc";
@@ -82,7 +84,7 @@ stdenv.mkDerivation rec {
         cpp -nostdinc -x assembler-with-cpp -I${ledeSrc}/target/linux/${socFamily}/dts -Iarch/mips/boot/dts -Iarch/mips/boot/dts/include -Iinclude/ -undef -D__DTS__  -o dtb.tmp board.dts
         echo '/{ chosen { bootargs = ${builtins.toJSON commandLine}; }; };'  >> dtb.tmp
         scripts/dtc/dtc -O dtb -i${ledeSrc}/target/linux/${socFamily}/dts/  -o vmlinux.dtb dtb.tmp
-        scripts/patch-dtb vmlinux.stripped vmlinux.dtb
+        patch-dtb vmlinux.stripped vmlinux.dtb
     '';
     buildPhase = ''
       make vmlinux
