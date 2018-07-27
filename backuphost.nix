@@ -1,4 +1,7 @@
-{ targetBoard, rsyncPassword ? "urbancookie", myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org" }:
+{ targetBoard
+, rsyncPassword ? "urbancookie"
+, myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
+, sshHostKey ? ./fake_ssh_host_key }:
 let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
 let
@@ -31,7 +34,7 @@ let
        nixwrt.device.hwModule
        (kexec {})
        (rsyncd { password = rsyncPassword; })
-       (sshd { hostkey = ./ssh_host_key ; })
+       (sshd { hostkey = sshHostKey ; })
        busybox
        (usbdisk {
          label = "backup-disk";
