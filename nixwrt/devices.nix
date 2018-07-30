@@ -15,7 +15,7 @@ in rec {
   mt7620 = rec {
     endian= "little";
     socFamily = "ramips";
-    hwModule = {dts, soc ? "mt7620" } : nixpkgs: self: super:
+    hwModule = {dtsPath, soc ? "mt7620" } : nixpkgs: self: super:
       with nixpkgs;
       let version = [4 14 53];
           kernelSrc = pkgs.fetchurl {
@@ -53,15 +53,26 @@ in rec {
                         (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
                         kconfig;
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
-        kernel.package = (callPackage ./kernel/default.nix) {
-          config = self.kernel.config;
-          commandLine = self.kernel.commandLine;
-          loadAddress = "0x80000000";
-          entryPoint = "0x80000000";
-          dtsPath = dts;
-          inherit (pkgs) ledeSrc;
-          inherit version kernelSrc socFamily;
-        };
+        kernel.package =
+          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
+            inherit (pkgs) ledeSrc;
+            inherit version kernelSrc socFamily;
+          }; vmlinux = (callPackage ./kernel/default.nix) {
+            config = self.kernel.config;
+            inherit sourceTree;
+          }; in (callPackage ./kernel/uimage.nix) {
+            inherit vmlinux;
+            commandLine = self.kernel.commandLine;
+            loadAddress = "0x80000000";
+            entryPoint  = "0x80000000";
+            inherit dtsPath;
+            dtcSearchPaths = [
+              "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
+              "${sourceTree}/arch/mips/boot/dts"
+              "${sourceTree}/arch/mips/boot/dts/include"
+              "${sourceTree}/include/"];
+            extraName = socFamily;
+          };
       };
     };
 
@@ -100,24 +111,8 @@ in rec {
       name = "glinet-mt300a";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = stdenv.mkDerivation rec {
-          name = "gl-mt300a.dts";
-          version = "1";
-          src = buildPackages.fetchurl {
-            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300A.dts";
-            sha256 = "17nc31hii74hz10gfsg2v4vz5y8k91n9znyydvbnfsax7swrzlnw";
-          };
-          patchFile = ./kernel/kernel-dts-enable-eth0.patch;
-          phases = [ "installPhase" ];
-          installPhase = ''
-            cp $src ./board.dts
-            echo patching from ${patchFile}
-            ${buildPackages.patch}/bin/patch -p1 < ${patchFile}
-            cp ./board.dts $out
-          '';
-        };
-        super' = (mt7620.hwModule {dts = dtsPath;} nixpkgs self super);
-        in super';
+        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300A.dts";
+        in mt7620.hwModule {inherit dtsPath;} nixpkgs self super;
     };
 
   # Another GL-Inet product: the MT300N v2 has a slightly different
@@ -130,13 +125,8 @@ in rec {
       name = "glinet-mt300n_v2";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let
-          dts = buildPackages.fetchurl {
-            url = "https://raw.githubusercontent.com/lede-project/source/70b192f57358f753842cbe1f8f82e26e8c6f9e1e/target/linux/ramips/dts/GL-MT300N-V2.dts";
-            sha256 = "1xfqays38pqh1qmzcf6753by9xac2jmyiglpv79p8d60b7qma8n4";
-          };
-          super' = (mt7620.hwModule {dts = dts; soc="mt76x8"; } nixpkgs self super);
-        in super';
+        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300N-V2.dts";
+        in mt7620.hwModule {inherit dtsPath; soc="mt76x8"; } nixpkgs self super;
     };
 
   # generic config for boards/products based on Atheros AR7x and AR9x SoCs,
@@ -285,7 +275,6 @@ in rec {
             commandLine = self.kernel.commandLine;
             loadAddress = "0x80000000";
             entryPoint = "0x80000000";
-#            dtsPath = dts;
             inherit (pkgs) ledeSrc;
             inherit version kernelSrc socFamily;
           };
