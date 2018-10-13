@@ -29,6 +29,13 @@ let
       filesystems = {} ;
     };
 
+    kernelMtdOpts = nixpkgs: self: super:
+      nixpkgs.lib.recursiveUpdate super {
+        kernel.config."MTD_SPLIT" = "y";
+        kernel.config."MTD_SPLIT_UIMAGE_FW" = "y";
+        kernel.config."MTD_CMDLINE_PARTS" = "y";
+        # partition layout comes from device tree, doesn't need to be specified here
+      };
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        nixwrt.device.hwModule
@@ -42,6 +49,7 @@ let
          fstype = "ext4";
          options = "rw";
        })
+       kernelMtdOpts
        (switchconfig {
          name = "switch0";
          interface = "eth0";
@@ -50,18 +58,15 @@ let
        (syslogd { loghost = "192.168.0.2"; })
        (ntpd { host = "pool.ntp.org"; })
        (dhcpClient { interface = "eth0.2"; })
-      ];
-    kernelMtdOpts = nixpkgs: self: super:
-      nixpkgs.lib.recursiveUpdate super {
-        kernel.config."MTD_SPLIT" = "y";
-        kernel.config."MTD_SPLIT_UIMAGE_FW" = "y";
-        # partition layout comes from device tree, doesn't need to be specified here
+    ];
+    in {
+      firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
+      phramware = let modules = wantedModules ++ [
+        (nixwrt.modules.phram { offset="0xa00000"; sizeMB="5"; })
+      ]; in  nixwrt.firmware (nixwrt.mergeModules modules);
+
+      sysupgrade = (pkgs.callPackage ./nixwrt/sysupgrade/default.nix) {
+        cmdline = appConfig.kernel.commandLine;
+
       };
-in {
-  tftproot =  let configuration = nixwrt.mergeModules (wantedModules ++ [
-       (nixwrt.modules.tftpboot { rootOffset="0xa00000"; rootSizeMB="12"; })
-     ]);
-    in nixwrt.tftproot configuration;
-  firmware = let configuration = nixwrt.mergeModules (wantedModules ++ [kernelMtdOpts]);
-    in nixwrt.firmware configuration;
-}
+    }

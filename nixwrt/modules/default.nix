@@ -140,13 +140,14 @@
       };
     };
 
-  # Add this module when you want separate tftp-bootable images that
-  # run from RAM instead of a single flashable firmware image.  Resulting images
-  # may be bigger, but hopefully your device has more RAM than flash
-  tftpboot = options @ { rootOffset, rootSizeMB} : nixpkgs: self: super:
+  # Add this module for a development image that can be tftp
+  # downloaded and run directly from RAM instead of needing to be
+  # flashed. Resulting images may be bigger, but hopefully your device
+  # has more RAM than flash
+  phram = options @ { offset, sizeMB} : nixpkgs: self: super:
     nixpkgs.lib.recursiveUpdate super {
       kernel.config."MTD_PHRAM" = "y";
-      kernel.commandLine = "${super.kernel.commandLine}  phram.phram=rootfs,${rootOffset},${rootSizeMB}Mi memmap=${rootSizeMB}M\$${rootOffset}";
+      kernel.commandLine = "${super.kernel.commandLine} mtdparts=mydev:${sizeMB}M(firmware) phram.phram=mydev,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
     };
 
   kexec = _: nixpkgs: self: super:

@@ -14,15 +14,15 @@ This works now.
 
 * Milestone 1: replace the OS on the wireless access point in the
   study - Trendnet TEW-731BR, based on  Atheros AR9341.  This works now.
-  
-* Milestone 2: replace the OS running on the 
+
+* Milestone 2: replace the OS running on the
   [GL-MT300N router](https://www.gl-inet.com/mt300n/) attached to my DSL modem
 
   ** all the stuff in M0, M1 plus PPPoE
 
 * Milestone 3: IP camera with motion detection on Raspberry Pi (note
   this is ARM not MIPS)
-  
+
   ** anybody's guess what is needed here
 
 * Milestone 4: put a lot of GPIOs in my cheap robot vacuum and turn
@@ -31,24 +31,23 @@ This works now.
 
 # How it works
 
-This is not NixOS.  This is using the Nix language and the Nix package
-collection to create an immutable "turnkey" image that can be flashed
-onto a router (or other IoT device) and never modified thereafter.
-The ingredients are
+This is not NixOS.  This is an immutable "turnkey" image that can be
+flashed onto a router (or other IoT device), built using using the Nix
+language and the Nix package collection.  The ingredients are:
 
 ## Nixpkgs
 
 As of June 2018 it requires a lightly forked nixpkgs, but I am working
 to feed changes back upstream.
 
-## a Nixpkgs overlay 
+## a Nixpkgs overlay
 
 In `nixwrt/overlay.nix` we create a couple of new derivations that
 don't exist in nixpkgs, and customize a few others for smaller size or
 to fix cross-compilation bugs.  Where possible and when time is
 available these changes will be pushed upstream.
 
-## a module-based configuration system 
+## a module-based configuration system
 
 A NixWRT image is created by passing a `configuration` attrset to a
 derivation that creates a root filesystem image based on that
@@ -73,13 +72,14 @@ requests, you will have helped fulfill the prophecy.
 
 First, set up a TFTP server.
 
-Then, allocate yourself (or request from your IT support) a static IP
-address on your local network.  It need not be globally reachable, it
-just has to be something that will let your device see its TFTP
-server.  If your router boot monitor has DHCP support you won't even
-need one, but I haven't yet seen a device that does this.  In the
-examples that follow, we will use 192.168.0.251 for the device and
-192.168.0.2 for the TFTP server.
+Then, allocate yourself (or request from your IT support if you're in
+the kind of place that has that kind of thing) a static IP address on
+your local network.  It need not be globally reachable, it just has to
+be something that will let your device see its TFTP server.  If your
+router boot monitor has DHCP support you won't even need one, but I
+haven't yet seen a device that does this.  In the examples that
+follow, we will use 192.168.0.251 for the device and 192.168.0.2 for
+the TFTP server.
 
 Then, find out how to get into your router's boot monitor.  This will
 very often involve opening it up and attaching a USB serial convertor
@@ -93,68 +93,57 @@ Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
     $ git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
-The best way to get started is to read `wap.nix`, which consists of
-(a) boilerplate, (b) a base `configuration`, (c) an array of
-`wantedModules`, and (d) two targets `tftproot` and `firmware`.  The
-former is for experimentation and the latter is for when you are ready
-to write to the router's permanent flash storage.
+The best way to get started is to read `backuphost.nix`, which
+consists of (a) boilerplate, (b) a base `configuration`, (c) an array
+of `wantedModules`, and (d) two targets `phramware` and `firmware`.
+The former is for experimentation and the latter is for when you are
+ready to write to the router's permanent flash storage.
 
 
-## Build the tftproot target
+## Build the phramware target
 
 This variant of NixWRT runs from RAM and doesn't need the router to be
 flashed.  This is great when you're testing things and don't want to
 keep erasing the flash (because it takes a long time and because it
 has limited write cycles).  It's not great when you want to do a
 permanent installation because the router RAM contents don't survive a
-reset.  It uses
-the
+reset.  It uses the
 [phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140) to
 emulate flash using system RAM.
 
-So, build the `tftproot` derivation and copy the result into your tftp
+So, build the `phramware` derivation and copy the result into your tftp
 server data directory: there is a Makefile which Works For Me but you
 may need to adjust pathnames and stuff.
 
-    $ wpa_passphrase 'my wifi ssid' 'my wifi password'
-    network={
-        ssid="my wifi ssid"
-        #psk="my wifi password"
-        psk=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
-    }
-    $ make t=yun d=wap tftproot PSK=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
-             ^      ^
-             |      +--- use file "wap.nix"          }  change to match
-             +---------- use "yun" from devices.nix  }  your setup
+    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp phramware
+             ^         ^
+             |         +--- use file "backuphost.nix"        }  change to match
+             +------------- use "mt300n_v2" from devices.nix }  your setup
 
-
-This should leave you with two files in `result/`: `kernel.image` and `rootfs.image`
+This should create a file `mt300n_v2_backuphost/firmware.bin` and copy it to
+`/tftp`
 
 ## Run it
 
-This will vary depending on your device, but on my TrendNET TEW712BR I
+This will vary depending on your device, but on my GL-Inet MT300N v2, I
 reset the router, hit RETURN when it says
 
     Hit any key to stop autoboot: 2
-    
-and then type the following commands at the `ar7240>` prompt:
 
-    setenv serverip 192.168.0.2 
-    setenv ipaddr 192.168.0.251 
-    setenv kernaddr 0x81000000
-    setenv rootaddr 1200000
-    setenv rootaddr_useg 0x$rootaddr
-    setenv rootaddr_ks0 0x8$rootaddr
-    setenv bootargs  console=ttyATH0,115200 panic=10 oops=panic init=/bin/init phram.phram=nixrootfs,$rootaddr_ks0,4Mi root=/dev/mtdblock0 memmap=4M\$$rootaddr_useg ath79-wdt.from_boot=n ath79-wdt.timeout=20  loglevel=8 rootfstype=squashfs ethaddr=90:A2:DA:F9:07:5A machtype=TEW-712BR
-    setenv bootn " tftp $rootaddr_ks0 /tftp/rootfs.image; tftp $kernaddr /tftp/kernel.image ; bootm  $kernaddr"
-    run bootn
+and then type the following commands at the uboot `gl-mt300an>` prompt:
 
-The constraints on memory addresses are as follows
+    setenv serverip 192.168.0.2
+    setenv ipaddr 192.168.0.251
+    setenv startaddr a00000
+    setenv startaddr_useg 0x${startaddr}
+    setenv startaddr_ks0 0x8${startaddr}
+    setenv dir /tftp/mt300n_v2_backuphost
+    tftp ${startaddr_ks0} ${dir}/firmware.bin ; bootm ${startaddr_useg}
 
-* the kernel and root images must not  overlap, nor should anything encroach
-  on the area starting at 0x8006000 where the kernel will be
-  uncompressed to
-* the memmap parameter in bootargs should cover the whole rootfs image
+The `startaddr` must be some location in ordinary RAM (i.e. not flash)
+that doesn't conflict with the area starting at 0x6000 to which the
+kernel is uncompressed.  0xa00000 (and 0x8a00000 which is the same
+physical RAM but differently mapped) seems to do the job.
 
 
 
@@ -183,23 +172,24 @@ course.
 
 ### Build the image
 
-    $ make t=yun d=wap firmware PSK=17e3c534ff0f0fbde1a158f6980f8955cf85a496e65a0b6b97d9e6e41d7de6d9
+    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
 
 ### Flash it
 
 Get into u-boot, then do something like this
 
-    setenv serverip 192.168.0.2 
-    setenv ipaddr 192.168.0.251 
-    erase 0x9f070000 0x9f400000
-    tftp 0x80060000 /tftp/firmware_yun.bin
-    cp.b 0x80060000 0x9f070000 ${filesize}
+    setenv serverip 192.168.0.2
+    setenv ipaddr 192.168.0.251
+    erase 0xbc050000 0xbcfd0000
+    setenv dir /tftp/mt300n_v2_backuphost
+    tftp 0x80060000 ${dir}/firmware.bin
+    cp.b 0x80060000 0xbc050000 ${filesize}
 
-The magic numbers here are 
+The magic numbers here are
 
 - 0x80060000 : somewhere in RAM, not critical
-- 0x9f070000 : flash memory address for "firmware" partition (kernel plus root fs)
-- 0x9f400000 : end of flash firmware partition image
+- 0xbc050000 : flash memory address for "firmware" partition
+- 0xbcfd0000 : end of flash firmware partition image
 
 If that looked like it worked, type `reset` to find out if you were right.
 
@@ -223,14 +213,13 @@ If it doesn't work, you could try
   and the end of the kernel is overlapping the start of the rootfs.
   Check the addresses in your uboot `tftp` commands
 
-  
+
 # Feedback
 
-Is very welcome.  Please open an issue on Github for anything that 
+Is very welcome.  Please open an issue on Github for anything that
 involves more than a line of text, or find me in the
-"Fediverse" [@telent@maston.social](https://mastodon.social/@telent) 
+"Fediverse" [@telent@maston.social](https://mastodon.social/@telent)
 or on Twitter [@telent_net](https://twitter.com/telent_net) if not.
 
 I do occasionally hang out on #nixos IRC as `dan_b` or as `telent` but
 not often enough to make it a good way of getting in touch.
-

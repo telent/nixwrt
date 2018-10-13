@@ -1,18 +1,19 @@
-t?=tew712br
-d?=wap
-default: tftproot
+t?=mt300n_v2
+d?=backuphost
+RSYNC_PASSWORD?=secret
+default: firmware
 export RSYNC_PASSWORD
-PHONY = password
+TFTPROOT?=/tftp/
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
-tftproot firmware:
+firmware phramware:
 	nix-build  -I nixpkgs=../nixpkgs $(d).nix -A $@ \
 	 --argstr rsyncPassword $(RSYNC_PASSWORD) \
 	 --argstr myKeys "$(shell cat $(ssh_public_key_file))" \
 	 --argstr targetBoard $(t) \
 	 --arg sshHostKey ./ssh_host_key \
-	 -o $(t)_$(d) --show-trace 
-	rsync -caAiL  $(t)_$(d) /tftp/
+	 -o $(t)_$(d) --show-trace
+	rsync -caAiL  $(t)_$(d) $(TFTPROOT)
 
 # this is for the backuphost target
 password:
