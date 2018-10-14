@@ -95,27 +95,17 @@ Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
 The best way to get started is to read `backuphost.nix`, which
 consists of (a) boilerplate, (b) a base `configuration`, (c) an array
-of `wantedModules`, and (d) two targets `phramware` and `firmware`.
-The former is for experimentation and the latter is for when you are
-ready to write to the router's permanent flash storage.
+of `wantedModules`, and (d) the `firmware` which will build something
+you can run on (or flash to) your router.
 
 
-## Build the phramware target
+## Build it
 
-This variant of NixWRT runs from RAM and doesn't need the router to be
-flashed.  This is great when you're testing things and don't want to
-keep erasing the flash (because it takes a long time and because it
-has limited write cycles).  It's not great when you want to do a
-permanent installation because the router RAM contents don't survive a
-reset.  It uses the
-[phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140) to
-emulate flash using system RAM.
-
-So, build the `phramware` derivation and copy the result into your tftp
+Build the `firmware` derivation and copy the result into your tftp
 server data directory: there is a Makefile which Works For Me but you
 may need to adjust pathnames and stuff.
 
-    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp phramware
+    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
              ^         ^
              |         +--- use file "backuphost.nix"        }  change to match
              +------------- use "mt300n_v2" from devices.nix }  your setup
@@ -123,10 +113,19 @@ may need to adjust pathnames and stuff.
 This should create a file `mt300n_v2_backuphost/firmware.bin` and copy it to
 `/tftp`
 
-## Run it
+## Running it from RAM
 
-This will vary depending on your device, but on my GL-Inet MT300N v2, I
-reset the router, hit RETURN when it says
+You can run NixWRT from RAM without needing to write to the router
+flash memory.  This is great when you're testing things and don't want
+to keep erasing the flash (because it takes a long time and because it
+has limited write cycles).  It's not great when you want to do a
+permanent installation because the router RAM contents don't survive a
+reset.  It uses the [phram
+driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140)
+to emulate flash using system RAM.
+
+Instructions vary depending on your device, but on my GL-Inet MT300N
+v2, I reset the router, hit RETURN when it says
 
     Hit any key to stop autoboot: 2
 
@@ -146,8 +145,7 @@ kernel is uncompressed.  0xa00000 (and 0x8a00000 which is the same
 physical RAM but differently mapped) seems to do the job.
 
 
-
-## Make it permanent (flashable image)
+## Making it permanent (flashable image)
 
 If you're sure you want to toast a perfectly good OpenWRT installation
 ... read on.  I accept no responsibility for anything bad that might
@@ -169,10 +167,6 @@ to look at the boot log for a line of the form `Booting image at
 /proc/mtd` in OpenWRT and see if there's a partition starting at
 `0x70000`.  If you get this wrong you may brick your device, of
 course.
-
-### Build the image
-
-    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
 
 ### Flash it
 

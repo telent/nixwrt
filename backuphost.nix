@@ -55,15 +55,13 @@ let
          interface = "eth0";
          vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
         })
+       (phram { offset = "0xa00000"; sizeMB = "5"; })
        (syslogd { loghost = "192.168.0.2"; })
        (ntpd { host = "pool.ntp.org"; })
        (dhcpClient { interface = "eth0.2"; })
     ];
     in {
       firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
-      phramware = let modules = wantedModules ++ [
-        (nixwrt.modules.phram { offset="0xa00000"; sizeMB="5"; })
-      ]; in  nixwrt.firmware (nixwrt.mergeModules modules);
 
       sysupgrade = (pkgs.callPackage ./nixwrt/sysupgrade/default.nix) {
         cmdline = appConfig.kernel.commandLine;

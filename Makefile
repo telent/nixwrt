@@ -6,7 +6,7 @@ export RSYNC_PASSWORD
 TFTPROOT?=/tftp/
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
-firmware phramware:
+firmware:
 	nix-build  -I nixpkgs=../nixpkgs $(d).nix -A $@ \
 	 --argstr rsyncPassword $(RSYNC_PASSWORD) \
 	 --argstr myKeys "$(shell cat $(ssh_public_key_file))" \
