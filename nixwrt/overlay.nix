@@ -78,6 +78,18 @@ in {
 
   swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
+  writemem = self.stdenv.mkDerivation {
+    name = "writemem";
+    version = "1";
+    stripAllList = [ "bin" "sbin" ];
+    src = self.lib.sourceFilesBySuffices ./sysupgrade ["Makefile" ".c" ".h" ".sh"];
+    installPhase = ''
+      mkdir -p $out/bin
+      substituteAll frob-commandline.sh $out/bin/frob-commandline
+      install writemem $out/bin/writemem
+      (cd $out/bin/ && chmod +x * )
+    '';
+  };
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];
     preConfigure = ''

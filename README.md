@@ -188,6 +188,24 @@ The magic numbers here are
 If that looked like it worked, type `reset` to find out if you were right.
 
 
+## Upgrading without a serial console (sketchy, untested)
+
+If you are running NixWRT, you can upgrade to a newer or different
+build from within the NixWRT Linux system - e.g. using an ssh
+connection into the router, without needing to access the boot
+monitor.  Here's how:
+
+1. find the MTD device for the current firmware image, e.g. by looking at `cat /proc/mtd`
+1. reboot the router using `kexec /dev/mtd5` with the current command line plus a parameter `memmap=nnnn` to reserve the physical RAM that the new image will need
+2. fetch the new image into the router `/tmp` directory using `curl` or `scp` or `netcat` or something
+3. use `writemem` to copy the image into the area of memory that you reserved in step 2
+4. do another kexec reboot, this time using the downloaded firmware image as the kernel pathname and adding phram parameters to use the new image
+5. do whatever testing you need.  If anything doesn't behave how you want, simply do a full reboot to revert to the regular NixWRT image in flash
+6. when you are ready to switch permanently to the new version, write it
+to flash with nandwrite and reboot into it
+
+
+
 
 ## Troubleshooting
 
