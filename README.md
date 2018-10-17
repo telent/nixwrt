@@ -3,12 +3,16 @@
 # What is it?
 
 An experiment, currently, to see if Nixpkgs is a good way to build an
-OS for a domestic wifi router of the kind that OpenWRT or DD-WRT or
-Tomato run on.
+OS for a domestic wifi router or IoT device, of the kind that OpenWRT
+or DD-WRT or Tomato run on.
 
-## What does it (will it) do?
+This is not NixOS-on-your-router.  This is an immutable "turnkey"
+image that can be flashed onto a router (or other IoT device), built
+using the Nix language and the Nix package collection.
 
-* Milestone 0 ("what I came in for"): backup server on GL-MT300A
+## Applications and use cases (current and prospective)
+
+* Milestone 0: backup server on GL-MT300A
 "travel router" (based on Mediatek MT7620A) with attached USB disk.
 This works now.
 
@@ -18,24 +22,16 @@ This works now.
 * Milestone 2: replace the OS running on the
   [GL-MT300N router](https://www.gl-inet.com/mt300n/) attached to my DSL modem
 
-  ** all the stuff in M0, M1 plus PPPoE
-
 * Milestone 3: IP camera with motion detection on Raspberry Pi (note
   this is ARM not MIPS)
 
-  ** anybody's guess what is needed here
+* Milestone 4: put a lot of GPIOs in my cheap robot vacuum cleaner and
+  turn it into a smart robot vacuum cleaner.  Probably never get to
+  this.
 
-* Milestone 4: put a lot of GPIOs in my cheap robot vacuum and turn
-  it into a smart robot vacuum cleaner.  Probably never get to this.
+# What's it made of?
 
-
-# How it works
-
-This is not NixOS.  This is an immutable "turnkey" image that can be
-flashed onto a router (or other IoT device), built using using the Nix
-language and the Nix package collection.  The ingredients are:
-
-## Nixpkgs
+## The Nix Package Collection
 
 As of June 2018 it requires a lightly forked nixpkgs, but I am working
 to feed changes back upstream.
@@ -68,7 +64,7 @@ requests, you will have helped fulfill the prophecy.
 
 # How to build it
 
-## Setting up (you will need ...)
+## One-time setup
 
 First, set up a TFTP server.
 
@@ -95,17 +91,17 @@ Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
 The best way to get started is to read `backuphost.nix`, which
 consists of (a) boilerplate, (b) a base `configuration`, (c) an array
-of `wantedModules`, and (d) the `firmware` which will build something
-you can run on (or flash to) your router.
+of `wantedModules`, and (d) two targets `firmware` and `phramware`
+which build firmware images.
 
 
 ## Build it
 
-Build the `firmware` derivation and copy the result into your tftp
+Building the `phramware` derivation, and copy the result into your tftp
 server data directory: there is a Makefile which Works For Me but you
 may need to adjust pathnames and stuff.
 
-    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
+    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp phramware
              ^         ^
              |         +--- use file "backuphost.nix"        }  change to match
              +------------- use "mt300n_v2" from devices.nix }  your setup
@@ -115,13 +111,13 @@ This should create a file `mt300n_v2_backuphost/firmware.bin` and copy it to
 
 ## Running it from RAM
 
-You can run NixWRT from RAM without needing to write to the router
-flash memory.  This is great when you're testing things and don't want
-to keep erasing the flash (because it takes a long time and because it
-has limited write cycles).  It's not great when you want to do a
-permanent installation because the router RAM contents don't survive a
-reset.  It uses the [phram
-driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140)
+The `phramware` image you just built is configured to run from RAM
+without needing to write to the router flash memory.  This is great
+when you're testing things and don't want to keep erasing the flash
+(because it takes a long time and because it has limited write
+cycles).  It's not great when you want to do a permanent installation
+because the router RAM contents don't survive a reset.  It uses the
+[phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140)
 to emulate flash using system RAM.
 
 Instructions vary depending on your device, but on my GL-Inet MT300N
@@ -163,10 +159,15 @@ You will need to find the address of your flash chip.  If you don't
 know you can probably make a reasonable guess: either use the U-boot
 `flinfo` command if your router has it, or otherwise my suggestion is
 to look at the boot log for a line of the form `Booting image at
-9f070000` and then double check by lookin at the output of `cat
+9f070000` and then double check by looking at the output of `cat
 /proc/mtd` in OpenWRT and see if there's a partition starting at
 `0x70000`.  If you get this wrong you may brick your device, of
 course.
+
+### Build the regular (non-phram) firmware
+
+    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
+
 
 ### Flash it
 
@@ -182,7 +183,7 @@ Get into u-boot, then do something like this
 The magic numbers here are
 
 - 0x80060000 : somewhere in RAM, not critical
-- 0xbc050000 : flash memory address for "firmware" partition
+- 0xbc050000 : flash memory address for "firmware" partition (as per `nixwrt/devices.nix`)
 - 0xbcfd0000 : end of flash firmware partition image
 
 If that looked like it worked, type `reset` to find out if you were right.
@@ -193,18 +194,35 @@ If that looked like it worked, type `reset` to find out if you were right.
 If you are running NixWRT, you can upgrade to a newer or different
 build from within the NixWRT Linux system - e.g. using an ssh
 connection into the router, without needing to access the boot
-monitor.  Here's how:
+monitor.  *Note that this doesn't need the `phramware` target at any
+point*.  To make this work, the firmware you're running *and* the
+firmware you're upgrading to should both have been built using the
+regular `firmware` target: `phramware` has boot-from-phram behaviour
+hardcoded into it and won't work if flashed.
 
-1. find the MTD device for the current firmware image, e.g. by looking at `cat /proc/mtd`
-1. reboot the router using `kexec /dev/mtd5` with the current command line plus a parameter `memmap=nnnn` to reserve the physical RAM that the new image will need
-2. fetch the new image into the router `/tmp` directory using `curl` or `scp` or `netcat` or something
-3. use `writemem` to copy the image into the area of memory that you reserved in step 2
-4. do another kexec reboot, this time using the downloaded firmware image as the kernel pathname and adding phram parameters to use the new image
-5. do whatever testing you need.  If anything doesn't behave how you want, simply do a full reboot to revert to the regular NixWRT image in flash
-6. when you are ready to switch permanently to the new version, write it
-to flash with nandwrite and reboot into it
+Here's how:
 
+0. ssh into your device and become root
 
+1. run brickwrt-reserve, passing it the device entry for your
+"firmware" device.  It will reboot the router, reserving a block of
+physical RAM into which you will then be able to write the new firmware
+
+    # brickwrt-reserve /dev/mtd5
+
+2. once the device has rebooted, get the new image onto it somehow
+(e.g. with scp or curl or netcat).  Let's suppose it ends up in
+`/tmp/firmware.bin`
+
+3. run `brickwrt-load`, which will copy your new firmware into the
+area of RAM you reserved in step 1, then reboot into the new kernel
+
+    # brickwrt-load /tmp/firmware.bin
+
+4. do whatever testing you need.  If anything doesn't behave how you want, simply do a full reboot to revert to the regular NixWRT image in flash
+
+5. when you are ready to switch permanently to the new version, write it
+to flash with `brickwrt-commit` (this bit is not implemented yet)
 
 
 ## Troubleshooting

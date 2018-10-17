@@ -60,8 +60,19 @@ let
        (ntpd { host = "pool.ntp.org"; })
        (dhcpClient { interface = "eth0.2"; })
     ];
+    forcePhramBoot = nixpkgs: self: super:
+      let p = self.phram;
+      in nixpkgs.lib.recursiveUpdate super {
+        kernel.commandLine = "${super.kernel.commandLine} mtdparts=mydev:${p.sizeMB}M(firmware) phram.phram=mydev,${p.offset},${p.sizeMB}Mi memmap=${p.sizeMB}M\$${p.offset}";
+      };
     in {
       firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
+
+      # phramware generates an image which boots from the "fake" phram mtd
+      # device - required if you want to boot from u-boot without
+      # writing the image to flash first
+      phramware = let m = wantedModules ++ [forcePhramBoot];
+        in nixwrt.firmware (nixwrt.mergeModules m);
 
       sysupgrade = (pkgs.callPackage ./nixwrt/sysupgrade/default.nix) {
         cmdline = appConfig.kernel.commandLine;

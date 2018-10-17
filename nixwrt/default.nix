@@ -13,29 +13,13 @@ with nixpkgs; rec {
     in lib.fix (self: lib.foldl extend {}
                   (map (x: x self) (map (f: f nixpkgs) ms)));
 
-  tftproot = configuration:
-    let rootfs = pkgs.callPackage ./rootfs-image.nix {
-                   busybox = configuration.busybox.package;
-                   inherit configuration;
-                 };
-        kernelImage = configuration.kernel.package;
-    in stdenv.mkDerivation rec {
-      name = "tftproot";
-      phases = [ "installPhase" ];
-      inherit kernelImage;
-      installPhase = ''
-        mkdir -p $out
-        cp ${kernelImage} $out/kernel.image
-        cp ${rootfs}/image.squashfs  $out/rootfs.image
-      '';
-   };
+  rootfs = configuration: pkgs.callPackage ./rootfs-image.nix {
+    busybox = configuration.busybox.package;
+    inherit configuration;
+  };
 
   firmware = configuration:
-    let rootfs = pkgs.callPackage ./rootfs-image.nix {
-                   busybox = configuration.busybox.package;
-                   inherit configuration;
-                 };
-        kernelImage = configuration.kernel.package;
+    let kernelImage = configuration.kernel.package;
     in stdenv.mkDerivation rec {
       name = "firmware.bin";
       phases = [ "installPhase" ];
@@ -43,7 +27,7 @@ with nixpkgs; rec {
       installPhase = ''
         mkdir -p $out
         dd if=${kernelImage} of=$out/firmware.bin bs=128k conv=sync
-        dd if=${rootfs}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
+        dd if=${rootfs configuration}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
       '';
   };
 }
