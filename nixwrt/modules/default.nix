@@ -140,14 +140,23 @@
       };
     };
 
-  # Add this module for a development image that can be tftp
-  # downloaded and run directly from RAM instead of needing to be
-  # flashed. Resulting images may be bigger, but hopefully your device
-  # has more RAM than flash
+  # support for upgrading a running NixWRT device with a newer or
+  # different build, without needing console/uboot access
   phram = options @ { offset, sizeMB} : nixpkgs: self: super:
     nixpkgs.lib.recursiveUpdate super {
       kernel.config."MTD_PHRAM" = "y";
-      kernel.commandLine = "${super.kernel.commandLine} mtdparts=mydev:${sizeMB}M(firmware) phram.phram=mydev,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
+      phram = {
+        sizeMB = sizeMB;
+	offset = offset;
+      };
+      etc."phram.vars" = {
+        content = ''
+          phram_sizeMB=${sizeMB}
+          phram_offset=${offset}
+        '';
+	mode = "0555";
+      };
+      packages = super.packages ++ [ nixpkgs.brickwrt ];
     };
 
   kexec = _: nixpkgs: self: super:

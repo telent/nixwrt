@@ -78,6 +78,8 @@ in {
 
   swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
+  brickwrt = self.callPackage ./brickwrt { };
+
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];
     preConfigure = ''
