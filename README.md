@@ -208,7 +208,9 @@ Here's how:
 "firmware" device.  It will reboot the router, reserving a block of
 physical RAM into which you will then be able to write the new firmware
 
-    # brickwrt-reserve /dev/mtd5
+```
+# brickwrt-reserve /dev/mtd5
+```
 
 2. once the device has rebooted, get the new image onto it somehow
 (e.g. with scp or curl or netcat).  Let's suppose it ends up in
@@ -217,7 +219,9 @@ physical RAM into which you will then be able to write the new firmware
 3. run `brickwrt-load`, which will copy your new firmware into the
 area of RAM you reserved in step 1, then reboot into the new kernel
 
-    # brickwrt-load /tmp/firmware.bin
+```
+# brickwrt-load /tmp/firmware.bin
+```
 
 4. do whatever testing you need.  If anything doesn't behave how you want, simply do a full reboot to revert to the regular NixWRT image in flash
 
