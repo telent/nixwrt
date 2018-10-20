@@ -159,6 +159,11 @@
       packages = super.packages ++ [ nixpkgs.brickwrt ];
     };
 
+  forcePhram = nixpkgs: self: super:
+    let p = self.phram;
+    in nixpkgs.lib.recursiveUpdate super {
+      kernel.commandLine = "${super.kernel.commandLine} mtdparts=mydev:${p.sizeMB}M(firmware) phram.phram=mydev,${p.offset},${p.sizeMB}Mi memmap=${p.sizeMB}M\$${p.offset}";
+    };
   kexec = _: nixpkgs: self: super:
     with nixpkgs;
     lib.recursiveUpdate super {
