@@ -29,13 +29,6 @@ let
       filesystems = {} ;
     };
 
-    kernelMtdOpts = nixpkgs: self: super:
-      nixpkgs.lib.recursiveUpdate super {
-        kernel.config."MTD_SPLIT" = "y";
-        kernel.config."MTD_SPLIT_UIMAGE_FW" = "y";
-        kernel.config."MTD_CMDLINE_PARTS" = "y";
-        # partition layout comes from device tree, doesn't need to be specified here
-      };
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        nixwrt.device.hwModule
@@ -49,7 +42,7 @@ let
          fstype = "ext4";
          options = "rw";
        })
-       kernelMtdOpts
+       kernelMtd
        (switchconfig {
          name = "switch0";
          interface = "eth0";

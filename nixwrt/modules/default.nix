@@ -140,6 +140,14 @@
       };
     };
 
+  kernelMtd =  nixpkgs: self: super:
+    nixpkgs.lib.recursiveUpdate super {
+      kernel.config."MTD_SPLIT" = "y";
+      kernel.config."MTD_SPLIT_UIMAGE_FW" = "y";
+      kernel.config."MTD_CMDLINE_PARTS" = "y";
+      # partition layout comes from device tree, doesn't need to be specified here
+    };
+
   # support for upgrading a running NixWRT device with a newer or
   # different build, without needing console/uboot access
   phram = options @ { offset, sizeMB} : nixpkgs: self: super:
