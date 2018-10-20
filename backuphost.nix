@@ -74,8 +74,4 @@ let
       phramware = let m = wantedModules ++ [forcePhramBoot];
         in nixwrt.firmware (nixwrt.mergeModules m);
 
-      sysupgrade = (pkgs.callPackage ./nixwrt/sysupgrade/default.nix) {
-        cmdline = appConfig.kernel.commandLine;
-
-      };
     }
