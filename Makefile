@@ -1,27 +1,21 @@
-t?=mt300n_v2
-d?=backuphost
-RSYNC_PASSWORD?=secret
-default: firmware
-export RSYNC_PASSWORD
-TFTPROOT?=/tftp/
+image?=phramware
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
+NIX_BUILD=nix-build --show-trace \
+ -I nixpkgs=../nixpkgs -I nixwrt=./nixwrt -A $(image)
 
-firmware phramware:
-	nix-build  -I nixpkgs=../nixpkgs $(d).nix -A $@ \
-	 --argstr rsyncPassword $(RSYNC_PASSWORD) \
+# you need to generate an ssh host key for your device before running
+# any of these builds: it will be baked in, so that you know you are
+# at the right place the first time you connect to it
+
+backuphost: examples/backuphost.nix
+	$(NIX_BUILD) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
-	 --argstr targetBoard $(t) \
-	 --arg sshHostKey ./ssh_host_key \
-	 -o $(t)_$(d) --show-trace
-	rsync -caAiL  $(t)_$(d) $(TFTPROOT)
+	 --argstr sshHostKey backuphost-host-key \
+	 $^ -o $@ 
 
-# this is for the backuphost target
-password:
-	$(eval RSYNC_PASSWORD := $(shell sudo cat /var/lib/backupwrt/rsync))
+defalutroute: examples/defalutroute.nix
+	$(NIX_BUILD) \
+	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
+	 --arg sshHostKey ./defalutroute-host-key \
+	 $^ -o $@ 
 
-
-# this has not been used in a few months (as of June 2018), and may be
-# better considered as a starting point than as a working qemu
-# invocation
-qemu: tftproot
-	nix-shell  -p qemu --run "qemu-system-mips  -M malta -m 128 -virtfs local,path=`pwd`,mount_tag=host0,security_model=passthrough,id=host0 -nographic -kernel malta/kernel.image  -append 'root=/dev/sr0 console=ttyS0 init=/bin/init' -blockdev driver=file,node-name=squashed,read-only=on,filename=malta/rootfs.image -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic -netdev user,id=u0 -device e1000,netdev=u0"

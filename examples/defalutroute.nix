@@ -1,11 +1,11 @@
 { targetBoard ? "mt300a"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, sshHostKey ? ./fake_ssh_host_key }:
-let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
+, sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
+let nixwrt = (import <nixwrt>) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
-      hostname = "rotuer";
+      hostname = "defalutroute";
       interfaces = {
         "eth0.2" = {
           type = "vlan"; id = 2; parent = "eth0"; depends = []; # wan
@@ -59,8 +59,6 @@ let
 
     in {
       firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
-#        option username 'abb-telent@aquiss.com'
-#        option password '(1pUPq}Ri'
 
       # phramware generates an image which boots from the "fake" phram mtd
       # device - required if you want to boot from u-boot without

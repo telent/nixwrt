@@ -61,6 +61,10 @@ somewhere between a prediction and a prophecy), and you can write your
 own (details later).  If you write your own and then send pull
 requests, you will have helped fulfill the prophecy.
 
+## Some examples
+
+Complete examples (some more functional than others) are to be found
+in the `examples` directory
 
 # How to build it
 
@@ -89,7 +93,7 @@ Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
     $ git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
-The best way to get started is to read `backuphost.nix`, which
+The best way to get started is to read `examples/backuphost.nix`, which
 consists of (a) boilerplate, (b) a base `configuration`, (c) an array
 of `wantedModules`, and (d) two targets `firmware` and `phramware`
 which build firmware images.
@@ -97,17 +101,10 @@ which build firmware images.
 
 ## Build it
 
-Building the `phramware` derivation, and copy the result into your tftp
-server data directory: there is a Makefile which Works For Me but you
-may need to adjust pathnames and stuff.
-
-    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp phramware
-             ^         ^
-             |         +--- use file "backuphost.nix"        }  change to match
-             +------------- use "mt300n_v2" from devices.nix }  your setup
-
-This should create a file `mt300n_v2_backuphost/firmware.bin` and copy it to
-`/tftp`
+    $ make defalutroute # or the basename of any other file in examples/
+    
+This should create a file `defalutroute/phramware.bin` which you need
+to copy to your TFTP server
 
 ## Running it from RAM
 
@@ -166,8 +163,9 @@ course.
 
 ### Build the regular (non-phram) firmware
 
-    $ make t=mt300n_v2 d=backuphost TFTPROOT=/tftp firmware
+    $ make defalutroute image=firmware
 
+Again, after doing this you need to make it available to the TFTP server
 
 ### Flash it
 
@@ -188,45 +186,6 @@ The magic numbers here are
 
 If that looked like it worked, type `reset` to find out if you were right.
 
-
-## Upgrading without a serial console (sketchy, untested)
-
-If you are running NixWRT, you can upgrade to a newer or different
-build from within the NixWRT Linux system - e.g. using an ssh
-connection into the router, without needing to access the boot
-monitor.  *Note that this doesn't need the `phramware` target at any
-point*.  To make this work, the firmware you're running *and* the
-firmware you're upgrading to should both have been built using the
-regular `firmware` target: `phramware` has boot-from-phram behaviour
-hardcoded into it and won't work if flashed.
-
-Here's how:
-
-0. ssh into your device and become root
-
-1. run brickwrt-reserve, passing it the device entry for your
-"firmware" device.  It will reboot the router, reserving a block of
-physical RAM into which you will then be able to write the new firmware
-
-```
-# brickwrt-reserve /dev/mtd5
-```
-
-2. once the device has rebooted, get the new image onto it somehow
-(e.g. with scp or curl or netcat).  Let's suppose it ends up in
-`/tmp/firmware.bin`
-
-3. run `brickwrt-load`, which will copy your new firmware into the
-area of RAM you reserved in step 1, then reboot into the new kernel
-
-```
-# brickwrt-load /tmp/firmware.bin
-```
-
-4. do whatever testing you need.  If anything doesn't behave how you want, simply do a full reboot to revert to the regular NixWRT image in flash
-
-5. when you are ready to switch permanently to the new version, write it
-to flash with `brickwrt-commit` (this bit is not implemented yet)
 
 
 ## Troubleshooting
