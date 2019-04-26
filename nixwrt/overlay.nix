@@ -65,6 +65,24 @@ in {
   };
 
   monit = stripped (super.monit.override { usePAM = false; openssl = null; });
+  ppp = (super.ppp.override { libpcap = null; }).overrideAttrs (o : {
+     stripAllList = [ "bin" ];
+     buildInputs = [];
+     buildPhase = ''
+       runHook preBuild
+       make -C pppd USE_TDB= HAVE_MULTILINK=
+       make -C pppd/plugins/rp-pppoe
+       runHook postBuild;
+     '';
+     installPhase = ''
+      runHook preInstall
+      mkdir -p $out/bin $out/lib/pppd/2.4.7
+      cp pppd/pppd pppd/plugins/rp-pppoe/pppoe-discovery $out/bin
+      cp pppd/plugins/rp-pppoe/rp-pppoe.so $out/lib/pppd/2.4.7
+      runHook postInstall
+    '';
+    postFixup = "";
+  });
 
   # temporary until patchelf#151 is applied upstream and nixpkgs gets new revision
   patchelf = super.patchelf.overrideAttrs(o@{patches ? [], ...} :
