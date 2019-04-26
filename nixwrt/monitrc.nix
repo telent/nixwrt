@@ -56,6 +56,7 @@ in writeText "monitrc" ''
     allow localhost
     allow 192.168.0.0/24
   set idfile /run/monit.id
+  set pidfile /run/monit.pid
   set statefile /run/monit.state
   check directory booted path /
 
