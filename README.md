@@ -103,12 +103,12 @@ which build firmware images.
 
     $ make defalutroute # or the basename of any other file in examples/
     
-This should create a file `defalutroute/phramware.bin` which you need
+This should create a file `defalutroute/firmware.bin` which you need
 to copy to your TFTP server
 
 ## Running it from RAM
 
-The `phramware` image you just built is configured to run from RAM
+The image you just built is configured to run from RAM
 without needing to write to the router flash memory.  This is great
 when you're testing things and don't want to keep erasing the flash
 (because it takes a long time and because it has limited write
