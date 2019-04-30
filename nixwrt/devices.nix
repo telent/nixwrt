@@ -17,15 +17,17 @@ in rec {
     socFamily = "ramips";
     hwModule = {dtsPath, soc ? "mt7620" } : nixpkgs: self: super:
       with nixpkgs;
-      let version = [4 14 53];
+      let version = [4 14 113];
           kernelSrc = pkgs.fetchurl {
             url = (kernelSrcUrl (mmp version));
-            sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
+            sha256 = "1hnsmlpfbcy52dax7g194ksr9179kpigj1y5k44jkwmagziz4kdj";
           };
           readconf = readDefconfig nixpkgs;
           stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
           kconfig = {
             "BLK_DEV_INITRD" = "n";
+            "CFG80211" = "y";
+            "MAC80211" = "y";            
             "CLKSRC_MMIO" = "y";
             "CLKSRC_OF" = "y";
             "CMDLINE_PARTITION" = "y";
@@ -43,9 +45,18 @@ in rec {
             "NET_MEDIATEK_GSW_MT7620" = "y";
             "NET_MEDIATEK_MT7620" = "y";
             "PARTITION_ADVANCED" = "y";
+	    "PHY_RALINK_USB" = "y";
             "PRINTK_TIME" = "y";
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
+            "WLAN_VENDOR_MEDIATEK" = "y";
+            "WLAN_VENDOR_RALINK" = "y";
+            "RT2X00" = "y";
+            "RT2X00_DEBUG" = "y";            
+            "RT2800PCI" = "y";   
+            "RT2800PCI_RT53XX" = "y";
+            "RT2800SOC" = "y";
+	    "SOC_MT7620" = "y";	
           };
           p = "${pkgs.ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {

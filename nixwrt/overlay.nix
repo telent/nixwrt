@@ -2,10 +2,11 @@ self: super:
 let
   stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
   ledeSrc = self.fetchFromGitHub {
-    owner = "lede-project";
-    repo = "source";
-    rev = "e204717ef2445fc848b0a70374b03b1c8484d176";
-    sha256 = "1db9ynjnf29yc3sz7gn358hy6bm34gwpvbw1ydsxjqsg8njqpzf9";
+    owner = "openwrt";
+    repo = "openwrt";
+    name = "openwrt-source" ;
+    rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
+    sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
   };
 in {
 
