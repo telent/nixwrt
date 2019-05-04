@@ -27,7 +27,11 @@ stdenv.mkDerivation rec {
       q_apply ${ledeSrc}/target/linux/generic/backport-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/pending-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/hack-${majmin}/
-      patch -p1 -N -i ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/609-rt2x00-make-wmac-loadable-via-OF-on-rt288x-305x-SoC.patch
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/601-*.patch | patch -f -p1 -N || true
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/602-*.patch | sed 's/CPTCFG_/CONFIG_/g' | patch -f -p1 -N || true
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/603-*.patch | patch -p1 -N
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/604-*.patch | patch -p1 -N
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/609-*.patch | patch -p1 -N
       ${lib.optionalString (! isNull socFamily)
                            "q_apply ${ledeSrc}/target/linux/${socFamily}/patches-${majmin}/"}
       chmod -R +w .       # */
