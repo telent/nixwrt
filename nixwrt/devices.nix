@@ -71,19 +71,21 @@ in rec {
           }; vmlinux = (callPackage ./kernel/default.nix) {
             config = self.kernel.config;
             inherit sourceTree;
-          }; in (callPackage ./kernel/uimage.nix) {
-            inherit vmlinux;
-            commandLine = self.kernel.commandLine;
-            loadAddress = "0x80000000";
-            entryPoint  = "0x80000000";
-            inherit dtsPath;
-            dtcSearchPaths = [
-              "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
-              "${sourceTree}/arch/mips/boot/dts"
-              "${sourceTree}/arch/mips/boot/dts/include"
-              "${sourceTree}/include/"];
-            extraName = socFamily;
-          };
+          }; uimage = 
+            (callPackage ./kernel/uimage.nix) {
+              inherit vmlinux;
+              commandLine = self.kernel.commandLine;
+              loadAddress = "0x80000000";
+              entryPoint  = "0x80000000";
+              inherit dtsPath;
+              dtcSearchPaths = [
+                "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
+                "${sourceTree}/arch/mips/boot/dts"
+                "${sourceTree}/arch/mips/boot/dts/include"
+                "${sourceTree}/include/"];
+              extraName = socFamily;
+            };
+          in uimage;
       };
     };
 

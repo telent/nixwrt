@@ -3,6 +3,7 @@
  , socFamily ? null
  , ledeSrc
  , kernelSrc
+ , patchutils
  , version
 } :
 let versionScalar = v :
@@ -14,6 +15,7 @@ stdenv.mkDerivation rec {
     name = "kernel-source";
     phases = [ "unpackPhase" "patchFromLede" "patchPhase" "buildPhase" "installPhase" ];
     src = kernelSrc;
+    nativeBuildInputs = [ patchutils ]; 
 
     patchFromLede = let
       majmin = "${toString (builtins.elemAt version 0)}.${toString (builtins.elemAt version 1)}";
@@ -27,8 +29,8 @@ stdenv.mkDerivation rec {
       q_apply ${ledeSrc}/target/linux/generic/backport-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/pending-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/hack-${majmin}/
-      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/601-*.patch | patch -f -p1 -N || true
-      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/602-*.patch | sed 's/CPTCFG_/CONFIG_/g' | patch -f -p1 -N || true
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/601-*.patch | filterdiff -x '*/local-symbols' -x '*/rt2x00_platform.h'  | patch -p1 -N 
+      cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/602-*.patch | sed 's/CPTCFG_/CONFIG_/g' | filterdiff -x '*/local-symbols' | patch  -p1 -N 
       cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/603-*.patch | patch -p1 -N
       cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/604-*.patch | patch -p1 -N
       cat ${ledeSrc}/package/kernel/mac80211/patches/rt2x00/609-*.patch | patch -p1 -N
