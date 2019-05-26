@@ -98,20 +98,16 @@ diff -x '*.o' -urw linux-4.14.53/arch/mips/kernel/machine_kexec.c linux-mine/arc
 diff -x '*.o' -urw linux-4.14.53/arch/mips/ralink/of.c linux-mine/arch/mips/ralink/of.c
 --- linux-4.14.53/arch/mips/ralink/of.c	2018-07-25 07:56:18.784813771 +0000
 +++ linux-mine/arch/mips/ralink/of.c	2018-07-25 08:09:16.102635955 +0000
-@@ -90,12 +90,14 @@
- 	 * parsed resulting in our memory appearing. fw_passed_dtb is used
- 	 * by CONFIG_MIPS_APPENDED_RAW_DTB as well.
- 	 */
-+        pr_debug("dtbs: firmware %p, start %p, end %lx, __image %p\n", fw_passed_dtb, __dtb_start, __dtb_end, &__image_dtb);
+@@ -90,9 +90,10 @@
  	if (fw_passed_dtb)
  		dtb = (void *)fw_passed_dtb;
  	else if (__dtb_start != __dtb_end)
  		dtb = (void *)__dtb_start;
 -
--	__dt_setup_arch(&__image_dtb);
+-	__dt_setup_arch(dtb);
 +        else
 +                dtb = (void *) &__image_dtb;
 +	__dt_setup_arch(dtb);
  
- 	of_scan_flat_dt(early_init_dt_find_chosen, NULL);
- 	if (chosen_dtb)
+ 	of_scan_flat_dt(early_init_dt_find_memory, NULL);
+ 	if (memory_dtb)
