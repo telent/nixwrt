@@ -8,6 +8,7 @@
 # [*] even that's unlikely
 
 image?=phramware
+SSID?=telent1
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 NIX_BUILD=nix-build --show-trace \
  -I nixpkgs=../nixpkgs -I nixwrt=./nixwrt -A $(image)
@@ -29,7 +30,7 @@ NIX_BUILD=nix-build --show-trace \
 %-host-key:
 	ssh-keygen -P '' -t rsa -f $@ -b 2048
 
-extensino/phramware.bin: ATTRS=--argstr psk $(PSK)
+extensino/phramware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) 
 
 %/phramware.bin: examples/%.nix %-host-key 
 	$(NIX_BUILD) \
