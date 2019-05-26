@@ -1,21 +1,47 @@
+# WARNING: This Makefile is my personal attempt to make building
+# my personal NixWRT images more personally convenient for me (personally).
+# It does not attempt to address the general questions of
+# "where should we keep secrets and how do we get them into nix-build attributes"
+# and should not be considered good practice, except perhaps[*] by accident
+
+
+# [*] even that's unlikely
+
 image?=phramware
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 NIX_BUILD=nix-build --show-trace \
  -I nixpkgs=../nixpkgs -I nixwrt=./nixwrt -A $(image)
 
-# you need to generate an ssh host key for your device before running
-# any of these builds: it will be baked in, so that you know you are
-# at the right place the first time you connect to it
+# ssh host keys are generated on the build system and then copied to
+# the target.  Unless you want to be confronted with "Host key
+# verification failed" messages from ssh every time you reflash, you
+# probably shouldn't be deleting them
 
-backuphost: examples/backuphost.nix
+# From a security POV this is suboptimal as it means the device's secret
+# keys are all compromised as soon as the build machine is, and we
+# would be better to try and generate a host key on first boot then somehow
+# notify that OOB to the connecting user, but as we don't in general
+# know of any provision/channel for doing that, this is not a problem
+# I have yet confronted.
+
+.PRECIOUS: %-host-key
+
+%-host-key:
+	ssh-keygen -P '' -t rsa -f $@ -b 2048
+
+extensino/phramware.bin: ATTRS=--argstr psk $(PSK)
+
+%/phramware.bin: examples/%.nix %-host-key 
 	$(NIX_BUILD) \
+	 $(ATTRS) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
-	 --argstr sshHostKey backuphost-host-key \
-	 $^ -o $@ 
+	 --argstr sshHostKey "`cat $(@D)-host-key`" \
+	 $< -o $(@D)
 
-defalutroute: examples/defalutroute.nix
+%/firmware.bin: image=firmware
+%/firmware.bin: examples/%.nix %-host-key 
 	$(NIX_BUILD) \
+	 $(ATTRS) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
-	 --arg sshHostKey ./defalutroute-host-key \
-	 $^ -o $@ 
-
+	 --argstr sshHostKey "`cat $(@D)-host-key`" \
+	 $< -o $(@D)

@@ -20,8 +20,11 @@ let
     monit
     monitrc
   ];
-  dropbearHostKey = runCommand "makeHostKey" { preferLocalBuild = true; } ''
-      ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear ${configuration.services.dropbear.hostKey} $out
+  dropbearHostKey = runCommand "makeHostKey" {
+    name= "makeHostKey"; preferLocalBuild = true;
+    inkey=configuration.services.dropbear.hostKey;
+  } ''
+      echo "$inkey" | ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear /dev/fd/0 $out
     '';
   mkPseudoFile = import ./pseudofile.nix { inherit lib writeText ; };
   pseudoEtc = mkPseudoFile "pseudo-etc.txt" "/etc/" ({
