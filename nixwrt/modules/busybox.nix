@@ -24,6 +24,7 @@ nixpkgs: self: super:
           "dmesg"
           "du"
           "find"
+          "flashcp"
           "flash_eraseall"
           "flash_lock"
           "flash_unlock"
