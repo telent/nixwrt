@@ -1,8 +1,9 @@
-{ targetBoard
-, rsyncPassword ? "urbancookie"
+# Status May 2019: builds, may not boot, has not been tested recently
+
+{ rsyncPassword ? "urbancookie"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? ./fake_ssh_host_key }:
-let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
+let nixwrt = (import <nixwrt>) { targetBoard = "mt300a"; }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {

@@ -1,3 +1,5 @@
+# Status May 2019: builds, but missing some needed packages
+
 { targetBoard ? "mt300a"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:

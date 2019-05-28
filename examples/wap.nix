@@ -1,6 +1,8 @@
 # Configuration for a wireless access point based on Atheros 9331
 # (testing on Arduino Yun, deploying on Trendnet TEW712BR)
 
+# Status May 2019: probably quite broken
+
 { targetBoard ? "yun" }:
 let nixwrt = (import ./nixwrt/default.nix) { inherit targetBoard; }; in
 with nixwrt.nixpkgs;
