@@ -10,22 +10,20 @@ This is not NixOS-on-your-router.  This is an immutable "turnkey"
 image that can be flashed onto a router (or other IoT device), built
 using the Nix language and the Nix package collection.
 
-## Applications and use cases (current and prospective)
+## Applications and use cases (former, current and prospective)
 
-* Milestone 0: backup server on GL-MT300A
-"travel router" (based on Mediatek MT7620A) with attached USB disk.
-This works now.
+* Milestone 0: backup server on GL-MT300A (based on Mediatek MT7620A)
+  with attached USB disk.  This works now.
 
-* Milestone 1: replace the OS on the wireless access point in the
-  study - Trendnet TEW-731BR, based on  Atheros AR9341.  This works now.
+* Milestone 1: wireless range extender on a Trendnet TEW-731BR
+  (Atheros AR9341).  This used to work, but small flash makes it
+  painful to maintain.
 
-* Milestone 2: replace the OS running on the
-  [GL-MT300N router](https://www.gl-inet.com/mt300n/) attached to my DSL modem
+* Milestone 2: home router (PPPOE, wireless, ethernet) on GL-AR750.
+  This is Atheros again, but needs the driver situation investigating
+  for the 5GHz wireless
 
-* Milestone 3: IP camera with motion detection on Raspberry Pi (note
-  this is ARM not MIPS)
-
-* Milestone 4: put a lot of GPIOs in my cheap robot vacuum cleaner and
+* Milestone 3: put a lot of GPIOs in my cheap robot vacuum cleaner and
   turn it into a smart robot vacuum cleaner.  Probably never get to
   this.
 
@@ -70,41 +68,62 @@ in the `examples` directory
 
 ## One-time setup
 
-First, set up a TFTP server.
+You will need
 
-Then, allocate yourself (or request from your IT support if you're in
-the kind of place that has that kind of thing) a static IP address on
-your local network.  It need not be globally reachable, it just has to
-be something that will let your device see its TFTP server.  If your
-router boot monitor has DHCP support you won't even need one, but I
-haven't yet seen a device that does this.  In the examples that
-follow, we will use 192.168.0.251 for the device and 192.168.0.2 for
-the TFTP server.
+* some kind of PC or other reasonable well-powered machine to build
+  everything on.  This is entirely cross-compiled, there is no
+  development on the target.  I do it all under NixOS, but I know no
+  reason in principle that a Nix installation on some other Linux or
+  on a Mac shouldn't also work
 
-Then, find out how to get into your router's boot monitor.  This will
-very often involve opening it up and attaching a USB serial convertor
-to some header pins: sometimes it involves soldering those pins into
-holes.  On other machines it's not nearly as complicated as you can
-access u-boot across the network.  The OpenWRT wiki is often very helpful here.
+* an ethernet connecting your build machine to your target device.
+  Perhaps you can put them on a LAN together, perhaps you can connect
+  them directly to each other with a patch cable.  (The latter is a
+  good idea if you plan to test things like DHCP servers on the
+  target, otherwise they may start answering IP address requests for
+  other hosts on your LAN).  Ideally you want statically allocated IP
+  addresses for the build machine and target, because U-Boot probably
+  won't work with DHCP
 
-Next, clone the nixwrt repo, and also the nixpkgs fork on which it depends
+* access to your target devices's boot monitor.  This will very often
+  involve opening it up and attaching a USB serial convertor to some
+  header pins: sometimes it involves soldering those pins into holes.
+  On other machines it's not nearly as complicated as you can access
+  u-boot across the network.  The OpenWRT wiki is often very helpful
+  here.
+
+Now, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
     $ git clone git@github.com:telent/nixwrt
     $ git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
     $ cd nixwrt
 
-The best way to get started is to read `examples/backuphost.nix`, which
-consists of (a) boilerplate, (b) a base `configuration`, (c) an array
-of `wantedModules`, and (d) two targets `firmware` and `phramware`
-which build firmware images.
+The best way to get started is to look at one of the examples in
+`examples/` and choose the one which has most similar hardware to the
+device you want to use and ideally which has most recently been
+updated.  There should be advisory and/or warning comments at the top of each.
+
+Each example has a quite similar structure: (a) boilerplate, (b) a
+base `configuration`, (c) an array of `wantedModules`, and (d) two
+targets `firmware` and `phramware` which build firmware images.
 
 
 ## Build it
 
-    $ make defalutroute # or the basename of any other file in examples/
+There is a Makefile to help you get started on building any of the examples.
+To build the `extensino` example, run 
+
+    $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=phramware
     
-This should create a file `defalutroute/firmware.bin` which you need
+This should create a file `extensino/firmware.bin` which you need
 to copy to your TFTP server
+
+Caveat: the makefile is a convenience thing for hacking/testing and
+not intended as the nucleus of any kind of production build pipeline.
+If you want something to build on for large-scale deploys, write
+something that invokes nix-build directly.
+
+
 
 ## Running it from RAM
 
@@ -129,13 +148,15 @@ and then type the following commands at the uboot `gl-mt300an>` prompt:
     setenv startaddr a00000
     setenv startaddr_useg 0x${startaddr}
     setenv startaddr_ks0 0x8${startaddr}
-    setenv dir /tftp/mt300n_v2_backuphost
+    setenv dir /tftp/extensino
     tftp ${startaddr_ks0} ${dir}/firmware.bin ; bootm ${startaddr_useg}
 
-The `startaddr` must be some location in ordinary RAM (i.e. not flash)
-that doesn't conflict with the area starting at 0x6000 to which the
-kernel is uncompressed.  0xa00000 (and 0x8a00000 which is the same
-physical RAM but differently mapped) seems to do the job.
+Depending on your network and tftp configuration, you probably need to
+change IP addresses and paths here.  The `startaddr` must be some
+location in ordinary RAM (i.e. not flash) that doesn't conflict with
+the area starting at 0x6000 to which the kernel is uncompressed.
+0xa00000 (and 0x8a00000 which is the same physical RAM but differently
+mapped) seems to do the job.
 
 
 ## Making it permanent (flashable image)
@@ -163,7 +184,7 @@ course.
 
 ### Build the regular (non-phram) firmware
 
-    $ make defalutroute image=firmware
+    $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=firmware
 
 Again, after doing this you need to make it available to the TFTP server
 
@@ -174,7 +195,7 @@ Get into u-boot, then do something like this
     setenv serverip 192.168.0.2
     setenv ipaddr 192.168.0.251
     erase 0xbc050000 0xbcfd0000
-    setenv dir /tftp/mt300n_v2_backuphost
+    setenv dir /tftp/extensino
     tftp 0x80060000 ${dir}/firmware.bin
     cp.b 0x80060000 0xbc050000 ${filesize}
 
