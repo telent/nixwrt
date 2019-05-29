@@ -97,6 +97,11 @@ in {
 
   swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
+  coreutils =  super.coreutils.overrideAttrs (o: {
+    # one of the tests fails under docker
+    doCheck = false;
+  });
+  
   brickwrt = self.callPackage ./brickwrt { };
 
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
