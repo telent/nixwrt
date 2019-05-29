@@ -48,7 +48,7 @@ NIX_BUILD=nix-build --show-trace \
 .PRECIOUS: %-host-key
 
 %-host-key:
-	ssh-keygen -P '' -t rsa -f $@ -b 2048
+	ssh-keygen -m PEM -P '' -t rsa -f $@ -b 2048
 
 define shortcut_to_example
 $(1): $(1)/firmware.bin
