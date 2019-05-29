@@ -19,6 +19,9 @@ using the Nix language and the Nix package collection.
   (Atheros AR9341).  This used to work, but small flash makes it
   painful to maintain.
 
+* Milestone 1b: wireless range extender on GL-MT300A.  Working but
+  slow as of May 2019, may be a simple misconfiguration.
+
 * Milestone 2: home router (PPPOE, wireless, ethernet) on GL-AR750.
   This is Atheros again, but needs the driver situation investigating
   for the 5GHz wireless
