@@ -73,11 +73,11 @@ in the `examples` directory
 
 You will need
 
-* some kind of PC or other reasonable well-powered machine to build
+* some kind of PC or other reasonably well-powered machine to build
   everything on.  This is entirely cross-compiled, there is no
-  development on the target.  I do it all under NixOS, but I know no
-  reason in principle that a Nix installation on some other Linux or
-  on a Mac shouldn't also work
+  development on the target.  I do it all under NixOS, but any system
+  with Nix installed should work - I tried it successfully in a
+  [Docker container](https://github.com/LnL7/nix-docker), for example
 
 * an ethernet connecting your build machine to your target device.
   Perhaps you can put them on a LAN together, perhaps you can connect
