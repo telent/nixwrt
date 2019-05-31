@@ -65,7 +65,7 @@ in {
     filesToInstall = ["u-boot.bin"];
   };
 
-  monit = stripped (super.monit.override { usePAM = false; openssl = null; });
+  monit = stripped (super.monit.override { usePAM = false; useSSL = false; openssl = null; });
   ppp = (super.ppp.override { libpcap = null; }).overrideAttrs (o : {
      stripAllList = [ "bin" ];
      buildInputs = [];
@@ -94,6 +94,7 @@ in {
       patches = patches ++ [u];
   });
 
+  zlib = super.zlib.overrideAttrs (o: { dontStrip = false; });
 
   swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
