@@ -42,7 +42,7 @@ let
           config = { interface = "wlan0"; inherit ssid; hw_mode = "g"; channel = 11; };
           inherit psk;
         })
-       (dhcpClient { interface = "br0"; })
+       (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf";  })
        (switchconfig {
          name = "switch0";
          interface = "eth0";
