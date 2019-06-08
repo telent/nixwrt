@@ -57,7 +57,7 @@ let
     ''; };
     rc = {mode="0755"; content = ''
       #!${busybox}/bin/sh
-      stty sane < /dev/console
+      # stty sane < /dev/console
       mount -a
       mkdir /dev/pts
       mount -t devpts none /dev/pts
