@@ -38,7 +38,7 @@ let ip = "${iproute}/bin/ip";
      uid = 0;
      gid = 0;
      depends = [];
-     stop = "/bin/kill \\\$MONIT_PROCESS_PID";
+     stop = "/bin/kill $MONIT_PROCESS_PID";
    } // spec;
      dep = d: if d == [] then ""  else "depends on " + (lib.strings.concatStringsSep ", " d);
     in ''
