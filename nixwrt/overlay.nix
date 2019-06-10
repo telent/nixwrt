@@ -104,6 +104,9 @@ in {
   });
   
   brickwrt = self.callPackage ./brickwrt { };
+  
+  klogforward = let ref = "348ac012283013a24606126da4ac5abc5853b7c6"; in
+  stripped (self.callPackage (builtins.fetchTarball "https://github.com/telent/klogforward/archive/${ref}.tar.gz" ) { } );
 
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];

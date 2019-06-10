@@ -3,6 +3,8 @@
 
   busybox = import ./busybox.nix;
 
+  syslog = import ./syslog.nix;
+
   rsyncd = options: nixpkgs: self: super:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate super  {
@@ -42,16 +44,6 @@
     };
   dhcpClient = import ./dhcp_client.nix;
 
-  syslogd = options: nixpkgs: self: super:
-    with nixpkgs;
-    lib.attrsets.recursiveUpdate super {
-      busybox.applets = super.busybox.applets ++ [ "syslogd" ];
-      busybox.config."FEATURE_SYSLOGD_READ_BUFFER_SIZE" = 256;
-      busybox.config."FEATURE_REMOTE_LOG" = "y";
-      services.syslogd = {
-        start = "/bin/syslogd -R ${options.loghost}";
-      };
-    };
   ntpd = options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super {

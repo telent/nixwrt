@@ -1,5 +1,6 @@
 { psk ? "fishfinger"
 , ssid ? "telent1"
+, loghost ? "loghost"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
 let nixwrt = (import <nixwrt>) { targetBoard = "mt300a"; }; in
@@ -51,9 +52,8 @@ let
            "2" = "0 6t";                 # wan (id 2 -> port 0)
          };
        })
-#       (syslogd { loghost = "192.168.0.2"; })
-
-(ntpd { host = "pool.ntp.org"; })
+       (syslog { inherit loghost ; })
+       (ntpd { host = "pool.ntp.org"; })
     ];
 
     in {

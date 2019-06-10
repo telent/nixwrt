@@ -22,7 +22,7 @@ ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 ## Per-target config
 
-extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) 
+extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
 
 
 ## Variables & Functions
