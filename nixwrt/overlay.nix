@@ -98,6 +98,15 @@ in {
 
   swconfig =  stripped (self.callPackage ./swconfig.nix { });
 
+  libpcap = super.libpcap.overrideAttrs (o: {
+    # tcpdump only wants the shared libraries, not all the
+    # headers and stuff
+    outputs = [ "lib" "out" ];
+    dontStrip = false;
+  });
+
+  tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
+
   coreutils =  super.coreutils.overrideAttrs (o: {
     # one of the tests fails under docker
     doCheck = false;
