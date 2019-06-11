@@ -1,7 +1,7 @@
 options: nixpkgs: self: super:
 with nixpkgs;
 let bg = cmd: args: "/bin/start-stop-daemon -o -b -m -p /run/${cmd}.pid -x ${klogforward}/bin/${cmd} -S -- ${args}";
-in 
+in
 lib.attrsets.recursiveUpdate super {
   packages = super.packages ++ [ pkgs.klogforward pkgs.tcpdump ];
   busybox.applets = super.busybox.applets ++ [ "start-stop-daemon" ];
@@ -9,7 +9,9 @@ lib.attrsets.recursiveUpdate super {
     "START_STOP_DAEMON" = "y";
     "FEATURE_START_STOP_DAEMON_FANCY" = "y";
   };
-  
+
+  etc."monit.syslog.rc" = { content = "set log syslog\n"; };
+
   services.klogforward = {
     start = bg "klogforward" "/dev/kmsg ${options.loghost} 514";
   };

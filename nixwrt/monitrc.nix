@@ -64,4 +64,6 @@ in writeText "monitrc" ''
   ${catLines (lib.attrsets.mapAttrsToList stanzaForService watchables)}
   ${catLines (lib.attrsets.mapAttrsToList stanzaForOneshot oneshots)}
   ${catLines (lib.attrsets.mapAttrsToList stanzaForFs filesystems)}
+
+  include /etc/monit.*.rc
   ''
