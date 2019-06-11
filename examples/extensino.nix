@@ -9,17 +9,19 @@ let
     baseConfiguration = {
       hostname = "extensino";
       interfaces = {        
-        "eth0.2" = {
-          type = "vlan"; id = 2; parent = "eth0"; depends = []; # wan
-        };
         "eth0.1" = {
-          type = "vlan"; id = 1; parent = "eth0"; depends = []; # lan
+          # in normal use there's nothing here, but in development
+          # it's hooked up to the build machine for tftp image download
+          type = "vlan"; id = 1; parent = "eth0"; depends = []; # wan
+        };
+        "eth0.2" = {
+          type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
         };
         "eth0" = { } ;
         "wlan0" = { };
         "br0" = {
           type = "bridge";
-          members  = [ "eth0.1" "wlan0" ];
+          members  = [ "eth0.2" "wlan0" ];
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -48,8 +50,8 @@ let
          name = "switch0";
          interface = "eth0";
          vlans = {
-           "1" = "1 2 3 4 6t";           # lan (id 1 -> ports 1-4)
-           "2" = "0 6t";                 # wan (id 2 -> port 0)
+           "1" = "0 6t";           # wan (id 1 -> port 0)
+           "2" = "1 6t";           # lan (id 2 -> ports 1-4)
          };
        })
        (syslog { inherit loghost ; })
