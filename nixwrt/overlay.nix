@@ -111,7 +111,7 @@ in {
     # one of the tests fails under docker
     doCheck = false;
   });
-  
+
   brickwrt = self.callPackage ./brickwrt { };
   
   klogforward = let ref = "348ac012283013a24606126da4ac5abc5853b7c6"; in

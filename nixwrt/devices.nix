@@ -27,7 +27,7 @@ in rec {
           kconfig = {
             "BLK_DEV_INITRD" = "n";
             "CFG80211" = "y";
-            "MAC80211" = "y";            
+            "MAC80211" = "y";
             "CLKSRC_MMIO" = "y";
             "CLKSRC_OF" = "y";
             "CMDLINE_PARTITION" = "y";
@@ -52,11 +52,11 @@ in rec {
             "WLAN_VENDOR_MEDIATEK" = "y";
             "WLAN_VENDOR_RALINK" = "y";
             "RT2X00" = "y";
-            "RT2X00_DEBUG" = "y";            
-            "RT2800PCI" = "y";   
+            "RT2X00_DEBUG" = "y";
+            "RT2800PCI" = "y";
             "RT2800PCI_RT53XX" = "y";
             "RT2800SOC" = "y";
-	    "SOC_MT7620" = "y";	
+	    "SOC_MT7620" = "y";
           };
           p = "${pkgs.ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {
@@ -71,7 +71,7 @@ in rec {
           }; vmlinux = (callPackage ./kernel/default.nix) {
             config = self.kernel.config;
             inherit sourceTree;
-          }; uimage = 
+          }; uimage =
             (callPackage ./kernel/uimage.nix) {
               inherit vmlinux;
               commandLine = self.kernel.commandLine;
