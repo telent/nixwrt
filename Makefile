@@ -19,6 +19,7 @@ image?=phramware  # build runnable-from-ram image
 SSID?=telent1
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
+-include secrets
 
 ## Per-target config
 
@@ -57,7 +58,7 @@ endef
 $(foreach x,$(EXAMPLES),$(eval $(call shortcut_to_example,$(x))))
 
 
-%/firmware.bin: examples/%.nix %-host-key 
+%/firmware.bin: examples/%.nix %-host-key
 	$(NIX_BUILD) \
 	 $(ATTRS) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
