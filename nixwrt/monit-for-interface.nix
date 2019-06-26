@@ -1,10 +1,5 @@
-# ip link add link eth0 name eth0.1 type vlan id 1
-# ip link add link eth0 name eth0.2 type vlan id 2
-# ip addr add 192.168.0.251/24 dev eth0.2
-# ip link set dev eth0 up
-
 {lib, ip, writeScriptBin}:
-let defaults = { up= true; routes = []; type = "hw"; depends = [];};
+let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;};
     setAddress = name : attrs:
       (lib.optionalString (attrs ? ipv4Address)
         "${ip} addr add ${attrs.ipv4Address} dev ${name}");
@@ -28,14 +23,14 @@ let defaults = { up= true; routes = []; type = "hw"; depends = [];};
         [(setAddress name attrs)
          (setUp name attrs)];
     };
-    stanza = name: a@{ routes , type, depends , ... } :
+    stanza = name: a@{ routes, type, depends, timeout, ... } :
       let c = ["#!/bin/sh"] ++ (commands.${type} name a) ++ ["# FIN\n"];
           depends' = lib.unique (depends ++ (lib.optionals (a ? members) a.members)
                                          ++ (lib.optional (a ? parent) a.parent));
           start = writeScriptBin "ifup-${name}" (lib.strings.concatStringsSep "\n" c); in
       ''
          check network ${name} interface ${name}
-           start program = "${start}/bin/ifup-${name}"
+         start program = "${start}/bin/ifup-${name} with timeout ${toString timeout} seconds"
            stop program = "${ip} link set dev ${name} down"
            if failed link then restart
            depends on ${lib.strings.concatStringsSep ", " (depends' ++ ["booted"])}

@@ -12,11 +12,15 @@ let
         "eth0" = {
       	  depends = [];
         };
+        "eth0.1" = {
+          type = "vlan"; id = 1; parent = "eth0"; depends = [];
+        };
         "wlan0" = { };
         "br0" = {
           type = "bridge";
           enableStp = true;
-          members  = [ "eth0" "wlan0" ];
+          timeout = 60;
+          members  = [ "eth0.1" "wlan0" ];
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -25,7 +29,7 @@ let
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
-      packages = [ ];
+      packages = [ pkgs.swconfig ];
       filesystems = {} ;
     };
 
@@ -39,6 +43,13 @@ let
        (hostapd {
           config = { interface = "wlan0"; inherit ssid; hw_mode = "g"; channel = 11; };
           inherit psk;
+        })
+       (switchconfig {
+         name = "switch0";
+         interface = "eth0";
+         vlans = {
+          "1" = "0 1 6t";           # all the ports
+        };
         })
        (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf";  })
        (syslog { inherit loghost ; })
