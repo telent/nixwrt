@@ -126,7 +126,7 @@
       kernel.config."SWCONFIG" = "y";
       interfaces.${interface}.depends =  [ name ];
       services.${name} = {
-        start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh &'";
+        start = "${self.busybox.package}/bin/sh -c '${scriptFile}/bin/switchconfig.sh'";
         type = "oneshot";
       };
     };
