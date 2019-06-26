@@ -3,7 +3,7 @@ with nixpkgs;
 let bg = cmd: args: "/bin/start-stop-daemon -o -b -m -p /run/${cmd}.pid -x ${klogforward}/bin/${cmd} -S -- ${args}";
 in
 lib.attrsets.recursiveUpdate super {
-  packages = super.packages ++ [ pkgs.klogforward pkgs.tcpdump ];
+  packages = super.packages ++ [ pkgs.klogforward ];
   busybox.applets = super.busybox.applets ++ [ "start-stop-daemon" ];
   busybox.config = super.busybox.config // {
     "START_STOP_DAEMON" = "y";
