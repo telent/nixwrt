@@ -18,9 +18,10 @@ let defaults = { up= true; routes = []; type = "hw"; depends = [];};
         ["${ip} link add link ${parent} name ${name} type ${type} id ${toString id}"
          (setAddress name attrs)
          (setUp name attrs)];
-      bridge = name : attrs@{type, members, ...} : lib.flatten
+      bridge = name : attrs@{type, members, enableStp ? false, ...} : lib.flatten
         ["${ip} link add name ${name} type ${type}"
          (setAddress name attrs)
+         "echo \"${if enableStp then ''1'' else ''0'' }\" > /sys/class/net/${name}/bridge/stp_state"
          (setUp name attrs)
          (map (intf : "${ip} link set ${intf} master ${name}") members)];
       hw = name : attrs :
