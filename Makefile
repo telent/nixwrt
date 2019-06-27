@@ -28,8 +28,9 @@ extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr
 
 ## Variables & Functions
 
-NIX_BUILD=nix-build --show-trace \
- -I nixpkgs=../nixpkgs -I nixwrt=./nixwrt -A $(image)
+INCLUDE=-I nixpkgs=../nixpkgs -I nixwrt=./nixwrt
+
+NIX_BUILD=nix-build --show-trace $(INCLUDE)  -A $(image)
 
 
 ## Implementation
@@ -64,3 +65,6 @@ $(foreach x,$(EXAMPLES),$(eval $(call shortcut_to_example,$(x))))
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
 	 --argstr sshHostKey "`cat $(@D)-host-key`" \
 	 $< -o $(@D)
+
+repl:
+	nix repl $(INCLUDE)
