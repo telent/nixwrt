@@ -9,12 +9,9 @@
 , pkgs
 , lib
 , configuration
+, monitrc
 , ...}:
 let
-  monitrc = pkgs.callPackage ./monitrc.nix {
-    inherit (configuration) interfaces services filesystems;
-  };
-
   packagesToInstall = configuration.packages ++ [
     busybox
     monit

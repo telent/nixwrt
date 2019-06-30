@@ -1,9 +1,12 @@
 { lib
  , iproute
+ , webadmin
  , writeText
  , writeScriptBin
- , interfaces ? {}, services ? {}, filesystems ? {} } :
+ , interfaces ? {}, services ? {}, filesystems ? {}
+ , ...} :
 let ip = "${iproute}/bin/ip";
+   httpConfig = lib.attrsets.recursiveUpdate { port = 80; allow = ["localhost"]; } webadmin;
    stanzaForInterface =
       import ./monit-for-interface.nix { inherit lib writeScriptBin ip; };
    stanzaForFs = mountpoint: spec : ''
@@ -52,9 +55,8 @@ let ip = "${iproute}/bin/ip";
 in writeText "monitrc" ''
   set init
   set daemon 30
-  set httpd port 80
-    allow localhost
-    allow 192.168.0.0/24
+  set httpd port ${toString httpConfig.port}
+  ${lib.strings.concatMapStrings (f: "  allow ${f}\n") httpConfig.allow}
   set idfile /run/monit.id
   set pidfile /run/monit.pid
   set statefile /run/monit.state

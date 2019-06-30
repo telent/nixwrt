@@ -30,7 +30,7 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
           start = writeScriptBin "ifup-${name}" (lib.strings.concatStringsSep "\n" c); in
       ''
          check network ${name} interface ${name}
-         start program = "${start}/bin/ifup-${name} with timeout ${toString timeout} seconds"
+         start program = "${start}/bin/ifup-${name}" with timeout ${toString timeout} seconds
            stop program = "${ip} link set dev ${name} down"
            if failed link then restart
            depends on ${lib.strings.concatStringsSep ", " (depends' ++ ["booted"])}

@@ -8,6 +8,7 @@ with nixwrt.nixpkgs;
 let
     baseConfiguration = {
       hostname = "extensino";
+      webadmin = { allow = ["localhost" "192.168.1.0/24"]; };
       interfaces = {
         "eth0" = {
       	  depends = [];
