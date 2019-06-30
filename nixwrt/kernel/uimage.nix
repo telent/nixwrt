@@ -8,7 +8,7 @@
 , extraName ? ""                # e.g. socFamily
 , loadAddress ? "0x80000000"
 , lzma
-, patchDtb
+, patchImage
 , stdenv
 , ubootTools
 } :
@@ -21,12 +21,16 @@ let
     echo '/{ chosen { bootargs = ${builtins.toJSON commandLine}; }; };'  >> dtb.tmp
     dtc -O dtb ${dtcSearchFlags} -o vmlinux.dtb dtb.tmp
     patch-dtb vmlinux.stripped vmlinux.dtb
-  '' else "echo no dts";
+  '' else ''
+    echo patch-cmdline vmlinux.stripped '${commandLine}'
+    patch-cmdline vmlinux.stripped '${commandLine}'
+    echo
+  '';
 in
 stdenv.mkDerivation {
   name = "kernel.image";
   phases = [ "buildPhase" "installPhase" ];
-  nativeBuildInputs = [ patchDtb dtc lzma stdenv.cc ubootTools ];
+  nativeBuildInputs = [ patchImage dtc lzma stdenv.cc ubootTools ];
   buildPhase = ''
     ${objcopy} -O binary -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id -S ${vmlinux} vmlinux.stripped
     ${patchDtbCommand}

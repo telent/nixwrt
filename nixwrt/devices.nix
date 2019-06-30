@@ -147,16 +147,16 @@ in rec {
   # in OpenWRT, just liven things up).  There are some boards that use device tree
   # but all the ones I've built for so far use the older configuration style that
   # requires a board-specific kconfig option.  So: if you're using a dts file in this
-  # soc family you're the first in nnixwrt to do so.
+  # soc family you're the first in nixwrt to do so.
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
-    hwModule = nixpkgs: self: super:
+    hwModule = {dtsPath ? null }: nixpkgs: self: super:
       with nixpkgs;
-      let version = [4 9 91];
+      let version = [4 14 113];
           kernelSrc = pkgs.fetchurl {
             url = (kernelSrcUrl (mmp version));
-            sha256 = "0clqndkj24a9752bc8x7cwdrdl38yarpvwx2yqkc98czxi9agjk0";
+            sha256 = "1hnsmlpfbcy52dax7g194ksr9179kpigj1y5k44jkwmagziz4kdj";
           };
           readconf = readDefconfig nixpkgs;
           p = "${ledeSrc}/target/linux/";
@@ -170,12 +170,12 @@ in rec {
                            "ATH9K_AHB" = "y";
                            "BLK_DEV_INITRD" = "n";
                            "CFG80211" = "y";
-                           "CMDLINE_OVERRIDE" = "y";
                            "CMDLINE_PARTITION" = "y";
                            "CRASHLOG" = "n";
                            "DEBUG_FS" = "n";
                            "DEBUG_KERNEL" = "n";
                            "DEVTMPFS" = "y";
+                           "IMAGE_CMDLINE_HACK" = "y";
                            "INPUT_MOUSE" = "n";
                            "INPUT_MOUSEDEV" = "n";
                            "JFFS2_FS" = "n";
@@ -200,16 +200,27 @@ in rec {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
-        kernel.package = (callPackage ./kernel/default.nix) {
-          config = self.kernel.config;
-          commandLine = self.kernel.commandLine;
-          loadAddress = "0x80060000";
-          entryPoint = "0x80060000";
-          inherit (pkgs) ledeSrc;
-          inherit kernelSrc socFamily version;
+        kernel.package =
+          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
+            inherit (pkgs) ledeSrc;
+            inherit version kernelSrc socFamily;
+          }; vmlinux = (callPackage ./kernel/default.nix) {
+            config = self.kernel.config;
+            inherit sourceTree;
+          }; uimage =
+            (callPackage ./kernel/uimage.nix) {
+              inherit vmlinux;
+              commandLine = self.kernel.commandLine;
+              loadAddress = "0x80060000";
+              entryPoint = "0x80060000";
+              dtcSearchPaths = [
+                "${sourceTree}/arch/mips/boot/dts"
+                "${sourceTree}/arch/mips/boot/dts/include"
+                "${sourceTree}/include/"];
+          };
+        in uimage;
         };
-      };
-    };
+        };
 
   # The Arduino Yun is a handy (although pricey) way to get an AR9331
   # target without any soldering: it's a MIPS SoC glued to an Arduino,
@@ -236,7 +247,7 @@ in rec {
     ar71xx // rec {
       name = "arduino-yun";
       hwModule = nixpkgs: self: super:
-        let super' = (ar71xx.hwModule nixpkgs self super);
+      let super' = (ar71xx.hwModule {} nixpkgs self super);
         in nixpkgs.lib.recursiveUpdate super' {
           kernel.config."ATH79_MACH_ARDUINO_YUN" = "y";
           kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=Yun machtype=Yun";
@@ -252,10 +263,21 @@ in rec {
     ar71xx // rec {
       name = "trendnet-tew712br";
       hwModule = nixpkgs: self: super:
-        let super' = (ar71xx.hwModule nixpkgs self super);
+      let super' = (ar71xx.hwModule {} nixpkgs self super);
         in nixpkgs.lib.recursiveUpdate super' {
           kernel.config."ATH79_MACH_TEW_712BR" = "y";
           kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
+        };
+    };
+
+  ar750 =
+    ar71xx // rec {
+      name = "glinet-ar750";
+      hwModule = nixpkgs: self: super:
+        let super' = (ar71xx.hwModule {} nixpkgs self super);
+        in nixpkgs.lib.recursiveUpdate super' {
+          kernel.config."ATH79_MACH_GL_AR750" = "y";
+          kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=GL-AR750 machtype=GL-AR750";
         };
     };
 
