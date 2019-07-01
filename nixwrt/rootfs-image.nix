@@ -31,6 +31,7 @@ let
       include ${monitrc}
       '';
     };
+    "monit.id" = { content = builtins.hashString "md5" configuration.services.dropbear.hostKey; };
     group = {content = ''
       root:!!:0:
       nogroup:x:65534:

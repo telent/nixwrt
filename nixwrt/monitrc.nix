@@ -57,7 +57,7 @@ in writeText "monitrc" ''
   set daemon 30
   set httpd port ${toString httpConfig.port}
   ${lib.strings.concatMapStrings (f: "  allow ${f}\n") httpConfig.allow}
-  set idfile /run/monit.id
+  set idfile /etc/monit.id
   set pidfile /run/monit.pid
   set statefile /run/monit.state
   check directory booted path /
