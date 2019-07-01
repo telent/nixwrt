@@ -7,6 +7,7 @@ lib.attrsets.recursiveUpdate super {
   busybox.applets = super.busybox.applets ++ [ "start-stop-daemon" ];
   busybox.config = super.busybox.config // {
     "START_STOP_DAEMON" = "y";
+    "FEATURE_INIT_SYSLOG" = "y";
     "FEATURE_START_STOP_DAEMON_FANCY" = "y";
   };
 
