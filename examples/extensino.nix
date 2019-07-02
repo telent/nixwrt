@@ -1,5 +1,5 @@
 { psk ? "fishfinger"
-, ssid ? "telent1"
+, ssid
 , loghost ? "loghost"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
@@ -15,17 +15,26 @@ let
         };
         "eth0.1" = {
           type = "vlan"; id = 1; parent = "eth0"; depends = [];
+          memberOf = "br0";
         };
-        "wlan0" = { };
+        "wlan0" = {
+          memberOf = "br0";
+        };
         "br0" = {
           type = "bridge";
           enableStp = true;
           timeout = 60;
-          members  = [ "eth0.1" "wlan0" ];
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
-      etc = { };
+      etc = {
+        "monit.ping.rc" = { content = ''
+          check host 1.1.1.1 with address 1.1.1.1
+	    depends on udhcpc
+            if failed ping then exec "/bin/touch /tmp/fog-in-channel"
+'';
+        };
+      };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}

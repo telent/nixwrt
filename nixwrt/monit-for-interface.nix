@@ -3,7 +3,10 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
     setAddress = name : attrs:
       (lib.optionalString (attrs ? ipv4Address)
         "${ip} addr add ${attrs.ipv4Address} dev ${name}");
-    setUp = name : {up,...}:
+    addToMaster = name : attrs@{memberOf ? null, ...} :
+      lib.optionalString (memberOf != null)
+        "${ip} link set ${name} master ${memberOf}";
+    setUp = name : {up, ...}:
       "${ip} link set dev ${name} ${if up then "up" else "down"}";
     commands = {
       # the intention is that we should be able to extend this with
@@ -12,15 +15,17 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
       vlan = name : attrs@{parent, type, id,  ...} :
         ["${ip} link add link ${parent} name ${name} type ${type} id ${toString id}"
          (setAddress name attrs)
+         (addToMaster name attrs)
          (setUp name attrs)];
-      bridge = name : attrs@{type, members, enableStp ? false, ...} : lib.flatten
+      bridge = name : attrs@{type, enableStp ? false, ...} : lib.flatten
         ["${ip} link add name ${name} type ${type}"
          (setAddress name attrs)
          "echo \"${if enableStp then ''1'' else ''0'' }\" > /sys/class/net/${name}/bridge/stp_state"
          (setUp name attrs)
-         (map (intf : "${ip} link set ${intf} master ${name}") members)];
+         ];
       hw = name : attrs :
         [(setAddress name attrs)
+         (addToMaster name attrs)
          (setUp name attrs)];
     };
     stanza = name: a@{ routes, type, depends, timeout, ... } :
