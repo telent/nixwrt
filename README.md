@@ -88,12 +88,12 @@ You will need
   addresses for the build machine and target, because U-Boot probably
   won't work with DHCP
 
-* access to your target devices's boot monitor.  This will very often
-  involve opening it up and attaching a USB serial convertor to some
-  header pins: sometimes it involves soldering those pins into holes.
-  On other machines it's not nearly as complicated as you can access
-  u-boot across the network.  The OpenWRT wiki is often very helpful
-  here.
+* access to your target devices's boot monitor (usually U-Boot).  This
+  will very often involve opening it up and attaching a USB serial
+  convertor to some header pins: sometimes it involves soldering those
+  pins into holes.  On other devices it's not nearly as complicated as
+  you can access U-Boot across the network.  The OpenWRT wiki is often
+  very helpful here.
 
 Now, clone the nixwrt repo, and also the nixpkgs fork on which it depends
 
@@ -174,7 +174,42 @@ understand if it'll work for you_.  There are a number of magic
 numbers which are most likely correct if you have the same hardware as
 I have and almost certainly incorrect if you don't.
 
-### Find the flash address
+### The moderately straightforward way
+
+If you have a working NixWRT with a running ssh daemon (usually by
+including the `sshd` module) and the `flashcp` busybox app (currently
+this is installed by default) you can install a new image from inside the running systenm without recourse to any U-Boot/serial connection shenanigans.  This is a win when you've deployed the device and don't wish to pop the top off.
+
+Step 1: Build the regular (non-phram) firmware
+
+    $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=firmware
+
+Step 2: copy it onto the device
+
+    $ cat extensino/firmware.bin | ssh root@extensino.lan 'cat > /tmp/nixwrt.bin'
+
+Step 3: ssh into the device and write it to the `firmware` mtd partition.  Note: the _real_ firmware partition, not the emulated phram one.
+
+    # cat /proc/mtd
+    dev:    size   erasesize  name
+    mtd0: 00030000 00001000 "u-boot"
+    mtd1: 00010000 00001000 "u-boot-env"
+    mtd2: 00010000 00001000 "factory"
+    mtd3: 00f80000 00001000 "firmware"
+    mtd4: 00220000 00001000 "kernel"
+    mtd5: 00d60000 00001000 "rootfs"
+    mtd6: 00b57000 00001000 "rootfs_data"
+    mtd7: 00010000 00001000 "art"
+
+    # flashcp -v /tmp/nixwrt.bin /dev/mtd3
+
+Step 4: reboot the device
+
+    # reboot
+
+### The complicated way
+
+#### Find the flash address
 
 You will need to find the address of your flash chip.  If you don't
 know you can probably make a reasonable guess: either use the U-boot
@@ -185,13 +220,13 @@ to look at the boot log for a line of the form `Booting image at
 `0x70000`.  If you get this wrong you may brick your device, of
 course.
 
-### Build the regular (non-phram) firmware
+#### Build the regular (non-phram) firmware
 
     $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=firmware
 
-Again, after doing this you need to make it available to the TFTP server
+Now do whatever you need to make it available to the TFTP server.
 
-### Flash it
+#### Flash it
 
 Get into u-boot, then do something like this
 
@@ -214,21 +249,28 @@ If that looked like it worked, type `reset` to find out if you were right.
 
 ## Troubleshooting
 
-If it doesn't work, you could try
+* if the kernel boots but gets stuck where the userland should be
+  starting, you could try changing `init=/bin/init` to `init=/bin/sh`.
+  Sometimes the ersatz edifice of string glommeration that creates the
+  contents of `/etc` goes wrong and generates broken files or empty
+  files or no files.  This will give you a root shell on the console
+  with which you can poke around
 
-* changing `init=/bin/init` to `init=/bin/sh`.  Sometimes the ersatz
-  edifice of string glommeration that creates the contents of `/etc`
-  goes wrong and generates broken files or empty files or no files.
-  This will give you a root shell on the console with which you can
-  poke around
-* On Atheros-based devices (the Yun) changing `ath79-wdt.from_boot=n` to `ath79-wdt.from_boot=y`: this
+* or use [Binwalk](https://github.com/ReFirmLabs/binwalk) to unpack
+  the image on the host
+
+* On Atheros-based devices (the Yun) you can change `ath79-wdt.from_boot=n` to `ath79-wdt.from_boot=y`: this
   will cause the board to reboot after 21 seconds, which is handy if
   it's wedging during the boot process - especially if you're not
   physically colocated with it.
-* If it can't mount a phram rootfs this is often because you've
-  enabled more kernel options causing the image size to increase,
-  and the end of the kernel is overlapping the start of the rootfs.
-  Check the addresses in your uboot `tftp` commands
+
+* There is a `syslog` module: if it seems to work mostly but services
+  are failing and you think they may be generating error messages, add
+  the syslog module to your config and point it at a syslog server.
+  Configuring the syslog server is outside the scope of this README,
+  but essentially it needs to be able to receive UDP on port 514.  I
+  use [RSYSLOG](https://www.rsyslog.com/): other choices are
+  available.
 
 
 # Feedback
