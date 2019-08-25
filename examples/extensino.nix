@@ -50,6 +50,7 @@ let
        busybox
        kernelMtd
        (phram { offset = "0xa00000"; sizeMB = "5"; })
+       haveged
        (hostapd {
           config = { interface = "wlan0"; inherit ssid; hw_mode = "g"; channel = 1; };
           inherit psk;

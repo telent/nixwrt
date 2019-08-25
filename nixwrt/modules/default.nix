@@ -193,4 +193,7 @@
       packages = super.packages ++ [ pkgs.kexectools ];
       kernel.config."KEXEC" = "y";
     };
+
+  haveged = import ./haveged.nix;
+
 }
