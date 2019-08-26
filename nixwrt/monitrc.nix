@@ -1,6 +1,9 @@
 { lib
+ , stdenv
  , iproute
  , webadmin
+ , callPackage
+ , hostapd
  , writeText
  , writeScriptBin
  , interfaces ? {}, services ? {}, filesystems ? {}
@@ -8,7 +11,7 @@
 let ip = "${iproute}/bin/ip";
    httpConfig = lib.attrsets.recursiveUpdate { port = 80; allow = ["localhost"]; } webadmin;
    stanzaForInterface =
-      import ./monit-for-interface.nix { inherit lib writeScriptBin ip; };
+      import ./monit-for-interface.nix { inherit hostapd lib writeScriptBin writeText ip; };
    stanzaForFs = mountpoint: spec : ''
      check filesystem vol_${spec.label} path ${mountpoint}
        start program = "/bin/mount -t ${spec.fstype} LABEL=${spec.label} ${mountpoint}";

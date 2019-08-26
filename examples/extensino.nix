@@ -18,12 +18,17 @@ let
           memberOf = "br0";
         };
         "wlan0" = {
+          type = "hostap";
+          ssid = "telent";
+          country_code = "UK";
+          channel = 2;
+          wpa_psk = psk;
           memberOf = "br0";
         };
         "br0" = {
           type = "bridge";
           enableStp = true;
-          timeout = 60;
+          timeout = 90;
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -51,10 +56,6 @@ let
        kernelMtd
        (phram { offset = "0xa00000"; sizeMB = "5"; })
        haveged
-       (hostapd {
-          config = { interface = "wlan0"; inherit ssid; hw_mode = "g"; channel = 1; };
-          inherit psk;
-        })
        (switchconfig {
          name = "switch0";
          interface = "eth0";

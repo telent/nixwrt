@@ -1,4 +1,4 @@
-{lib, ip, writeScriptBin}:
+{lib, ip, hostapd, writeText, writeScriptBin}:
 let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;};
     setAddress = name : attrs:
       (lib.optionalString (attrs ? ipv4Address)
@@ -23,6 +23,13 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
          "echo \"${if enableStp then ''1'' else ''0'' }\" > /sys/class/net/${name}/bridge/stp_state"
          (setUp name attrs)
          ];
+      hostap = name : attrs :
+      let cfg = { inherit (attrs) channel country_code ssid wpa_psk; };
+         conf = writeText "hostap-${name}.conf" (import ./hostapd-conf.nix lib cfg);
+      in lib.flatten
+        ["${hostapd}/bin/hostapd -B -P /run/hostapd.pid -i ${name} -S ${conf}"
+           (addToMaster name attrs)
+          ];
       hw = name : attrs :
         [(setAddress name attrs)
          (addToMaster name attrs)
