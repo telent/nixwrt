@@ -2,8 +2,9 @@
 
 { rsyncPassword ? "urbancookie"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, sshHostKey ? ./fake_ssh_host_key }:
-let nixwrt = (import <nixwrt>) { targetBoard = "mt300a"; }; in
+, loghost ? "loghost"
+, sshHostKey ? "----FAKING RSA PRIVATE KEY----" }:
+let nixwrt = (import <nixwrt>) { targetBoard = "mt300nv2"; }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
@@ -50,7 +51,7 @@ let
          vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
         })
        (phram { offset = "0xa00000"; sizeMB = "5"; })
-       (syslogd { loghost = "192.168.0.2"; })
+       (syslogd { inherit loghost ; })
        (ntpd { host = "pool.ntp.org"; })
        (dhcpClient { interface = "eth0.2"; })
     ];
