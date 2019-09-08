@@ -29,6 +29,13 @@ let
       ];
       packages = [ pkgs.iproute ];
       filesystems = {} ;
+      busybox = {
+        # because I have empirically determined that
+	# being able to see which copy of a file is more recent
+	# is an essential feature of a storage server
+        config.feature_ls_timestamps = "y";
+        config.feature_ls_sortfiles = "y";	
+      };
     };
 
     wantedModules = with nixwrt.modules;
