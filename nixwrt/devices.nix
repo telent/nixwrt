@@ -63,6 +63,8 @@ in rec {
         kernel.config = (readconf "${p}/generic/config-${majmin version}") //
                         (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
                         kconfig;
+        kernel.loadAddress = "0x80000000";
+        kernel.entryPoint = "0x80000000";
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.package =
           let sourceTree = (callPackage ./kernel/prepare-source.nix) {
@@ -75,8 +77,8 @@ in rec {
             (callPackage ./kernel/uimage.nix) {
               inherit vmlinux;
               commandLine = self.kernel.commandLine;
-              loadAddress = "0x80000000";
-              entryPoint  = "0x80000000";
+              loadAddress = self.kernel.loadAddress;
+              entryPoint  = self.kernel.entryPoint;
               inherit dtsPath;
               dtcSearchPaths = [
                 "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
@@ -200,6 +202,8 @@ in rec {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
+        kernel.loadAddress = "0x80060000";
+        kernel.entryPoint = "0x80060000";
         kernel.package =
           let sourceTree = (callPackage ./kernel/prepare-source.nix) {
             inherit (pkgs) ledeSrc;
@@ -211,8 +215,8 @@ in rec {
             (callPackage ./kernel/uimage.nix) {
               inherit vmlinux;
               commandLine = self.kernel.commandLine;
-              loadAddress = "0x80060000";
-              entryPoint = "0x80060000";
+              loadAddress = self.kernel.loadAddress;
+              entryPoint  = self.kernel.entryPoint;
               dtcSearchPaths = [
                 "${sourceTree}/arch/mips/boot/dts"
                 "${sourceTree}/arch/mips/boot/dts/include"
@@ -304,12 +308,14 @@ in rec {
                             "PCI" = "y";
                             "NET_VENDOR_INTEL" = "y";
                           };
+          kernel.loadAddress = "0x80000000";
+          kernel.entryPoint = "0x80000000";
           kernel.commandLine = "root=/dev/sr0 console=ttyS0 init=/bin/init";
           kernel.package = (callPackage ./kernel/default.nix) {
             config = self.kernel.config;
             commandLine = self.kernel.commandLine;
-            loadAddress = "0x80000000";
-            entryPoint = "0x80000000";
+            loadAddress = self.kernel.loadAddress;
+            entryPoint  = self.kernel.entryPoint;
             inherit (pkgs) ledeSrc;
             inherit version kernelSrc socFamily;
           };
