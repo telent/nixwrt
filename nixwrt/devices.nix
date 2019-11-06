@@ -7,6 +7,19 @@ let
   mmp = version :
     let el = n : builtins.toString (builtins.elemAt version n);
     in (el 0) + "." + (el 1) + "." + (el 2);
+  uimage = callPackage : vmlinux : cfg :
+            (callPackage ./kernel/uimage.nix) {
+              inherit vmlinux;
+              commandLine = cfg.commandLine;
+              loadAddress = cfg.loadAddress;
+              entryPoint  = cfg.entryPoint;
+              dtsPath = cfg.dts;
+              dtcSearchPaths = [
+                "${cfg.source}/arch/mips/boot/dts"
+                "${cfg.source}/arch/mips/boot/dts/include"
+                "${cfg.source}/include/"];
+            };
+
 in rec {
 
   # generic config for boards/products based on the mt7620, which uses the "ramips"
@@ -66,30 +79,18 @@ in rec {
         kernel.loadAddress = "0x80000000";
         kernel.entryPoint = "0x80000000";
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
+        kernel.dts = dtsPath;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          inherit (pkgs) ledeSrc;
+          inherit version kernelSrc socFamily;
+        };
         kernel.package =
-          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          }; vmlinux = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            inherit sourceTree;
-          }; uimage =
-            (callPackage ./kernel/uimage.nix) {
-              inherit vmlinux;
-              commandLine = self.kernel.commandLine;
-              loadAddress = self.kernel.loadAddress;
-              entryPoint  = self.kernel.entryPoint;
-              inherit dtsPath;
-              dtcSearchPaths = [
-                "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
-                "${sourceTree}/arch/mips/boot/dts"
-                "${sourceTree}/arch/mips/boot/dts/include"
-                "${sourceTree}/include/"];
-              extraName = socFamily;
-            };
-          in uimage;
+          let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
+          }; in uimage callPackage vmlinux self.kernel;
       };
-    };
+  };
+
 
   # GL-Inet GL-MT300A
 
@@ -204,28 +205,17 @@ in rec {
         kernel.config = kconfig;
         kernel.loadAddress = "0x80060000";
         kernel.entryPoint = "0x80060000";
-        kernel.package =
-          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          }; vmlinux = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            inherit sourceTree;
-          }; uimage =
-            (callPackage ./kernel/uimage.nix) {
-              inherit vmlinux;
-              commandLine = self.kernel.commandLine;
-              loadAddress = self.kernel.loadAddress;
-              entryPoint  = self.kernel.entryPoint;
-              dtcSearchPaths = [
-                "${sourceTree}/arch/mips/boot/dts"
-                "${sourceTree}/arch/mips/boot/dts/include"
-                "${sourceTree}/include/"];
+        kernel.dts = null;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          inherit (pkgs) ledeSrc;
+          inherit version kernelSrc socFamily;
+        };
+        kernel.package = let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
           };
-        in uimage;
-        };
-        };
-
+          in uimage self.callPackage vmlinux self.kernel;
+      };
+  };
   # The Arduino Yun is a handy (although pricey) way to get an AR9331
   # target without any soldering: it's a MIPS SoC glued to an Arduino,
   # so you can use Arduino tools to talk to it.

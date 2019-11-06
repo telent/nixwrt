@@ -4,7 +4,7 @@
  , writeText
  , config ? {}
  , commandLine ? ""
- , sourceTree
+ , source
 } :
 let kconfigFile = writeText "nixwrt_kconfig"
         (builtins.concatStringsSep
@@ -34,12 +34,12 @@ stdenv.mkDerivation rec {
     export KBUILD_OUTPUT=`pwd`
     cp ${kconfigFile} .config
     cp ${kconfigFile} .config.orig
-    ( cd ${sourceTree} && make V=1 olddefconfig )
+    ( cd ${source} && make V=1 olddefconfig )
   '';
 
   KBUILD_BUILD_HOST = "nixwrt.builder";
   buildPhase = ''
-    make -C ${sourceTree} vmlinux
+    make -C ${source} vmlinux
   '';
 
   installPhase = ''
