@@ -170,16 +170,15 @@
       kernel.config."MTD_PHRAM" = "y";
       phram = {
         sizeMB = sizeMB;
-	offset = offset;
+        offset = offset;
       };
       etc."phram.vars" = {
         content = ''
           phram_sizeMB=${sizeMB}
           phram_offset=${offset}
         '';
-	mode = "0555";
+        mode = "0555";
       };
-      packages = super.packages ++ [ nixpkgs.brickwrt ];
     };
 
   forcePhram = nixpkgs: self: super:
