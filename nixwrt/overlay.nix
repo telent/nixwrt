@@ -97,7 +97,7 @@ in {
 
   zlib = super.zlib.overrideAttrs (o: { dontStrip = false; });
 
-  swconfig =  stripped (self.callPackage ./swconfig.nix { });
+  swconfig =  stripped (self.callPackage ./pkgs/swconfig.nix { });
 
   libpcap = super.libpcap.overrideAttrs (o: {
     # tcpdump only wants the shared libraries, not all the
