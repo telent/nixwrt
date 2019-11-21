@@ -1,6 +1,6 @@
 # Status May 2019: builds, but missing some needed packages
 
-{ targetBoard ? "gl_ar750"
+{ targetBoard ? "ar750"
 , ssid
 , psk
 , loghost ? "loghost"

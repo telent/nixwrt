@@ -275,40 +275,4 @@ in rec {
         };
     };
 
-  # this is bitrotted code for running on Qemu.  See QEMU.md
-  malta = rec {
-    name = "qemu-malta"; endian = "little";
-    socFamily = "malta";
-    hwModule = nixpkgs: self: super:
-      with nixpkgs;
-      let p = "${ledeSrc}/target/linux/";
-          version = [4 14 53];
-          kernelSrc = pkgs.fetchurl {
-            url = (kernelSrcUrl (mmp version));
-            sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
-          };
-          readconf = readDefconfig nixpkgs;
-      in
-        lib.recursiveUpdate super {
-          kernel.config = (readconf "${p}/generic/config-${majmin version}") //
-                          (readconf "${p}/${socFamily}/config-${majmin version}") //
-                          {
-                            "BLK_DEV_SR" = "y";
-                            "E1000" = "y";
-                            "PCI" = "y";
-                            "NET_VENDOR_INTEL" = "y";
-                          };
-          kernel.loadAddress = "0x80000000";
-          kernel.entryPoint = "0x80000000";
-          kernel.commandLine = "root=/dev/sr0 console=ttyS0 init=/bin/init";
-          kernel.package = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            commandLine = self.kernel.commandLine;
-            loadAddress = self.kernel.loadAddress;
-            entryPoint  = self.kernel.entryPoint;
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          };
-        };
-  };
 }
