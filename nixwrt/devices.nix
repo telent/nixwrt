@@ -58,7 +58,7 @@ in rec {
             "NET_MEDIATEK_GSW_MT7620" = "y";
             "NET_MEDIATEK_MT7620" = "y";
             "PARTITION_ADVANCED" = "y";
-	          "PHY_RALINK_USB" = "y";
+            "PHY_RALINK_USB" = "y";
             "PRINTK_TIME" = "y";
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
@@ -69,7 +69,7 @@ in rec {
             "RT2800PCI" = "y";
             "RT2800PCI_RT53XX" = "y";
             "RT2800SOC" = "y";
-	          "SOC_MT7620" = "y";
+            "SOC_MT7620" = "y";
           };
           p = "${pkgs.ledeSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {
