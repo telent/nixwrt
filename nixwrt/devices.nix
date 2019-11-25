@@ -263,16 +263,4 @@ in rec {
           kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         };
     };
-
-  ar750 =
-    ar71xx // rec {
-      name = "glinet-ar750";
-      hwModule = nixpkgs: self: super:
-        let super' = (ar71xx.hwModule {} nixpkgs self super);
-        in nixpkgs.lib.recursiveUpdate super' {
-          kernel.config."ATH79_MACH_GL_AR750" = "y";
-          kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=GL-AR750 machtype=GL-AR750";
-        };
-    };
-
 }
