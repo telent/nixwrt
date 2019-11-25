@@ -80,17 +80,23 @@ in rec {
             "SOC_MT7620" = "y";
           };
       p = "${pkgs.fetchFromGitHub openwrtSrc}/target/linux/";
+      socPatches = [
+        "${p}ramips/patches-4.14/"
+      ];
+      socFiles = [
+        "${p}ramips/files-4.14/*"
+      ];
       in lib.attrsets.recursiveUpdate super {
-        kernel.config = (readconf "${p}/generic/config-${majmin version}") //
-                        (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
+        kernel.config = (readconf "${p}generic/config-${majmin version}") //
+                        (readconf "${p}${socFamily}/${soc}/config-${majmin version}") //
                         kconfig;
         kernel.loadAddress = "0x80000000";
         kernel.entryPoint = "0x80000000";
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.dts = dtsPath;
         kernel.source = (callPackage ./kernel/prepare-source.nix) {
-          inherit version kernelSrc socFamily;
           ledeSrc = pkgs.fetchFromGitHub  openwrtSrc;
+          inherit version kernelSrc socFamily socPatches socFiles;
         };
         kernel.package =
           let vmlinux = (callPackage ./kernel/default.nix) {

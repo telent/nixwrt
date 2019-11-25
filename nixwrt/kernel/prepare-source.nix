@@ -5,6 +5,8 @@
  , ledeSrc
  , kernelSrc
  , patchutils
+ , socFiles
+ , socPatches
  , version
 } :
 let versionScalar = v :
@@ -25,15 +27,12 @@ stdenv.mkDerivation rec {
         if test -d $1 ; then find $1 -type f | sort | xargs  -n1 patch -N -p1 -i  ;fi
       }
       cp -dRv ${ledeSrc}/target/linux/generic/files/* .
-      cp -dRv ${ledeSrc}/target/linux/ramips/files-${majmin}/* .
-      cp -dRv ${ledeSrc}/target/linux/ar71xx/files/* .
+      ${lib.concatMapStringsSep "\n" (x: "cp -dRv ${x} .") socFiles}
       q_apply ${ledeSrc}/target/linux/generic/backport-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/pending-${majmin}/
       q_apply ${ledeSrc}/target/linux/generic/hack-${majmin}/
-      ${lib.optionalString (! isNull socFamily)
-                           "q_apply ${ledeSrc}/target/linux/${socFamily}/patches-${majmin}/"}
-      chmod -R +w .       # */
-
+      ${lib.concatMapStringsSep "\n" (x: "q_apply ${x}") socPatches}
+      chmod -R +w .
     '';
 
     patches = [ ./kernel-ath79-wdt-at-boot.patch
