@@ -61,6 +61,7 @@ in rec {
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
             "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
+            "MIPS_RAW_APPENDED_DTB" = "y";
             "MTD_CMDLINE_PART" = "y";
             "NETFILTER"= "y";   # mtk_eth_soc.c won't build without this
             "NET_MEDIATEK_GSW_MT7620" = "y";
