@@ -1,13 +1,6 @@
 self: super:
 let
   stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
-  ledeSrc = self.fetchFromGitHub {
-    owner = "openwrt";
-    repo = "openwrt";
-    name = "openwrt-source" ;
-    rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
-    sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
-  };
 in {
 
   # we need to build real lzma instead of using xz, because the lzma
@@ -29,11 +22,15 @@ in {
     };
   };
 
-  inherit ledeSrc;
-
   patchImage = self.stdenv.mkDerivation {
     name = "patch-dtb";
-    src = ledeSrc;
+    src = self.fetchFromGitHub {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "a74095c68c4fc66195f7c4885171e4f1d9e5c5e6";
+      sha256 = "1kk4qvrp5wbrci541bjvb6lld60n003w12dkpwl18bxs9ygpnzlq";
+    };
     configurePhase = "true";
     buildPhase = ''
       $CC -o patch-dtb tools/patch-image/src/patch-dtb.c

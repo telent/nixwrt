@@ -22,11 +22,19 @@ let
 
 in rec {
 
-  # generic config for boards/products based on the mt7620, which uses the "ramips"
-  # soc family in Linux.  Board-specific config for systems based on this (at least, all the
-  # ones I've seen so far) is based on device tree, so they need .dts files
+  # generic config for boards/products based on the mt7620, which uses
+  # the "ramips" soc family in Linux.  Board-specific config for
+  # systems based on this (at least, all the ones I've seen so far) is
+  # based on device tree, so they need .dts files
   mt7620 = rec {
     endian= "little";
+    openwrtSrc =  {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
+      sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
+    };
     socFamily = "ramips";
     hwModule = {dtsPath, soc ? "mt7620" } : nixpkgs: self: super:
       with nixpkgs;
@@ -71,7 +79,7 @@ in rec {
             "RT2800SOC" = "y";
             "SOC_MT7620" = "y";
           };
-          p = "${pkgs.ledeSrc}/target/linux/";
+      p = "${pkgs.fetchFromGitHub openwrtSrc}/target/linux/";
       in lib.attrsets.recursiveUpdate super {
         kernel.config = (readconf "${p}/generic/config-${majmin version}") //
                         (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
@@ -81,8 +89,8 @@ in rec {
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.dts = dtsPath;
         kernel.source = (callPackage ./kernel/prepare-source.nix) {
-          inherit (pkgs) ledeSrc;
           inherit version kernelSrc socFamily;
+          ledeSrc = pkgs.fetchFromGitHub  openwrtSrc;
         };
         kernel.package =
           let vmlinux = (callPackage ./kernel/default.nix) {
@@ -90,7 +98,6 @@ in rec {
           }; in uimage callPackage vmlinux self.kernel;
       };
   };
-
 
   # GL-Inet GL-MT300A
 
@@ -127,7 +134,7 @@ in rec {
       name = "glinet-mt300a";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300A.dts";
+        let dtsPath = "${pkgs.fetchFromGitHub mt7620.openwrtSrc}/target/linux/ramips/dts/GL-MT300A.dts";
         in mt7620.hwModule {inherit dtsPath;} nixpkgs self super;
     };
 
@@ -141,7 +148,7 @@ in rec {
       name = "glinet-mt300n_v2";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300N-V2.dts";
+        let dtsPath = "${pkgs.fetchFromGitHub mt7620.openwrtSrc}/target/linux/ramips/dts/GL-MT300N-V2.dts";
         in mt7620.hwModule {inherit dtsPath; soc="mt76x8"; } nixpkgs self super;
     };
 
@@ -154,6 +161,13 @@ in rec {
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
+    openwrtSrc =  {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
+      sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
+    };
     hwModule = {dtsPath ? null }: nixpkgs: self: super:
       with nixpkgs;
       let version = [4 14 113];
@@ -207,7 +221,7 @@ in rec {
         kernel.entryPoint = "0x80060000";
         kernel.dts = null;
         kernel.source = (callPackage ./kernel/prepare-source.nix) {
-          inherit (pkgs) ledeSrc;
+          ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
           inherit version kernelSrc socFamily;
         };
         kernel.package = let vmlinux = (callPackage ./kernel/default.nix) {
