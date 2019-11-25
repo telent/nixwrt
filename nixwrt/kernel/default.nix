@@ -20,9 +20,12 @@ stdenv.mkDerivation rec {
   name = "kernel";
 
   hardeningDisable = ["all"];
-  nativeBuildInputs = [buildPackages.pkgs.bc buildPackages.stdenv.cc ];
+  nativeBuildInputs = [buildPackages.stdenv.cc] ++
+                      (with buildPackages.pkgs;
+                        [bc bison flex openssl perl]);
   CC = "${stdenv.cc.bintools.targetPrefix}gcc";
-  HOSTCC = "gcc";
+  HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include";
+  HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib ";
   CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
   ARCH = "mips";              # use "mips" here for both mips and mipsel
   dontStrip = true;
