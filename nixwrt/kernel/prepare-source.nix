@@ -1,5 +1,6 @@
 {  stdenv
  , buildPackages
+ , callPackage
  , socFamily ? null
  , ledeSrc
  , kernelSrc
