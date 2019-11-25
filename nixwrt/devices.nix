@@ -159,12 +159,89 @@ in rec {
         in mt7620.hwModule {inherit dtsPath; soc="mt76x8"; } nixpkgs self super;
     };
 
-  # generic config for boards/products based on Atheros AR7x and AR9x SoCs,
-  # which corresponds to the "ath79" soc family in Linux (but the "ar71xx" designator
-  # in OpenWRT, just liven things up).  There are some boards that use device tree
-  # but all the ones I've built for so far use the older configuration style that
-  # requires a board-specific kconfig option.  So: if you're using a dts file in this
-  # soc family you're the first in nixwrt to do so.
+  # generic config for boards/products based on Atheros AR7x and AR9x
+  # SoCs, ("ath79" designator in Linux kernel).  This is for
+  # boards/socs/targets that have been updated to use a device tree
+
+  ath79 = rec {
+    endian= "big";
+    socFamily = "ath79";
+    openwrtSrc = {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "a724095c68c4fc66195f7c4885171e4f1d9e5c5e6";
+      sha256 = "1kk4qvrp5wbrci541bjvb6lld60n003w12dkpwl18bxs9ygpnzlq";
+    };
+    hwModule = {dtsPath } : nixpkgs: self: super:
+      with nixpkgs;
+      let version = [4 19 84];
+          kernelSrc = pkgs.fetchurl {
+            url = (kernelSrcUrl (mmp version));
+            sha256 = "868b4a92619cb00ab142a20a67f000525b9605820d1b66faa4a183133eac0660";
+          };
+          readconf = readDefconfig nixpkgs;
+          stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
+          kconfig = {
+            "BLK_DEV_INITRD" = "n";
+            "CFG80211" = "y";
+            "CMDLINE_PARTITION" = "y";
+            "DEBUG_INFO" = "y";
+            "DEVTMPFS" = "y";
+            "EARLY_PRINTK" = "y";
+            "IMAGE_CMDLINE_HACK" = "n";
+            "IP_PNP" = "y";
+            "JFFS2_FS" = "n";
+            "MAC80211" = "y";
+            "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
+            "MIPS_RAW_APPENDED_DTB" = "y";
+            "MODULE_SIG" = "n";
+            "MTD_CMDLINE_PART" = "y";
+            "MTD_SPLIT_FIRMWARE" = "y";
+            "PARTITION_ADVANCED" = "y";
+            "PRINTK_TIME" = "y";
+            "SQUASHFS" = "y";
+            "SQUASHFS_XZ" = "y";
+          };
+          p = "${pkgs.fetchFromGitHub openwrtSrc}/target/linux/";
+          socFiles = [
+            "${p}ath79/files/*"
+          ];
+          socPatches = [
+            "${p}ath79/patches-4.19/"
+          ];
+      in lib.attrsets.recursiveUpdate super {
+        kernel.config = (readconf "${p}/generic/config-${majmin version}") //
+                        (readconf "${p}/ath79/config-4.19") //
+                        kconfig;
+        kernel.loadAddress = "0x80060000";
+        kernel.entryPoint = "0x80060000";
+        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
+        kernel.dts = dtsPath;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
+          inherit version kernelSrc socFamily socFiles socPatches;
+        };
+        kernel.package =
+          let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
+          }; in uimage callPackage vmlinux self.kernel;
+      };
+  };
+  ar750 = ath79 //rec {
+      name = "glinet-ar750";
+      hwModule = nixpkgs: self: super:
+        with nixpkgs;
+        let dtsPath = "${pkgs.fetchFromGitHub ath79.openwrtSrc}/target/linux/ath79/dts/qca9531_glinet_gl-ar750.dts";
+        in ath79.hwModule {inherit dtsPath; } nixpkgs self super;
+    };
+
+
+  # generic config for boards/products based on Atheros AR7x and AR9x
+  # SoCs, which have _not_ been updated to use DTS but instead use the
+  # older configuration style that requires a board-specific kconfig
+  # option.  This is the "ar71xx" designator
+
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
