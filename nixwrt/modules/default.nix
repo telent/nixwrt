@@ -163,15 +163,8 @@
 	   etc."ppp/pap-secrets" = { content = auth; mode = "0400"; };
 	};
 
-  # support for upgrading a running NixWRT device with a newer or
-  # different build, without needing console/uboot access
   phram = options @ { offset, sizeMB} : nixpkgs: self: super:
     nixpkgs.lib.recursiveUpdate super {
-      kernel.config."MTD_PHRAM" = "y";
-      phram = {
-        sizeMB = sizeMB;
-        offset = offset;
-      };
       etc."phram.vars" = {
         content = ''
           phram_sizeMB=${sizeMB}
@@ -179,12 +172,11 @@
         '';
         mode = "0555";
       };
-    };
-
-  forcePhram = nixpkgs: self: super:
-    let p = self.phram;
-    in nixpkgs.lib.recursiveUpdate super {
-      kernel.commandLine = "${super.kernel.commandLine} mtdparts=mydev:${p.sizeMB}M(firmware) phram.phram=mydev,${p.offset},${p.sizeMB}Mi memmap=${p.sizeMB}M\$${p.offset}";
+      kernel.config."MTD_PHRAM" = "y";
+      kernel.config."MTD_SPLIT_FIRMWARE" = "y";
+      kernel.config."MTD_SPLIT_FIRMWARE_NAME" = builtins.toJSON "nixwrt";
+      kernel.commandLine =
+        "${super.kernel.commandLine} mtdparts=phram0:${sizeMB}M(nixwrt) phram.phram=phram0,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
     };
   kexec = _: nixpkgs: self: super:
     with nixpkgs;
