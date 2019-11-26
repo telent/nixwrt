@@ -32,7 +32,7 @@ let
 	# being able to see which copy of a file is more recent
 	# is an essential feature of a storage server
         config.feature_ls_timestamps = "y";
-        config.feature_ls_sortfiles = "y";	
+        config.feature_ls_sortfiles = "y";
       };
     };
 
