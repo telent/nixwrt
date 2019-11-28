@@ -20,7 +20,7 @@ let
     ${stdenv.cc.targetPrefix}cpp -nostdinc -x assembler-with-cpp ${cppDtSearchFlags} -undef -D__DTS__  -o dtb.tmp ${dtsPath}
     echo '/{ chosen { bootargs = ${builtins.toJSON commandLine}; }; };'  >> dtb.tmp
     dtc -O dtb ${dtcSearchFlags} -o vmlinux.dtb dtb.tmp
-    patch-dtb vmlinux.stripped vmlinux.dtb
+    ( cat vmlinux.stripped vmlinux.dtb > vmlinux.tmp ) && mv vmlinux.tmp vmlinux.stripped
   '' else ''
     echo patch-cmdline vmlinux.stripped '${commandLine}'
     patch-cmdline vmlinux.stripped '${commandLine}'

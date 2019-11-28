@@ -22,15 +22,8 @@ with nixpkgs; rec {
   };
 
   firmware = configuration:
-    let kernelImage = configuration.kernel.package;
-    in stdenv.mkDerivation rec {
-      name = "firmware.bin";
-      phases = [ "installPhase" ];
-      inherit kernelImage;
-      installPhase = ''
-        mkdir -p $out
-        dd if=${kernelImage} of=$out/firmware.bin bs=128k conv=sync
-        dd if=${rootfs configuration}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
-      '';
-  };
+    pkgs.callPackage ./firmware.nix {
+      kernelImage = configuration.kernel.package;
+      rootImage = rootfs configuration;
+    };
 }

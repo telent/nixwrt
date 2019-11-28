@@ -38,9 +38,9 @@ let
     '';};
     hosts = {content = "127.0.0.1 localhost\n"; };
     fstab = {
-      content = (import ./fstab.nix stdenv) configuration.filesystems;
+      content = (import ./fstab.nix lib) configuration.filesystems;
     };
-    passwd = {content = (import ./mkpasswd.nix stdenv) configuration.users; };
+    passwd = {content = (import ./mkpasswd.nix lib) configuration.users; };
     inittab = {content = ''
       ::askfirst:-/bin/sh
       ::sysinit:/etc/rc

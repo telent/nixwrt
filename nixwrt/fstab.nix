@@ -1,4 +1,4 @@
-{ lib,...} : filesystems :
+lib : filesystems :
 let baseFilesystems = ''
         proc /proc proc defaults 0 0
         tmpfs /tmp tmpfs rw 0 0

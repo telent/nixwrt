@@ -7,13 +7,34 @@ let
   mmp = version :
     let el = n : builtins.toString (builtins.elemAt version n);
     in (el 0) + "." + (el 1) + "." + (el 2);
+  uimage = callPackage : vmlinux : cfg :
+            (callPackage ./kernel/uimage.nix) {
+              inherit vmlinux;
+              commandLine = cfg.commandLine;
+              loadAddress = cfg.loadAddress;
+              entryPoint  = cfg.entryPoint;
+              dtsPath = cfg.dts;
+              dtcSearchPaths = [
+                "${cfg.source}/arch/mips/boot/dts"
+                "${cfg.source}/arch/mips/boot/dts/include"
+                "${cfg.source}/include/"];
+            };
+
 in rec {
 
-  # generic config for boards/products based on the mt7620, which uses the "ramips"
-  # soc family in Linux.  Board-specific config for systems based on this (at least, all the
-  # ones I've seen so far) is based on device tree, so they need .dts files
+  # generic config for boards/products based on the mt7620, which uses
+  # the "ramips" soc family in Linux.  Board-specific config for
+  # systems based on this (at least, all the ones I've seen so far) is
+  # based on device tree, so they need .dts files
   mt7620 = rec {
     endian= "little";
+    openwrtSrc =  {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
+      sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
+    };
     socFamily = "ramips";
     hwModule = {dtsPath, soc ? "mt7620" } : nixpkgs: self: super:
       with nixpkgs;
@@ -40,12 +61,13 @@ in rec {
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
             "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
+            "MIPS_RAW_APPENDED_DTB" = "y";
             "MTD_CMDLINE_PART" = "y";
             "NETFILTER"= "y";   # mtk_eth_soc.c won't build without this
             "NET_MEDIATEK_GSW_MT7620" = "y";
             "NET_MEDIATEK_MT7620" = "y";
             "PARTITION_ADVANCED" = "y";
-	    "PHY_RALINK_USB" = "y";
+            "PHY_RALINK_USB" = "y";
             "PRINTK_TIME" = "y";
             "SQUASHFS" = "y";
             "SQUASHFS_XZ" = "y";
@@ -56,38 +78,33 @@ in rec {
             "RT2800PCI" = "y";
             "RT2800PCI_RT53XX" = "y";
             "RT2800SOC" = "y";
-	    "SOC_MT7620" = "y";
+            "SOC_MT7620" = "y";
           };
-          p = "${pkgs.ledeSrc}/target/linux/";
+      p = "${pkgs.fetchFromGitHub openwrtSrc}/target/linux/";
+      socPatches = [
+        "${p}ramips/patches-4.14/"
+      ];
+      socFiles = [
+        "${p}ramips/files-4.14/*"
+      ];
       in lib.attrsets.recursiveUpdate super {
-        kernel.config = (readconf "${p}/generic/config-${majmin version}") //
-                        (readconf "${p}/${socFamily}/${soc}/config-${majmin version}") //
+        kernel.config = (readconf "${p}generic/config-${majmin version}") //
+                        (readconf "${p}${socFamily}/${soc}/config-${majmin version}") //
                         kconfig;
+        kernel.loadAddress = "0x80000000";
+        kernel.entryPoint = "0x80000000";
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
+        kernel.dts = dtsPath;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          ledeSrc = pkgs.fetchFromGitHub  openwrtSrc;
+          inherit version kernelSrc socFamily socPatches socFiles;
+        };
         kernel.package =
-          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          }; vmlinux = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            inherit sourceTree;
-          }; uimage =
-            (callPackage ./kernel/uimage.nix) {
-              inherit vmlinux;
-              commandLine = self.kernel.commandLine;
-              loadAddress = "0x80000000";
-              entryPoint  = "0x80000000";
-              inherit dtsPath;
-              dtcSearchPaths = [
-                "${pkgs.ledeSrc}/target/linux/${socFamily}/dts"
-                "${sourceTree}/arch/mips/boot/dts"
-                "${sourceTree}/arch/mips/boot/dts/include"
-                "${sourceTree}/include/"];
-              extraName = socFamily;
-            };
-          in uimage;
+          let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
+          }; in uimage callPackage vmlinux self.kernel;
       };
-    };
+  };
 
   # GL-Inet GL-MT300A
 
@@ -124,7 +141,7 @@ in rec {
       name = "glinet-mt300a";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300A.dts";
+        let dtsPath = "${pkgs.fetchFromGitHub mt7620.openwrtSrc}/target/linux/ramips/dts/GL-MT300A.dts";
         in mt7620.hwModule {inherit dtsPath;} nixpkgs self super;
     };
 
@@ -138,19 +155,103 @@ in rec {
       name = "glinet-mt300n_v2";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = "${pkgs.ledeSrc}/target/linux/ramips/dts/GL-MT300N-V2.dts";
+        let dtsPath = "${pkgs.fetchFromGitHub mt7620.openwrtSrc}/target/linux/ramips/dts/GL-MT300N-V2.dts";
         in mt7620.hwModule {inherit dtsPath; soc="mt76x8"; } nixpkgs self super;
     };
 
-  # generic config for boards/products based on Atheros AR7x and AR9x SoCs,
-  # which corresponds to the "ath79" soc family in Linux (but the "ar71xx" designator
-  # in OpenWRT, just liven things up).  There are some boards that use device tree
-  # but all the ones I've built for so far use the older configuration style that
-  # requires a board-specific kconfig option.  So: if you're using a dts file in this
-  # soc family you're the first in nixwrt to do so.
+  # generic config for boards/products based on Atheros AR7x and AR9x
+  # SoCs, ("ath79" designator in Linux kernel).  This is for
+  # boards/socs/targets that have been updated to use a device tree
+
+  ath79 = rec {
+    endian= "big";
+    socFamily = "ath79";
+    openwrtSrc = {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "a724095c68c4fc66195f7c4885171e4f1d9e5c5e6";
+      sha256 = "1kk4qvrp5wbrci541bjvb6lld60n003w12dkpwl18bxs9ygpnzlq";
+    };
+    hwModule = {dtsPath } : nixpkgs: self: super:
+      with nixpkgs;
+      let version = [4 19 84];
+          kernelSrc = pkgs.fetchurl {
+            url = (kernelSrcUrl (mmp version));
+            sha256 = "868b4a92619cb00ab142a20a67f000525b9605820d1b66faa4a183133eac0660";
+          };
+          readconf = readDefconfig nixpkgs;
+          stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
+          kconfig = {
+            "BLK_DEV_INITRD" = "n";
+            "CFG80211" = "y";
+            "CMDLINE_PARTITION" = "y";
+            "DEBUG_INFO" = "y";
+            "DEVTMPFS" = "y";
+            "EARLY_PRINTK" = "y";
+            "IMAGE_CMDLINE_HACK" = "n";
+            "IP_PNP" = "y";
+            "JFFS2_FS" = "n";
+            "MAC80211" = "y";
+            "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
+            "MIPS_RAW_APPENDED_DTB" = "y";
+            "MODULE_SIG" = "n";
+            "MTD_CMDLINE_PART" = "y";
+            "MTD_SPLIT_FIRMWARE" = "y";
+            "PARTITION_ADVANCED" = "y";
+            "PRINTK_TIME" = "y";
+            "SQUASHFS" = "y";
+            "SQUASHFS_XZ" = "y";
+          };
+          p = "${pkgs.fetchFromGitHub openwrtSrc}/target/linux/";
+          socFiles = [
+            "${p}ath79/files/*"
+          ];
+          socPatches = [
+            "${p}ath79/patches-4.19/"
+          ];
+      in lib.attrsets.recursiveUpdate super {
+        kernel.config = (readconf "${p}/generic/config-${majmin version}") //
+                        (readconf "${p}/ath79/config-4.19") //
+                        kconfig;
+        kernel.loadAddress = "0x80060000";
+        kernel.entryPoint = "0x80060000";
+        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
+        kernel.dts = dtsPath;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
+          inherit version kernelSrc socFamily socFiles socPatches;
+        };
+        kernel.package =
+          let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
+          }; in uimage callPackage vmlinux self.kernel;
+      };
+  };
+  ar750 = ath79 //rec {
+      name = "glinet-ar750";
+      hwModule = nixpkgs: self: super:
+        with nixpkgs;
+        let dtsPath = "${pkgs.fetchFromGitHub ath79.openwrtSrc}/target/linux/ath79/dts/qca9531_glinet_gl-ar750.dts";
+        in ath79.hwModule {inherit dtsPath; } nixpkgs self super;
+    };
+
+
+  # generic config for boards/products based on Atheros AR7x and AR9x
+  # SoCs, which have _not_ been updated to use DTS but instead use the
+  # older configuration style that requires a board-specific kconfig
+  # option.  This is the "ar71xx" designator
+
   ar71xx = rec {
     socFamily = "ar71xx";
     endian = "big";
+    openwrtSrc =  {
+      owner = "openwrt";
+      repo = "openwrt";
+      name = "openwrt-source" ;
+      rev = "430b66bbe8726a096b5db04dc34915ae9be1eaeb";
+      sha256 = "0h7mzq2055548060vmvyl5dkvbbfzyasa79rsn2i15nhsmmgc0ri";
+    };
     hwModule = {dtsPath ? null }: nixpkgs: self: super:
       with nixpkgs;
       let version = [4 14 113];
@@ -200,28 +301,19 @@ in rec {
                          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = kconfig;
-        kernel.package =
-          let sourceTree = (callPackage ./kernel/prepare-source.nix) {
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          }; vmlinux = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            inherit sourceTree;
-          }; uimage =
-            (callPackage ./kernel/uimage.nix) {
-              inherit vmlinux;
-              commandLine = self.kernel.commandLine;
-              loadAddress = "0x80060000";
-              entryPoint = "0x80060000";
-              dtcSearchPaths = [
-                "${sourceTree}/arch/mips/boot/dts"
-                "${sourceTree}/arch/mips/boot/dts/include"
-                "${sourceTree}/include/"];
+        kernel.loadAddress = "0x80060000";
+        kernel.entryPoint = "0x80060000";
+        kernel.dts = null;
+        kernel.source = (callPackage ./kernel/prepare-source.nix) {
+          ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
+          inherit version kernelSrc socFamily;
+        };
+        kernel.package = let vmlinux = (callPackage ./kernel/default.nix) {
+            inherit (self.kernel) config source;
           };
-        in uimage;
-        };
-        };
-
+          in uimage self.callPackage vmlinux self.kernel;
+      };
+  };
   # The Arduino Yun is a handy (although pricey) way to get an AR9331
   # target without any soldering: it's a MIPS SoC glued to an Arduino,
   # so you can use Arduino tools to talk to it.
@@ -269,50 +361,4 @@ in rec {
           kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyATH0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=TEW-712BR machtype=TEW-712BR";
         };
     };
-
-  ar750 =
-    ar71xx // rec {
-      name = "glinet-ar750";
-      hwModule = nixpkgs: self: super:
-        let super' = (ar71xx.hwModule {} nixpkgs self super);
-        in nixpkgs.lib.recursiveUpdate super' {
-          kernel.config."ATH79_MACH_GL_AR750" = "y";
-          kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init rootfstype=squashfs board=GL-AR750 machtype=GL-AR750";
-        };
-    };
-
-  # this is bitrotted code for running on Qemu.  See QEMU.md
-  malta = rec {
-    name = "qemu-malta"; endian = "little";
-    socFamily = "malta";
-    hwModule = nixpkgs: self: super:
-      with nixpkgs;
-      let p = "${ledeSrc}/target/linux/";
-          version = [4 14 53];
-          kernelSrc = pkgs.fetchurl {
-            url = (kernelSrcUrl (mmp version));
-            sha256 = "1gqbm26j7sayl854mlfjmwjvjh3gis2w1l2rl7s53ibxz5r2apx8";
-          };
-          readconf = readDefconfig nixpkgs;
-      in
-        lib.recursiveUpdate super {
-          kernel.config = (readconf "${p}/generic/config-${majmin version}") //
-                          (readconf "${p}/${socFamily}/config-${majmin version}") //
-                          {
-                            "BLK_DEV_SR" = "y";
-                            "E1000" = "y";
-                            "PCI" = "y";
-                            "NET_VENDOR_INTEL" = "y";
-                          };
-          kernel.commandLine = "root=/dev/sr0 console=ttyS0 init=/bin/init";
-          kernel.package = (callPackage ./kernel/default.nix) {
-            config = self.kernel.config;
-            commandLine = self.kernel.commandLine;
-            loadAddress = "0x80000000";
-            entryPoint = "0x80000000";
-            inherit (pkgs) ledeSrc;
-            inherit version kernelSrc socFamily;
-          };
-        };
-  };
 }

@@ -32,7 +32,7 @@ let
 	# being able to see which copy of a file is more recent
 	# is an essential feature of a storage server
         config.feature_ls_timestamps = "y";
-        config.feature_ls_sortfiles = "y";	
+        config.feature_ls_sortfiles = "y";
       };
     };
 
@@ -55,7 +55,6 @@ let
          interface = "eth0";
          vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
         })
-       (phram { offset = "0xa00000"; sizeMB = "5"; })
        (syslog { inherit loghost ; })
        (ntpd { host = "pool.ntp.org"; })
        (dhcpClient {
@@ -69,7 +68,11 @@ let
       # phramware generates an image which boots from the "fake" phram mtd
       # device - required if you want to boot from u-boot without
       # writing the image to flash first
-      phramware = let m = wantedModules ++ [nixwrt.modules.forcePhram];
+      phramware =
+        let phram_ = (nixwrt.modules.phram {
+              offset = "0xa00000"; sizeMB = "5";
+            });
+            m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);
 
     }

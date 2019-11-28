@@ -54,7 +54,6 @@ let
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
-       (phram { offset = "0xa00000"; sizeMB = "5"; })
        haveged
        (switchconfig {
          name = "switch0";
@@ -74,6 +73,10 @@ let
       # phramware generates an image which boots from the "fake" phram mtd
       # device - required if you want to boot from u-boot without
       # writing the image to flash first
-      phramware = let m = wantedModules ++ [nixwrt.modules.forcePhram];
+      phramware =
+        let phram_ = (nixwrt.modules.phram {
+              offset = "0xa00000"; sizeMB = "5";
+            });
+            m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);
     }

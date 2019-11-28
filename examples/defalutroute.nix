@@ -3,6 +3,7 @@
 { targetBoard ? "ar750"
 , ssid
 , psk
+, loghost ? "loghost"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
 let nixwrt = (import <nixwrt>) { inherit targetBoard; }; in
@@ -10,6 +11,7 @@ with nixwrt.nixpkgs;
 let
     baseConfiguration = {
       hostname = "defalutroute";
+      webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
         "eth0.2" = {
           type = "vlan"; id = 2; parent = "eth0"; depends = []; # wan
@@ -54,9 +56,8 @@ let
 	   "2" = "0 6t";                 # wan (id 2 -> port 0)
 	 };
         })
-       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
-       (phram { offset = "0xa00000"; sizeMB = "5"; })
-       (syslogd { loghost = "192.168.0.2"; })
+#       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
+       (syslog { inherit loghost; })
        (ntpd { host = "pool.ntp.org"; })
 #       (dhcpClient { interface = "eth0.2"; })
     ];
@@ -67,8 +68,10 @@ let
       # phramware generates an image which boots from the "fake" phram mtd
       # device - required if you want to boot from u-boot without
       # writing the image to flash first
-      phramware = let m = wantedModules ++ [nixwrt.modules.forcePhram];
+      phramware =
+        let phram_ = (nixwrt.modules.phram {
+              offset = "0xa00000"; sizeMB = "5";
+            });
+            m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);
-      p = pkgs.ppp;
-      k = let c = (nixwrt.mergeModules wantedModules); in c.kernel.package;
     }
