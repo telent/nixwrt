@@ -3,10 +3,11 @@
  , runCommand
  , writeText
  , config ? {}
+ , checkedConfig ? {}
  , commandLine ? ""
  , source
 } :
-let kconfigFile = writeText "nixwrt_kconfig"
+let writeConfig = name : config: writeText name
         (builtins.concatStringsSep
           "\n"
           (lib.mapAttrsToList
@@ -15,6 +16,8 @@ let kconfigFile = writeText "nixwrt_kconfig"
               "MIPS_CMDLINE_FROM_DTB" = "y";
             } )
           ));
+    kconfigFile = writeConfig "nixwrt_kconfig" config;
+    checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
   name = "kernel";
@@ -30,7 +33,10 @@ stdenv.mkDerivation rec {
   ARCH = "mips";              # use "mips" here for both mips and mipsel
   dontStrip = true;
   dontPatchELF = true;
-  phases = ["configurePhase" "buildPhase" "installPhase"
+  phases = ["configurePhase"
+            "checkConfigurationPhase"
+            "buildPhase"
+            "installPhase"
   ];
 
   configurePhase = ''
@@ -38,6 +44,13 @@ stdenv.mkDerivation rec {
     cp ${kconfigFile} .config
     cp ${kconfigFile} .config.orig
     ( cd ${source} && make V=1 olddefconfig )
+  '';
+
+  checkConfigurationPhase = ''
+    if comm -2 -3 <(grep '=' ${checkedConfigFile} |sort) <(grep '=' .config|sort)  | egrep -v '=n$'  ; then
+      echo -e "\n^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
+      exit 0
+    fi
   '';
 
   KBUILD_BUILD_HOST = "nixwrt.builder";

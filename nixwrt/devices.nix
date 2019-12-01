@@ -60,9 +60,8 @@ in rec {
             "IMAGE_CMDLINE_HACK" = "n";
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
-            "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
             "MIPS_RAW_APPENDED_DTB" = "y";
-            "MTD_CMDLINE_PART" = "y";
+            "MTD_CMDLINE_PARTS" = "y";
             "NETFILTER"= "y";   # mtk_eth_soc.c won't build without this
             "NET_MEDIATEK_GSW_MT7620" = "y";
             "NET_MEDIATEK_MT7620" = "y";
@@ -102,6 +101,7 @@ in rec {
         kernel.package =
           let vmlinux = (callPackage ./kernel/default.nix) {
             inherit (self.kernel) config source;
+            checkedConfig = kconfig;
           }; in uimage callPackage vmlinux self.kernel;
       };
   };
@@ -193,10 +193,9 @@ in rec {
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
             "MAC80211" = "y";
-            "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
             "MIPS_RAW_APPENDED_DTB" = "y";
             "MODULE_SIG" = "n";
-            "MTD_CMDLINE_PART" = "y";
+            "MTD_CMDLINE_PARTS" = "y";
             "MTD_SPLIT_FIRMWARE" = "y";
             "PARTITION_ADVANCED" = "y";
             "PRINTK_TIME" = "y";
@@ -224,8 +223,9 @@ in rec {
         };
         kernel.package =
           let vmlinux = (callPackage ./kernel/default.nix) {
-            inherit (self.kernel) config source;
-          }; in uimage callPackage vmlinux self.kernel;
+                inherit (self.kernel) config source;
+                checkedConfig = kconfig;
+              }; in uimage callPackage vmlinux self.kernel;
       };
   };
   ar750 = ath79 //rec {
@@ -282,9 +282,8 @@ in rec {
                            "JFFS2_FS" = "n";
                            "KALLSYMS" = "n";
                            "MAC80211" = "y";
-                           "MIPS_CMDLINE_BUILTIN_EXTEND" = "y";
                            "MSDOS_PARTITION" = "n";
-                           "MTD_CMDLINE_PART" = "y";
+                           "MTD_CMDLINE_PARTS" = "y";
                            "MOUSE_PS2" = "n";
                            "OVERLAY_FS" = "n";
                            "PARTITION_ADVANCED" = "y";
