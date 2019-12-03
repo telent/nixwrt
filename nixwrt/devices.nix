@@ -50,13 +50,11 @@ in rec {
             "CFG80211" = "y";
             "MAC80211" = "y";
             "CLKSRC_MMIO" = "y";
-            "CLKSRC_OF" = "y";
             "CMDLINE_PARTITION" = "y";
             "CPU_LITTLE_ENDIAN" = "y";
             "DEBUG_INFO" = "y";
             "DEVTMPFS" = "y";
             "EARLY_PRINTK" = "y";
-            "GENERIC_IRQ_IPI" = "y";
             "IMAGE_CMDLINE_HACK" = "n";
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
@@ -295,7 +293,6 @@ in rec {
                            "SWAP" = "n";
                            "TMPFS" = "y";
                            "VT" = "n";
-                           "WLAN_80211" = "y";
                            "WLAN_VENDOR_ATH" = "y";
                          };
       in lib.attrsets.recursiveUpdate super {
