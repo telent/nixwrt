@@ -13,18 +13,16 @@ let
       hostname = "defalutroute";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
-        "eth0.2" = {
-          type = "vlan"; id = 2; parent = "eth0"; depends = []; # wan
+        "eth0" = { } ;          # WAN
+        "eth1" = { } ;
+        "eth1.1" = {
+          type = "vlan"; id = 2; parent = "eth1"; depends = []; # wan
         };
-        "eth0.1" = {
-          type = "vlan"; id = 1; parent = "eth0"; depends = []; # lan
-        };
-        "eth0" = { } ;
         "wlan0" = { };
         "br0" = {
           type = "bridge";
           ipv4Address = "192.168.1.4/24";
-          members  = [ "eth0.1" "wlan0" ];
+          members  = [ "eth1.1" ];
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -50,15 +48,15 @@ let
         })
        (switchconfig {
          name = "switch0";
-         interface = "eth0";
+         interface = "eth1";
          vlans = {
-	   "1" = "1 2 3 4 6t";           # lan (id 1 -> ports 1-4)
-	   "2" = "0 6t";                 # wan (id 2 -> port 0)
-	 };
-        })
+	         "1" = "0t 1 2 3 4";           # lan (0 is cpu)
+	       };
+       })
+       haveged
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
-       (syslog { inherit loghost; })
-       (ntpd { host = "pool.ntp.org"; })
+#       (syslog { inherit loghost; })
+#       (ntpd { host = "pool.ntp.org"; })
 #       (dhcpClient { interface = "eth0.2"; })
     ];
 
