@@ -44,7 +44,6 @@ in rec {
             sha256 = "1hnsmlpfbcy52dax7g194ksr9179kpigj1y5k44jkwmagziz4kdj";
           };
           readconf = readDefconfig nixpkgs;
-          stripOpts = prefix: c: lib.filterAttrs (n: v: !(lib.hasPrefix prefix n)) c;
           kconfig = {
             "BLK_DEV_INITRD" = "n";
             "CFG80211" = "y";
