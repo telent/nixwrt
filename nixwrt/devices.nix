@@ -7,19 +7,12 @@ let
   mmp = version :
     let el = n : builtins.toString (builtins.elemAt version n);
     in (el 0) + "." + (el 1) + "." + (el 2);
-  uimage = callPackage : vmlinux : cfg :
+  uimage = callPackage : vmlinux : cfg : fdt :
             (callPackage ./kernel/uimage.nix) {
               inherit vmlinux;
-              commandLine = cfg.commandLine;
-              loadAddress = cfg.loadAddress;
-              entryPoint  = cfg.entryPoint;
-              dtsPath = cfg.dts;
-              dtcSearchPaths = [
-                "${cfg.source}/arch/mips/boot/dts"
-                "${cfg.source}/arch/mips/boot/dts/include"
-                "${cfg.source}/include/"];
+              inherit fdt;
+              inherit (cfg) commandLine loadAddress entryPoint;
             };
-
 in rec {
 
   # generic config for boards/products based on the mt7620, which uses
@@ -83,6 +76,10 @@ in rec {
       socFiles = [
         "${p}ramips/files-4.14/*"
       ];
+      ksrc = (callPackage ./kernel/prepare-source.nix) {
+        ledeSrc = pkgs.fetchFromGitHub  openwrtSrc;
+        inherit version kernelSrc socFamily socPatches socFiles;
+      };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = (readconf "${p}generic/config-${majmin version}") //
                         (readconf "${p}${socFamily}/${soc}/config-${majmin version}") //
@@ -91,15 +88,23 @@ in rec {
         kernel.entryPoint = "0x80000000";
         kernel.commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.dts = dtsPath;
-        kernel.source = (callPackage ./kernel/prepare-source.nix) {
-          ledeSrc = pkgs.fetchFromGitHub  openwrtSrc;
-          inherit version kernelSrc socFamily socPatches socFiles;
-        };
+        kernel.source = ksrc;
         kernel.package =
-          let vmlinux = (callPackage ./kernel/default.nix) {
-            inherit (self.kernel) config source;
-            checkedConfig = kconfig;
-          }; in uimage callPackage vmlinux self.kernel;
+          let
+            fdt = (callPackage ./kernel/build-fdt.nix) {
+              dts = dtsPath;
+              inherit (self.kernel) commandLine;
+              includes = [
+                "${p}/ramips/dts"
+                "${ksrc}/arch/mips/boot/dts"
+                "${ksrc}/arch/mips/boot/dts/include"
+                "${ksrc}/include/"];
+            };
+            vmlinux = (callPackage ./kernel/default.nix) {
+              inherit (self.kernel) config source;
+              checkedConfig = kconfig;
+            };
+          in uimage callPackage vmlinux self.kernel fdt;
       };
   };
 
@@ -205,6 +210,10 @@ in rec {
           socPatches = [
             "${p}ath79/patches-4.19/"
           ];
+          ksrc = (callPackage ./kernel/prepare-source.nix) {
+            ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
+            inherit version kernelSrc socFamily socFiles socPatches;
+          };
       in lib.attrsets.recursiveUpdate super {
         kernel.config = (readconf "${p}/generic/config-${majmin version}") //
                         (readconf "${p}/ath79/config-4.19") //
@@ -212,16 +221,23 @@ in rec {
         kernel.loadAddress = "0x80060000";
         kernel.entryPoint = "0x80060000";
         kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
-        kernel.dts = dtsPath;
-        kernel.source = (callPackage ./kernel/prepare-source.nix) {
-          ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
-          inherit version kernelSrc socFamily socFiles socPatches;
-        };
+        kernel.source = ksrc;
         kernel.package =
-          let vmlinux = (callPackage ./kernel/default.nix) {
-                inherit (self.kernel) config source;
-                checkedConfig = kconfig;
-              }; in uimage callPackage vmlinux self.kernel;
+          let
+            fdt = (callPackage ./kernel/build-fdt.nix) {
+              dts = dtsPath;
+              inherit (self.kernel) commandLine;
+              includes = [
+                "${p}/ath79/dts"
+                "${ksrc}/arch/mips/boot/dts"
+                "${ksrc}/arch/mips/boot/dts/include"
+                "${ksrc}/include/"];
+            };
+            vmlinux = (callPackage ./kernel/default.nix) {
+              inherit (self.kernel) config source;
+              checkedConfig = kconfig;
+            };
+          in uimage callPackage vmlinux self.kernel fdt;
       };
   };
   ar750 = ath79 //rec {
@@ -230,7 +246,7 @@ in rec {
         with nixpkgs;
         let dtsPath = "${pkgs.fetchFromGitHub ath79.openwrtSrc}/target/linux/ath79/dts/qca9531_glinet_gl-ar750.dts";
         in ath79.hwModule {inherit dtsPath; } nixpkgs self super;
-    };
+  };
 
 
   # generic config for boards/products based on Atheros AR7x and AR9x
@@ -305,7 +321,7 @@ in rec {
         kernel.package = let vmlinux = (callPackage ./kernel/default.nix) {
             inherit (self.kernel) config source;
           };
-          in uimage self.callPackage vmlinux self.kernel;
+          in uimage self.callPackage vmlinux self.kernel null;
       };
   };
   # The Arduino Yun is a handy (although pricey) way to get an AR9331
