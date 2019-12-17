@@ -244,7 +244,19 @@ in rec {
       name = "glinet-ar750";
       hwModule = nixpkgs: self: super:
         with nixpkgs;
-        let dtsPath = "${pkgs.fetchFromGitHub ath79.openwrtSrc}/target/linux/ath79/dts/qca9531_glinet_gl-ar750.dts";
+        let owrtDtsPath = "${pkgs.fetchFromGitHub ath79.openwrtSrc}/target/linux/ath79/dts/qca9531_glinet_gl-ar750.dts";
+            cal = ./ar750-ath10k-cal.bin;
+            dtsPath = stdenv.mkDerivation {
+              name = "dts";
+              phases = [ "buildPhase" ];
+              buildPhase = ''
+cat ${owrtDtsPath} > tmp.dts
+echo "&pcie0 { wifi@0,0 { qcom,ath10k-calibration-data = [ " >> tmp.dts
+od -A n -v -t x1 ${cal}   >> tmp.dts
+echo "] ; };};" >> tmp.dts
+cp tmp.dts $out
+               '';
+            };
         in ath79.hwModule {inherit dtsPath; } nixpkgs self super;
   };
 
