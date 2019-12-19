@@ -184,8 +184,16 @@ in rec {
           };
           readconf = readDefconfig nixpkgs;
           kconfig = {
+#            "ATH9K" = "y";
+#            "ATH9K_AHB" = "y";
+            "ATH10K" = "y";
+            "ATH10K_PCI" = "y";
+            "ATH10K_DEBUG" = "y";
             "BLK_DEV_INITRD" = "n";
             "CFG80211" = "y";
+            "CFG80211_REQUIRE_SIGNED_REGDB" = "n";
+            "CFG80211_DEBUGFS" = "y";
+            "CFG80211_CRDA_SUPPORT" = "n";
             "CMDLINE_PARTITION" = "y";
             "DEBUG_INFO" = "y";
             "DEVTMPFS" = "y";
@@ -214,12 +222,33 @@ in rec {
             ledeSrc = pkgs.fetchFromGitHub openwrtSrc;
             inherit version kernelSrc socFamily socFiles socPatches;
           };
+          firmwareBlobs = pkgs.fetchFromGitHub {
+            owner = "kvalo";
+            repo = "ath10k-firmware";
+            rev = "5d63529ffc6e24974bc7c45b28fd1c34573126eb";
+            sha256 = "1bwpifrwl5mvsmbmc81k8l22hmkwk05v7xs8dxag7fgv2kd6lv2r";
+          };
+          fwDir = stdenv.mkDerivation rec {
+            name = "firmare";
+            phases = ["buildPhase"];
+            buildPhase = ''
+mkdir -p $out/firmware/ath10k/QCA9887/hw1.0/
+cp ${pkgs.wireless-regdb}/lib/firmware/regulatory.db* $out/firmware
+blobdir=${firmwareBlobs}/QCA9887/hw1.0
+cp $blobdir/10.2.4-1.0/firmware-5.bin_10.2.4-1.0-00047 $out/firmware/ath10k/QCA9887/hw1.0/firmware-5.bin
+cp $blobdir/board.bin  $out/firmware/ath10k/QCA9887/hw1.0/
+'';
+          };
       in lib.attrsets.recursiveUpdate super {
-        kernel.config = (readconf "${p}/generic/config-${majmin version}") //
-                        (readconf "${p}/ath79/config-4.19") //
-                        kconfig;
+        kernel.config =
+          (readconf "${p}/generic/config-${majmin version}") //
+          (readconf "${p}/ath79/config-4.19") //
+          { "EXTRA_FIRMWARE_DIR" = builtins.toJSON "${fwDir}/firmware";
+            "EXTRA_FIRMWARE" = builtins.toJSON "regulatory.db regulatory.db.p7s ath10k/QCA9887/hw1.0/firmware-5.bin ath10k/QCA9887/hw1.0/board.bin"; } //
+          kconfig;
         kernel.loadAddress = "0x80060000";
         kernel.entryPoint = "0x80060000";
+        #        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs  ath10k_pci.debug_mask=0x432 ath10k_core.debug_mask=0x432";
         kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
         kernel.source = ksrc;
         kernel.package =

@@ -17,12 +17,28 @@ let
         "eth1" = { } ;
         "eth1.1" = {
           type = "vlan"; id = 2; parent = "eth1"; depends = []; # wan
+          memberOf = "br0";
         };
-        "wlan0" = { };
+        # "wlan1" = {
+        #   type = "hostap";
+        #   ssid = "telent1";
+        #   country_code = "UK";
+        #   channel = 2;
+        #   wpa_psk = psk;
+        #   memberOf = "br0";
+        # };
+        "wlan0" = {
+          type = "hostap";
+          ssid = "telent1";
+          country_code = "US";
+          channel = 36;
+          wpa_psk = psk;
+          hw_mode = "a";
+          memberOf = "br0";
+        };
         "br0" = {
           type = "bridge";
           ipv4Address = "192.168.1.4/24";
-          members  = [ "eth1.1" ];
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
@@ -41,11 +57,6 @@ let
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
-       (hostapd {
-          config = { interface = "wlan0"; ssid = "telent1"; hw_mode = "g"; channel = 4; };
-          # no support for creating PSK from passphrase in nixwrt, so use wpa_passphrase
-          psk = "fishfinger" ;
-        })
        (switchconfig {
          name = "switch0";
          interface = "eth1";

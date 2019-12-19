@@ -24,7 +24,7 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
          (setUp name attrs)
          ];
       hostap = name : attrs :
-      let cfg = { inherit (attrs) channel country_code ssid wpa_psk; };
+      let cfg = { inherit (attrs) channel country_code hw_mode ssid wpa_psk; };
          conf = writeText "hostap-${name}.conf" (import ./hostapd-conf.nix lib cfg);
       in lib.flatten
         ["${hostapd}/bin/hostapd -B -P /run/hostapd.pid -i ${name} -S ${conf}"
