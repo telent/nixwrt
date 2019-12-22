@@ -16,24 +16,28 @@ let
         "eth0" = { } ;          # WAN
         "eth1" = { } ;
         "eth1.1" = {
-          type = "vlan"; id = 2; parent = "eth1"; depends = []; # wan
+          type = "vlan"; id = 2; parent = "eth1"; depends = []; # lan
           memberOf = "br0";
         };
-        # "wlan1" = {
-        #   type = "hostap";
-        #   ssid = "telent1";
-        #   country_code = "UK";
-        #   channel = 2;
-        #   wpa_psk = psk;
-        #   memberOf = "br0";
-        # };
         "wlan0" = {
+          type = "hostap";
+          ssid = "telent1";
+          country_code = "US";
+          channel = 9;
+          wpa_psk = psk;
+          hw_mode = "g";
+          memberOf = "br0";
+        };
+        "wlan1" = {
           type = "hostap";
           ssid = "telent1";
           country_code = "US";
           channel = 36;
           wpa_psk = psk;
           hw_mode = "a";
+#          debug = true;
+#          logger_stdout = "-1";
+#          logger_stdout_level = "2";
           memberOf = "br0";
         };
         "br0" = {

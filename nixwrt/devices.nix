@@ -184,20 +184,33 @@ in rec {
           };
           readconf = readDefconfig nixpkgs;
           kconfig = {
-#            "ATH9K" = "y";
-#            "ATH9K_AHB" = "y";
+            "ATH9K" = "y";
+            "ATH9K_AHB" = "y";
+            "ATH9K_DEBUGFS" = "y";
+            "ATH_DEBUG" = "y";
             "ATH10K" = "y";
             "ATH10K_PCI" = "y";
             "ATH10K_DEBUG" = "y";
             "BLK_DEV_INITRD" = "n";
             "CFG80211" = "y";
+            # can't get signed regdb to work rn, it just gives me
+            # "loaded regulatory.db is malformed or signature is
+            # missing/invalid"
             "CFG80211_REQUIRE_SIGNED_REGDB" = "n";
             "CFG80211_DEBUGFS" = "y";
+            # I am reluctant to have to enable this but can't transmit on
+            # 5GHz bands without it (they are all marked NO-IR)
+            "CFG80211_CERTIFICATION_ONUS" = "y";
+            # We don't need userspace agent (requires udev), we bake the
+            # db into the kernel as firmware
             "CFG80211_CRDA_SUPPORT" = "n";
             "CMDLINE_PARTITION" = "y";
             "DEBUG_INFO" = "y";
             "DEVTMPFS" = "y";
             "EARLY_PRINTK" = "y";
+            # we don't have a user helper, so we get multiple 60s pauses
+            # at boot time unless we disable trying to call it
+            "FW_LOADER_USER_HELPER" = "n";
             "IMAGE_CMDLINE_HACK" = "n";
             "IP_PNP" = "y";
             "JFFS2_FS" = "n";
