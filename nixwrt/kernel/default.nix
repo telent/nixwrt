@@ -11,7 +11,7 @@ let writeConfig = name : config: writeText name
         (builtins.concatStringsSep
           "\n"
           (lib.mapAttrsToList
-            (name: value: "CONFIG_${name}=${value}")
+            (name: value: (if value == "n" then "# CONFIG_${name} is not set" else "CONFIG_${name}=${value}"))
             (config // {
               "MIPS_CMDLINE_FROM_DTB" = "y";
             } )
@@ -47,10 +47,12 @@ stdenv.mkDerivation rec {
   '';
 
   checkConfigurationPhase = ''
-    if comm -2 -3 <(grep '=' ${checkedConfigFile} |sort) <(grep '=' .config|sort)  | egrep -v '=n$'  ; then
-      echo -e "\n^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
+    echo Checking required config items:
+    if comm -2 -3 <(grep 'CONFIG' ${checkedConfigFile} |sort) <(grep 'CONFIG' .config|sort) |grep '.'    ; then
+      echo -e "^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
       exit 0
     fi
+    echo "OK"
   '';
 
   KBUILD_BUILD_HOST = "nixwrt.builder";
