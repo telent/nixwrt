@@ -41,8 +41,11 @@ stdenv.mkDerivation rec {
                 ./552-ahb_of.patch
               ]
     ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch
-    ++ lib.optional (socFamily == "ramips") (callPackage ./rt2x00.nix { inherit ledeSrc; })
     ;
+    ++ lib.optionals (socFamily == "ramips") [
+      (callPackage ./rt2x00.nix { inherit ledeSrc; })
+      ./ralink_appended_raw_dtb.patch
+    ];
 
     patchFlags = [ "-p1" ];
     buildPhase = ''

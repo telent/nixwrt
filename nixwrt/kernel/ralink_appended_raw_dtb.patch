@@ -1,0 +1,15 @@
+--- a/arch/mips/ralink/of.c	1970-01-01 01:00:01.000000000 +0100
++++ b/arch/mips/ralink/of.c	2020-04-28 20:38:20.236157150 +0100
+@@ -94,8 +94,10 @@
+ 		dtb = (void *)fw_passed_dtb;
+ 	else if (__dtb_start != __dtb_end)
+ 		dtb = (void *)__dtb_start;
+-
+-	__dt_setup_arch(&__image_dtb);
++	else
++		dtb = (void *) &__image_dtb;
++	  
++	__dt_setup_arch(dtb);
+ 
+ 	of_scan_flat_dt(early_init_dt_find_chosen, NULL);
+ 	if (chosen_dtb)
