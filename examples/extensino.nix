@@ -19,7 +19,7 @@ let
         };
         "wlan0" = {
           type = "hostap";
-          ssid = "telent";
+          ssid = ssid;
           country_code = "UK";
           channel = 2;
           wpa_psk = psk;
