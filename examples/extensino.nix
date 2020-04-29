@@ -22,6 +22,7 @@ let
           ssid = ssid;
           country_code = "UK";
           channel = 2;
+          hw_mode = "g";
           wpa_psk = psk;
           memberOf = "br0";
         };
