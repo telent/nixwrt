@@ -1,12 +1,18 @@
 { name, endian, ...}:
 let ends = {
-      "little" = {triples = "mipsel-linux-musl"; bfd = "elf32ltsmip"; };
-      "big" = {triples = "mips-linux-musl"; bfd = "elf32btsmip"; };
+      "little" = {
+        config = "mipsel-unknown-linux-musl";
+        bfd = "elf32ltsmip";
+      };
+      "big" = {
+        config = "mips-unknown-linux-musl";
+        bfd = "elf32btsmip";
+      };
     };
 in {
   crossSystem = rec {
     libc = "musl";
-    system = ends.${endian}.triples;
+    config = ends.${endian}.config;
     openssl.system = "linux-generic32";
     withTLS = true;
     platform = {
