@@ -38,10 +38,9 @@ stdenv.mkDerivation rec {
     patches = [ ./kernel-ath79-wdt-at-boot.patch
                 ./kernel-lzma-command.patch
                 ./kexec_copy_from_user_return.patch
-                ./552-ahb_of.patch
               ]
     ++ lib.optional (! versionExceeds version [4 10 0]) ./kernel-memmap-param.patch
-    ;
+    ++ lib.optional (socFamily == "ath79") ./552-ahb_of.patch
     ++ lib.optionals (socFamily == "ramips") [
       (callPackage ./rt2x00.nix { inherit ledeSrc; })
       ./ralink_appended_raw_dtb.patch
