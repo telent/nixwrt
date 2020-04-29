@@ -181,9 +181,9 @@ in {
   iproute = stripped ((super.iproute.override {
     # db dep is only if we need arpd
     db = null; iptables = null;
-  }).overrideAttrs (o: {
+  }).overrideAttrs (o @ {postInstall ? "", ...}: {
     # we don't need these and they depend on bash
-    postInstall = o.postInstall + ''
+    postInstall = postInstall + ''
       rm $out/sbin/routef $out/sbin/routel $out/sbin/rtpr $out/sbin/ifcfg
 
     '';
