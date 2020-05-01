@@ -88,10 +88,13 @@ let
     /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
     /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
   '';
-  squashfs = pkgs.callPackage <nixpkgs/nixos/lib/make-squashfs.nix> {
-    storeContents = packagesToInstall ;
-    excludeWildcards = [ "... lib*.a" "... man/man[1-9]" ];
-  };
+  squashfs =
+    let excludeWildcards = [ "... lib*.a" "... man/man[1-9]" ];
+    in pkgs.callPackage <nixpkgs/nixos/lib/make-squashfs.nix> {
+      storeContents = packagesToInstall ;
+      comp = "xz -Xdict-size 100% -wildcards ${stdenv.lib.concatStringsSep " " (map (f: "-e '${f}' ") excludeWildcards)}";
+
+    };
 in stdenv.mkDerivation rec {
   name = "nixwrt-root";
   phases = [ "installPhase" ];

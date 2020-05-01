@@ -34,8 +34,9 @@ using the Nix language and the Nix package collection.
 
 ## The Nix Package Collection
 
-As of June 2018 it requires a lightly forked nixpkgs, but I am working
-to feed changes back upstream.
+As of May 2020 it has been tested with nixpkgs master git rev
+bc675971dae581ec653fa6. If you're using a later or earlier version,
+your mileage may vary.
 
 ## a Nixpkgs overlay
 
@@ -86,7 +87,14 @@ You will need
   target, otherwise they may start answering IP address requests for
   other hosts on your LAN).  Ideally you want statically allocated IP
   addresses for the build machine and target, because U-Boot probably
-  won't work with DHCP
+  won't work with DHCP.
+
+  * Provided without warranty is nol.nix, a script I use on my build
+    machine to provide better isolation between my real LAN and my
+    test network.  It generates a QEMU VM which I run with PCI
+    passthru so that it has exclusive access to my second network card.
+    It may or may not work for you, but feel free to adapt or use it
+    for inspiration
 
 * access to your target devices's boot monitor (usually U-Boot).  This
   will very often involve opening it up and attaching a USB serial
@@ -95,10 +103,11 @@ You will need
   you can access U-Boot across the network.  The OpenWRT wiki is often
   very helpful here.
 
-Now, clone the nixwrt repo, and also the nixpkgs fork on which it depends
+Now, clone the nixwrt repo, and also the nixpkgs revision on which it depends
 
     $ git clone git@github.com:telent/nixwrt
-    $ git clone git@github.com:telent/nixpkgs.git nixpkgs-for-nixwrt
+    $  git clone -n  git@github.com:nixos/nixpkgs.git && \
+       (cd nixpkgs && git checkout bc675971dae581ec653fa6)
     $ cd nixwrt
 
 The best way to get started is to look at one of the examples in
@@ -119,13 +128,12 @@ To build the `extensino` example, run
     $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=phramware
     
 This should create a file `extensino/firmware.bin` which you need
-to copy to your TFTP server
+to copy to your TFTP server.
 
 Caveat: the makefile is a convenience thing for hacking/testing and
 not intended as the nucleus of any kind of production build pipeline.
 If you want something to build on for large-scale deploys, write
 something that invokes nix-build directly.
-
 
 
 ## Running it from RAM
@@ -178,7 +186,7 @@ I have and almost certainly incorrect if you don't.
 
 If you have a working NixWRT with a running ssh daemon (usually by
 including the `sshd` module) and the `flashcp` busybox app (currently
-this is installed by default) you can install a new image from inside the running systenm without recourse to any U-Boot/serial connection shenanigans.  This is a win when you've deployed the device and don't wish to pop the top off.
+this is installed by default) you can install a new image from inside the running system without recourse to any U-Boot/serial connection shenanigans.  This is a win when you've deployed the device and don't wish to pop the top off.
 
 Step 1: Build the regular (non-phram) firmware
 
