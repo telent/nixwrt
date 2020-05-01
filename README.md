@@ -142,7 +142,7 @@ The image you just built is configured to run from RAM
 without needing to write to the router flash memory.  This is great
 when you're testing things and don't want to keep erasing the flash
 (because it takes a long time and because it has limited write
-cycles).  It's not great when you want to do a permanent installation
+cycles).  It's not great when you want to do a permanent installation,
 because the router RAM contents don't survive a reset.  It uses the
 [phram driver](https://github.com/torvalds/linux/blob/3a00be19238ca330ce43abd33caac8eff343800c/drivers/mtd/devices/Kconfig#L140)
 to emulate flash using system RAM.
@@ -284,9 +284,10 @@ If that looked like it worked, type `reset` to find out if you were right.
 # Feedback
 
 Is very welcome.  Please open an issue on Github for anything that
-involves more than a line of text, or find me in the
-"Fediverse" [@telent@maston.social](https://mastodon.social/@telent)
-or on Twitter [@telent_net](https://twitter.com/telent_net) if not.
+involves more than a line of text, or find me in the "Fediverse"
+[@dan@terse.telent/net](https://terse.telent.net) (preferred) or on
+Twitter [@telent_net](https://twitter.com/telent_net) (less preferred)
+if not.
 
 I do occasionally hang out on #nixos IRC as `dan_b` or as `telent` but
 not often enough to make it a good way of getting in touch.
