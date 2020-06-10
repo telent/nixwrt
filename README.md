@@ -3,7 +3,7 @@
 # What is it?
 
 An experiment, currently, to see if Nixpkgs is a good way to build an
-OS for a domestic wifi router or IoT device, of the kind that OpenWRT
+OS for a domestic wifi router or IoT device, of the kind that OpenWrt
 or DD-WRT or Tomato run on.
 
 This is not NixOS-on-your-router.  This is an immutable "turnkey"
@@ -100,7 +100,7 @@ You will need
   will very often involve opening it up and attaching a USB serial
   convertor to some header pins: sometimes it involves soldering those
   pins into holes.  On other devices it's not nearly as complicated as
-  you can access U-Boot across the network.  The OpenWRT wiki is often
+  you can access U-Boot across the network. The OpenWrt wiki is often
   very helpful here.
 
 Now, clone the nixwrt repo, and also the nixpkgs revision on which it depends
