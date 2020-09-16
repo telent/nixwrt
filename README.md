@@ -3,7 +3,7 @@
 # What is it?
 
 An experiment, currently, to see if Nixpkgs is a good way to build an
-OS for a domestic wifi router or IoT device, of the kind that OpenWRT
+OS for a domestic wifi router or IoT device, of the kind that OpenWrt
 or DD-WRT or Tomato run on.
 
 This is not NixOS-on-your-router.  This is an immutable "turnkey"
@@ -100,7 +100,7 @@ You will need
   will very often involve opening it up and attaching a USB serial
   convertor to some header pins: sometimes it involves soldering those
   pins into holes.  On other devices it's not nearly as complicated as
-  you can access U-Boot across the network.  The OpenWRT wiki is often
+  you can access U-Boot across the network. The OpenWrt wiki is often
   very helpful here.
 
 Now, clone the nixwrt repo, and also the nixpkgs revision on which it depends
@@ -172,7 +172,7 @@ mapped) seems to do the job.
 
 ## Making it permanent (flashable image)
 
-If you're sure you want to toast a perfectly good OpenWRT installation
+If you're sure you want to toast a perfectly good OpenWrt installation
 ... read on.  I accept no responsibility for anything bad that might
 happen as a result of following these instructions.
 
@@ -224,7 +224,7 @@ know you can probably make a reasonable guess: either use the U-boot
 `flinfo` command if your router has it, or otherwise my suggestion is
 to look at the boot log for a line of the form `Booting image at
 9f070000` and then double check by looking at the output of `cat
-/proc/mtd` in OpenWRT and see if there's a partition starting at
+/proc/mtd` in OpenWrt and see if there's a partition starting at
 `0x70000`.  If you get this wrong you may brick your device, of
 course.
 
