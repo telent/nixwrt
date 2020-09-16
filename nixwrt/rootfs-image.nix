@@ -98,7 +98,7 @@ let
 in stdenv.mkDerivation rec {
   name = "nixwrt-root";
   phases = [ "installPhase" ];
-  nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
+  nativeBuildInputs = with buildPackages; [ qprint squashfsTools ];
   installPhase =
     let linkFarm = p : "( cd $out/bin; for i in ${p}/bin/* ; do ln -fs $i . ; done )"; in ''
       mkdir -p $out/sbin $out/bin $out/nix/store

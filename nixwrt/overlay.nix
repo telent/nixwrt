@@ -107,8 +107,9 @@ in {
     doCheck = false;
   });
 
-  klogforward = let ref = "47af2c6d451b9fec6ceff96002cbb938bd056f8a"; in
-  stripped (self.callPackage (builtins.fetchTarball "https://github.com/telent/klogforward/archive/${ref}.tar.gz" ) { } );
+  klogforward =
+    let ref = "47af2c6d451b9fec6ceff96002cbb938bd056f8a"; in
+    stripped (self.callPackage (builtins.fetchTarball "https://github.com/telent/klogforward/archive/${ref}.tar.gz" ) { } );
 
   libnl = (super.libnl.override({  pythonSupport = false; })).overrideAttrs (o: {
     outputs = [ "dev" "out" "man" ];
@@ -155,7 +156,8 @@ in {
 
   }));
 
-  hostapd = let configuration = [
+  hostapd =
+    let configuration = [
      "CONFIG_DRIVER_NL80211=y"
      "CONFIG_IAPP=y"
      "CONFIG_IEEE80211W=y"
@@ -166,16 +168,17 @@ in {
      "CONFIG_TLS=internal"
      "CONFIG_INTERNAL_LIBTOMMATH=y"
      "CONFIG_INTERNAL_LIBTOMMATH_FAST=y"
-  ];
-  confFile = super.writeText "hostap.config"
-      (builtins.concatStringsSep "\n" configuration);
-  in stripped ((super.hostapd.override { sqlite = null; }).overrideAttrs(o:  {
-      extraConfig = "";
-      configurePhase = ''
-        cp -v ${confFile} hostapd/defconfig
-        ${o.configurePhase}
-      '';
-  }));
+        ];
+        confFile = super.writeText "hostap.config"
+          (builtins.concatStringsSep "\n" configuration);
+    in stripped ((super.hostapd.override { sqlite = null; }).
+      overrideAttrs(o:  {
+        extraConfig = "";
+        configurePhase = ''
+          cp -v ${confFile} hostapd/defconfig
+          ${o.configurePhase} 
+        '';
+      }));
 
   iprouteFull = super.iproute;
   iproute = stripped ((super.iproute.override {
@@ -197,7 +200,7 @@ in {
     postConfigure = "true";
   }));
 
-  # we had trouble building rsync with acl support, and
+  # we had trouble building rsync with acl support
   rsync = stripped (super.rsync.override { enableACLs = false; } );
 
 }

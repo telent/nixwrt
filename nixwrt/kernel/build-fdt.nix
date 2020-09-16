@@ -1,4 +1,8 @@
-{ stdenv, dts, commandLine, dtc, includes } :
+{ stdenv
+, dts
+, commandLine
+, dtc
+, includes } :
 let
   cppDtSearchFlags = builtins.concatStringsSep " " (map (f: "-I${f}") includes);
   dtcSearchFlags = builtins.concatStringsSep " " (map (f: "-i${f}") includes);
