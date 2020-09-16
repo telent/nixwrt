@@ -1,4 +1,4 @@
-{ name, endian, ...}:
+{ endian, ...}:
 let ends = {
       "little" = {
         config = "mipsel-unknown-linux-musl";

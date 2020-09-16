@@ -175,8 +175,8 @@
       kernel.config."MTD_PHRAM" = "y";
       kernel.config."MTD_SPLIT_FIRMWARE" = "y";
       kernel.config."MTD_SPLIT_FIRMWARE_NAME" = builtins.toJSON "nixwrt";
-      kernel.commandLine =
-        "${super.kernel.commandLine} mtdparts=phram0:${sizeMB}M(nixwrt) phram.phram=phram0,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
+      boot.commandLine =
+        "${super.boot.commandLine} mtdparts=phram0:${sizeMB}M(nixwrt) phram.phram=phram0,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
     };
   kexec = _: nixpkgs: self: super:
     with nixpkgs;

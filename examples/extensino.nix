@@ -3,7 +3,7 @@
 , loghost ? "loghost"
 , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
 , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
-let nixwrt = (import <nixwrt>) { targetBoard = "mt300a"; }; in
+let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
@@ -51,7 +51,8 @@ let
 
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
-       nixwrt.device.hwModule
+       (import <nixwrt/modules/lib.nix> {})
+       (import <nixwrt/devices/gl-mt300a.nix> {})
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd

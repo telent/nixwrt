@@ -7,6 +7,14 @@ I am rearranging the kernel significantly
 - build wireless subsystem and drivers from linux-next or other "modern"
    tree, using linux-backports project
 
+As of Wed Sep 16 21:47:59 BST 2020 this is WIP and I am focussing
+exclusively on extensino.nix (gl-mt300a), which has ostensibly working
+ethernet and absolitely no wifi.  I will revisit the other
+targets/boards when this one is back to working again
+
+
+---
+
 Some notes to myself towards this aim:
 
 For example, we can apparently successfully make a backported ath10k
