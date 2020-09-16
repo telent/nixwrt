@@ -34,8 +34,11 @@ arhcive/firmware.bin: ATTRS=--argstr loghost $(LOGHOST) --argstr rsyncPassword $
 
 INCLUDE=-I nixpkgs=../nixpkgs -I nixwrt=./nixwrt
 
-NIX_BUILD=nix-build --show-trace $(INCLUDE)  -A $(image)
+NIX_BUILD=nix-build -j1
+NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE)  -A $(image)
 
+# nixpkgs doesn't recognise mips-linux as a supported system
+export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
 
 ## Implementation
 
@@ -64,7 +67,7 @@ $(foreach x,$(EXAMPLES),$(eval $(call shortcut_to_example,$(x))))
 
 
 %/firmware.bin: examples/%.nix %-host-key
-	$(NIX_BUILD) \
+	$(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
 	 --argstr sshHostKey "`cat $(@D)-host-key`" \
