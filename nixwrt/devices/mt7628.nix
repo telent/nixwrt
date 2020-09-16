@@ -46,8 +46,9 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
     };
     config =
       (kb.readDefconfig "${openwrtKernelFiles}/generic/config-5.4") //
-      (kb.readDefconfig "${openwrtKernelFiles}/ramips/mt7620/config-5.4") //
+      (kb.readDefconfig "${openwrtKernelFiles}/ramips/mt76x8/config-5.4") //
       extraConfig;
+
     package =
       let vmlinux = kb.makeVmlinux {
             inherit tree ;
@@ -69,7 +70,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
       in kb.makeUimage {
         inherit vmlinux fdt;
         inherit (self.boot) entryPoint loadAddress commandLine;
-        extraName = "mt7620";
+        extraName = "mt76x8";
         inherit (nixpkgs) patchImage stdenv;
         inherit (nixpkgs.buildPackages) lzma ubootTools;
       };
