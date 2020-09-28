@@ -78,17 +78,13 @@ let
     inherit (nixpkgs) stdenv buildPackages runCommand writeText;
     openwrtSrc = openwrt;
     backportedSrc =
-      builtins.fetchTarball {
-        url = "https://cdn.kernel.org/pub/linux/kernel/projects/backports/stable/v5.8/backports-5.8-1.tar.xz";
-        name = "backports-5.8.1";
-        sha256 = "1r0q5a7mjkg069rdsmwvnlvxcvc51vchafbs06nc4vzrpnn148pq";
-      # nixpkgs.buildPackages.callPackage ../kernel/backport.nix {
-      #   donorTree = nixpkgs.fetchgit {
-      #     url =
-      #       "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git";
-      #     rev = "bcf876870b95592b52519ed4aafcf9d95999bc9c";
-      #     sha256 = "1jffq83jzcvkvpf6afhwkaj0zlb293vlndp1r66xzx41mbnnra0x";
-      #   };
+      nixpkgs.buildPackages.callPackage ../kernel/backport.nix {
+        donorTree = nixpkgs.fetchgit {
+          url =
+            "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git";
+          rev = "bcf876870b95592b52519ed4aafcf9d95999bc9c";
+          sha256 = "1jffq83jzcvkvpf6afhwkaj0zlb293vlndp1r66xzx41mbnnra0x";
+        };
       };
     klibBuild = vmlinux.modulesupport;
   };
