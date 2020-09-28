@@ -88,9 +88,27 @@ let
       };
     klibBuild = vmlinux.modulesupport;
   };
+  modloaderservice = {
+    type = "oneshot";
+    start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
+      #!${nixpkgs.busybox}/bin/sh
+      cd ${modules}
+      insmod ./compat/compat.ko
+      insmod ./net/wireless/cfg80211.ko
+      insmod ./net/mac80211/mac80211.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00lib.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00mmio.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00soc.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800lib.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800mmio.ko
+      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800soc.ko
+    ''; in "${s}/bin/load-modules.sh";
+  };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
-  packages = ( if super ? packages then super.packages else [] ) ++ [modules];
-  busybox.applets = super.busybox.applets ++ [ "insmod" "modinfo" ];
+  packages = ( if super ? packages then super.packages else [] )
+             ++ [modules];
+  services.modloader = modloaderservice;
+  busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
   kernel = rec {
     inherit vmlinux tree;
     config =
