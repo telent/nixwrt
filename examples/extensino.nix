@@ -78,7 +78,7 @@ let
       # writing the image to flash first
       phramware =
         let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "5";
+              offset = "0xa00000"; sizeMB = "6";
             });
             m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);

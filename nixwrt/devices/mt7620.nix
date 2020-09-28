@@ -88,10 +88,19 @@ let
       };
     klibBuild = vmlinux.modulesupport;
   };
+  regulatory = nixpkgs.stdenv.mkDerivation {
+    name = "regdb";
+    phases = ["installPhase"];
+    installPhase = ''
+      mkdir -p $out/firmware
+      cp ${nixpkgs.wireless-regdb}/lib/firmware/regulatory.db* $out/firmware
+    '';
+  };
   modloaderservice = {
     type = "oneshot";
     start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
       #!${nixpkgs.busybox}/bin/sh
+      echo ${regulatory}/firmware/ > /sys/module/firmware_class/parameters/path
       cd ${modules}
       insmod ./compat/compat.ko
       insmod ./net/wireless/cfg80211.ko
@@ -106,7 +115,7 @@ let
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
   packages = ( if super ? packages then super.packages else [] )
-             ++ [modules];
+             ++ [modules regulatory];
   services.modloader = modloaderservice;
   busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
   kernel = rec {
