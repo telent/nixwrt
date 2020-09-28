@@ -1,0 +1,112 @@
+{  stdenv
+ , buildPackages
+ , runCommand
+ , writeText
+
+ , openwrtSrc
+ , backportedSrc
+ , klibBuild
+} :
+let writeConfig = name : config: writeText name
+        (builtins.concatStringsSep
+          "\n"
+          (lib.mapAttrsToList
+            (name: value: (if value == "n" then "# CPTCFG_${name} is not set" else "CPTCFG_${name}=${value}"))
+            config
+          ));
+    config = {
+      "CRYPTO_ARC4" = "y";
+      "CFG80211_WEXT"="n";
+      "CFG80211"="m";
+      "MAC80211"="m";
+      "MAC80211_LEDS"="y";
+      "MAC80211_MESH"="y";
+      "WLAN"="y";
+      "WLAN_VENDOR_ATH"="y";
+      "ATH9K"="m";
+      "WLAN_VENDOR_RALINK"="y";
+      "RT2X00" = "m";
+      "RT2800SOC" = "m";
+      "REQUIRE_SIGNED_REGDB" = "n";
+    };
+    kconfigFile = writeConfig "nixwrt_backports_kconfig" config;
+#    checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
+    lib = stdenv.lib; in
+stdenv.mkDerivation rec {
+  src = backportedSrc;
+  name = "backported-modules";
+
+  hardeningDisable = ["all"];
+  nativeBuildInputs = [buildPackages.stdenv.cc] ++
+                      (with buildPackages.pkgs;
+                        [bc bison flex pkgconfig openssl
+                         which kmod cpio
+                         ncurses.all ncurses.dev perl]);
+  #  CC = "${stdenv.cc.bintools.targetPrefix}gcc";
+  CC = "${buildPackages.stdenv.cc}/bin/gcc";
+  HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include -I${buildPackages.pkgs.ncurses.dev}/include";
+  HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib -L${buildPackages.pkgs.ncurses.out}/lib " ;
+  PKG_CONFIG_PATH = "./pkgconfig";
+  CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
+  ARCH = "mips";  # kernel uses "mips" here for both mips and mipsel
+  dontStrip = true;
+  dontPatchELF = true;
+  phases = ["unpackPhase"
+            "butcherPkgconfig"
+            "patchFromOpenwrt"
+            "configurePhase"
+  #           "checkConfigurationPhase"
+            "buildPhase"
+            "installPhase"
+           ];
+
+  # this is here to work around what I think is a bug in nixpkgs packaging
+  # of ncurses: it installs pkg-config data files which don't produce
+  # any -L options when queried with "pkg-config --lib ncurses".  For a
+  # regular nixwrt compilation you'll never even notice, this only becomes
+  # an issue if you do a nix-shell in this derivation and expect "make nconfig"
+  # to work.
+  butcherPkgconfig = ''
+    cp -r ${buildPackages.pkgs.ncurses.dev}/lib/pkgconfig .
+    chmod +w pkgconfig pkgconfig/*.pc
+    for i in pkgconfig/*.pc; do test -f $i && sed -i 's/^Libs:/Libs: -L''${libdir} /'  $i;done
+  '';
+
+  patchFromOpenwrt = ''
+     mac80211=${openwrtSrc}/package/kernel/mac80211
+     cat $mac80211/patches/build/* |patch -p1 -N
+     cat $mac80211/patches/rt2x00/* |patch -p1 -N
+  '';
+
+
+   configurePhase = ''
+     cp ${kconfigFile} .config
+     cp ${kconfigFile} .config.orig
+     chmod +w .config .config.orig
+     echo $TMPDIR
+     make V=1 CC=${CC} SHELL=`type -p bash` LEX=flex KLIB_BUILD=${klibBuild} olddefconfig
+     grep ATH9K .config
+   '';
+
+  # checkConfigurationPhase = ''
+  #   echo Checking required config items:
+  #   if comm -2 -3 <(grep 'CONFIG' ${checkedConfigFile} |sort) <(grep 'CONFIG' .config|sort) |grep '.'    ; then
+  #     echo -e "^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
+  #     exit 0
+  #   fi
+  #   echo "OK"
+  # '';
+
+   KBUILD_BUILD_HOST = "nixwrt.builder";
+
+   buildPhase = ''
+    patchShebangs scripts/
+    make V=1 SHELL=`type -p bash` KLIB_BUILD=${klibBuild} modules
+   '';
+
+   installPhase = ''
+     mkdir -p $out
+     find . -name \*.ko -o -name \*.mod.o | cpio --make-directories --verbose -p $out
+   ''   ;
+
+}

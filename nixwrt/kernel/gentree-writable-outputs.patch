@@ -1,0 +1,97 @@
+--- /nix/store/swnksqfa53bv4c5n376zpw8zmzs47f4b-backports3/gentree.py	1970-01-01 01:00:01.000000000 +0100
++++ ./gentree.py	2020-09-18 21:55:30.100918501 +0100
+@@ -2,6 +2,6 @@
+ #
+ # Generate the output tree into a specified directory.
+ #
+-
+ import argparse, sys, os, errno, shutil, re, subprocess
++import stat
+ import tarfile, gzip, time
+@@ -127,6 +127,10 @@
+         if e.errno != errno.ENOENT:
+             raise
+ 
++def makeWritable(filename):
++    os.chmod(filename,
++             os.stat(filename).st_mode | 0700)
++
+ 
+ def copytree(src, dst, symlinks=False, ignore=None):
+     """
+@@ -141,6 +145,7 @@
+ 
+     if not os.path.isdir(dst):
+         os.makedirs(dst)
++        makeWritable(dst)
+     errors = []
+     for name in names:
+         if name in ignored_names:
+@@ -154,7 +161,8 @@
+             elif os.path.isdir(srcname):
+                 copytree(srcname, dstname, symlinks, ignore)
+             else:
+-                shutil.copy2(srcname, dstname)
++                shutil.copy(srcname, dstname)
++                makeWritable(dstname)
+         except (IOError, os.error) as why:
+             errors.append((srcname, dstname, str(why)))
+         # catch the Error from the recursive copytree so that we can
+@@ -163,6 +172,7 @@
+             errors.extend(err.args[0])
+     try:
+         shutil.copystat(src, dst)
++        makeWritable(dst)
+     except WindowsError:
+         # can't copy file access times on Windows
+         pass
+@@ -187,6 +197,7 @@
+     for srcitem, tgtitem in copy_list:
+         if tgtitem == '':
+             copytree(srcpath, outdir, ignore=shutil.ignore_patterns('*~'))
++            makeWritable(outdir)
+         elif tgtitem[-1] == '/':
+             def copy_ignore(dir, entries):
+                 r = []
+@@ -199,14 +210,17 @@
+                      ignore=copy_ignore)
+         else:
+             try:
+-                os.makedirs(os.path.join(outdir, os.path.dirname(tgtitem)))
++                n = os.path.join(outdir, os.path.dirname(tgtitem))
++                os.makedirs(n, 0755)
++                makeWritable(n)
+             except OSError as e:
+                 # ignore dirs we might have created just now
+                 if e.errno != errno.EEXIST:
+                     raise
+-            shutil.copy(os.path.join(srcpath, srcitem),
+-                        os.path.join(outdir, tgtitem))
+-
++            outpath = os.path.join(outdir, tgtitem)
++            if os.path.exists(outpath): os.remove(outpath)
++            shutil.copy(os.path.join(srcpath, srcitem), outpath)
++            makeWritable(outpath)
+ 
+ def copy_git_files(srcpath, copy_list, rev, outdir):
+     """
+@@ -886,7 +904,10 @@
+     git_debug_snapshot(args, 'Add driver sources')
+ 
+     disable_list = add_automatic_backports(args)
+-    if git_tracked_version:
++    if os.environ['BACKPORTS_VERSION']:
++        backports_version = os.environ['BACKPORTS_VERSION']
++        kernel_version = os.environ['KERNEL_VERSION']
++    elif git_tracked_version:
+         backports_version = "(see git)"
+         kernel_version = "(see git)"
+     else:
+@@ -1037,6 +1030,7 @@ def process(kerneldir, copy_list_file, git_revision=None,
+                 break
+         if copy_defconfig:
+             shutil.copy(dfsrc, os.path.join(bpid.target_dir, 'defconfigs', dfbase))
++            makeWritable(os.path.join(bpid.target_dir, 'defconfigs', dfbase))
+ 
+     git_debug_snapshot(args, "add (useful) defconfig files")
+ 

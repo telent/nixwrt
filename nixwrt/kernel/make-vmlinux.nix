@@ -25,7 +25,7 @@ stdenv.mkDerivation rec {
   hardeningDisable = ["all"];
   nativeBuildInputs = [buildPackages.stdenv.cc] ++
                       (with buildPackages.pkgs;
-                        [bc bison flex pkgconfig openssl ncurses.all perl]);
+                        [rsync bc bison flex pkgconfig openssl ncurses.all perl]);
   CC = "${stdenv.cc.bintools.targetPrefix}gcc";
   HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include -I${buildPackages.pkgs.ncurses}/include";
   HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib -L${buildPackages.pkgs.ncurses.out}/lib " ;
@@ -34,6 +34,7 @@ stdenv.mkDerivation rec {
   ARCH = "mips";  # kernel uses "mips" here for both mips and mipsel
   dontStrip = true;
   dontPatchELF = true;
+  outputs = ["out"  "modulesupport"];
   phases = ["butcherPkgconfig"
             "configurePhase"
             "checkConfigurationPhase"
@@ -76,6 +77,9 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     cp vmlinux $out
+    make clean
+    mkdir -p $modulesupport
+    cp -a . $modulesupport
   '';
 
 }

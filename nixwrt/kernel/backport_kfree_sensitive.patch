@@ -1,0 +1,21 @@
+diff --git a/backport/backport-include/linux/slab.h b/backport/backport-include/linux/slab.h
+index 66f0cc0d..e320851e 100644
+--- a/backport/backport-include/linux/slab.h
++++ b/backport/backport-include/linux/slab.h
+@@ -24,4 +24,16 @@ static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
+ }
+ #endif
+ 
++#if LINUX_VERSION_IS_LESS(5, 9, 0)
++/*  kfree_sensitive was introduced in 453431a54934 -
++ * see https://patchwork.kernel.org/patch/11606197/
++ *
++ * this change is somewhere in the 5.9-rc series, so hopefully
++ * the version comparison here is OK
++ */
++
++#define kfree_sensitive kzfree
++
++#endif
++
+ #endif /* __BACKPORT_SLAB_H */

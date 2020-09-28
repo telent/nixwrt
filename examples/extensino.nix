@@ -46,6 +46,7 @@ let
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.swconfig ];
+      busybox = { applets = []; };
       filesystems = {} ;
     };
 

@@ -1,0 +1,129 @@
+--- /nix/store/swnksqfa53bv4c5n376zpw8zmzs47f4b-backports3/gentree.py	1970-01-01 01:00:01.000000000 +0100
++++ ./gentree.py	2020-09-18 21:55:30.100918501 +0100
+@@ -2,12 +2,12 @@
+ #
+ # Generate the output tree into a specified directory.
+ #
+-
+ import argparse, sys, os, errno, shutil, re, subprocess
++import stat
+ import tarfile, gzip, time
+ 
+ # find self
+-source_dir = os.path.abspath(os.path.dirname(__file__))
++source_dir = "/nix/store/swnksqfa53bv4c5n376zpw8zmzs47f4b-backports3";
+ sys.path.append(source_dir)
+ # and import libraries we have
+ from lib import kconfig, patch, make
+@@ -81,13 +81,13 @@
+     Read a (the) dependency file and return the list of
+     dependencies as a dictionary, mapping a Kconfig symbol
+     to a list of kernel version dependencies.
+-    
++
+     If a backported feature that an upstream backported driver
+     depends on had kconfig limitations (ie, debugging feature not
+     available) a built constaint restriction can be expressed
+     by using a kconfig expression. The kconfig expressions can
+     be specified by using the "kconfig: " prefix.
+-    
++
+     While reading ignore blank or commented lines.
+     """
+     ret = {}
+@@ -127,6 +127,10 @@
+         if e.errno != errno.ENOENT:
+             raise
+ 
++def makeWritable(filename):
++    os.chmod(filename,
++             os.stat(filename).st_mode | 0700)
++
+ 
+ def copytree(src, dst, symlinks=False, ignore=None):
+     """
+@@ -141,6 +145,9 @@
+ 
+     if not os.path.isdir(dst):
+         os.makedirs(dst)
++        print("mkdir", dst)
++        makeWritable(dst)
++        os.system("ls -ld "+dst+" >/dev/tty")
+     errors = []
+     for name in names:
+         if name in ignored_names:
+@@ -154,7 +161,9 @@
+             elif os.path.isdir(srcname):
+                 copytree(srcname, dstname, symlinks, ignore)
+             else:
+-                shutil.copy2(srcname, dstname)
++                shutil.copy(srcname, dstname)
++                print("r", dstname)
++                makeWritable(dstname)
+         except (IOError, os.error) as why:
+             errors.append((srcname, dstname, str(why)))
+         # catch the Error from the recursive copytree so that we can
+@@ -163,6 +172,7 @@
+             errors.extend(err.args[0])
+     try:
+         shutil.copystat(src, dst)
++        makeWritable(dst)
+     except WindowsError:
+         # can't copy file access times on Windows
+         pass
+@@ -187,6 +197,7 @@
+     for srcitem, tgtitem in copy_list:
+         if tgtitem == '':
+             copytree(srcpath, outdir, ignore=shutil.ignore_patterns('*~'))
++            makeWritable(outdir)
+         elif tgtitem[-1] == '/':
+             def copy_ignore(dir, entries):
+                 r = []
+@@ -199,14 +210,19 @@
+                      ignore=copy_ignore)
+         else:
+             try:
+-                os.makedirs(os.path.join(outdir, os.path.dirname(tgtitem)))
++                n = os.path.join(outdir, os.path.dirname(tgtitem))
++                os.makedirs(n, 0755)
++                print("ll",n)
++                makeWritable(n)
+             except OSError as e:
+                 # ignore dirs we might have created just now
+                 if e.errno != errno.EEXIST:
+                     raise
+-            shutil.copy(os.path.join(srcpath, srcitem),
+-                        os.path.join(outdir, tgtitem))
+-
++            outpath = os.path.join(outdir, tgtitem)
++            print("s", outpath)
++            if os.path.exists(outpath): os.remove(outpath)
++            shutil.copy(os.path.join(srcpath, srcitem), outpath)
++            makeWritable(outpath)
+ 
+ def copy_git_files(srcpath, copy_list, rev, outdir):
+     """
+@@ -867,8 +883,10 @@
+         logwrite('Copy original source files ...')
+     else:
+         logwrite('Get original source files from git ...')
+-    
++
++    os.system("find "+bpid.target_dir+" -ls  >/dev/tty")
+     copy_files(os.path.join(source_dir, 'backport'), backport_files, bpid.target_dir)
++    os.system("find "+bpid.target_dir+" -ls  >/dev/tty")
+ 
+     git_debug_init(args)
+ 
+@@ -886,7 +904,10 @@
+     git_debug_snapshot(args, 'Add driver sources')
+ 
+     disable_list = add_automatic_backports(args)
+-    if git_tracked_version:
++    if os.environ['BACKPORTS_VERSION']:
++        backports_version = os.environ['BACKPORTS_VERSION']
++        kernel_version = os.environ['KERNEL_VERSION']
++    elif git_tracked_version:
+         backports_version = "(see git)"
+         kernel_version = "(see git)"
+     else:
