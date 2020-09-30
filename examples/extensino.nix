@@ -19,13 +19,28 @@ let
         };
         "wlan0" = {
           type = "hostap";
-          ssid = ssid;
-          country_code = "UK";
-          channel = 2;
-          hw_mode = "g";
-          wpa_psk = psk;
+          params = {
+            ssid = ssid;
+            country_code = "UK";
+            channel = 1;
+            hw_mode = "g";
+            ieee80211n = 1;
+            wmm_enabled = 1;
+            wpa = 2;
+            wpa_key_mgmt = "WPA-PSK";
+            wpa_psk = psk;
+            wpa_pairwise = "TKIP CCMP"; # do we need TKIP here?
+
+            # to get 40MHz channels, we would need to set something
+            # like
+            #  ht_capab = "[HT40-][HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40]";
+            # or
+            # ht_capab = "[SHORT-GI-40][HT40+][HT40-][DSSS_CCK-40]";
+            # but (maybe some regulatory misconfiguration) my hardware
+            # doesn't like that and refuses to start hostapd
+          };
           memberOf = "br0";
-        };
+       };
         "br0" = {
           type = "bridge";
           enableStp = true;

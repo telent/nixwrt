@@ -24,8 +24,7 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
          (setUp name attrs)
          ];
       hostap = name : attrs :
-        let attrs' = { logger_stdout = -1; logger_stdout_level = 99; } // attrs;
-            cfg = { inherit (attrs') channel country_code hw_mode logger_stdout logger_stdout_level ssid wpa_psk; };
+        let cfg = { logger_stdout = -1; logger_stdout_level = 99; } // attrs.params;
             conf = writeText "hostap-${name}.conf" (import ./hostapd-conf.nix lib cfg);
             debug = (if attrs ? debug then "-d" else "" );
         in lib.flatten
