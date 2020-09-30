@@ -6,6 +6,7 @@
  , openwrtSrc
  , backportedSrc
  , klibBuild
+ , kconfig
 } :
 let writeConfig = name : config: writeText name
         (builtins.concatStringsSep
@@ -14,21 +15,7 @@ let writeConfig = name : config: writeText name
             (name: value: (if value == "n" then "# CPTCFG_${name} is not set" else "CPTCFG_${name}=${value}"))
             config
           ));
-    config = {
-      "CRYPTO_ARC4" = "y";
-      "CFG80211_WEXT"="n";
-      "CFG80211"="m";
-      "MAC80211"="m";
-      "MAC80211_LEDS"="y";
-      "MAC80211_MESH"="y";
-      "WLAN"="y";
-      "WLAN_VENDOR_ATH"="y";
-      "ATH9K"="m";
-      "WLAN_VENDOR_RALINK"="y";
-      "RT2X00" = "m";
-      "RT2800SOC" = "m";
-      "REQUIRE_SIGNED_REGDB" = "n";
-    };
+    config = kconfig;
     kconfigFile = writeConfig "nixwrt_backports_kconfig" config;
 #    checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
     lib = stdenv.lib; in

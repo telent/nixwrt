@@ -87,6 +87,21 @@ let
         };
       };
     klibBuild = vmlinux.modulesupport;
+    kconfig = {
+      "ATH9K"="m";
+      "CFG80211"="m";
+      "CFG80211_WEXT"="n";
+      "CRYPTO_ARC4" = "y";
+      "MAC80211"="m";
+      "MAC80211_LEDS"="y";
+      "MAC80211_MESH"="y";
+      "REQUIRE_SIGNED_REGDB" = "n";
+      "RT2800SOC" = "m";
+      "RT2X00" = "m";
+      "WLAN"="y";
+      "WLAN_VENDOR_ATH"="y";
+      "WLAN_VENDOR_RALINK"="y";
+    };
   };
   regulatory = nixpkgs.stdenv.mkDerivation {
     name = "regdb";
