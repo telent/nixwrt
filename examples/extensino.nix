@@ -48,14 +48,6 @@ let
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
-      etc = {
-        "monit.ping.rc" = { content = ''
-          check host 1.1.1.1 with address 1.1.1.1
-	    depends on udhcpc
-            if failed ping then exec "/bin/touch /tmp/fog-in-channel"
-'';
-        };
-      };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
