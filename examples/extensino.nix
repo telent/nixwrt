@@ -1,8 +1,8 @@
-{ psk ? "fishfinger"
+{ psk
 , ssid
-, loghost ? "loghost"
-, myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
+, loghost
+, myKeys
+, sshHostKey }:
 let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
@@ -80,20 +80,20 @@ let
           "1" = "0 1 6t";           # all the ports
         };
         })
-       (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf";  })
+       (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf"; })
        (syslog { inherit loghost ; })
        (ntpd { host = "pool.ntp.org"; })
     ];
 
     in {
       firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
-
+      kernel = nixwrt.kernel (nixwrt.mergeModules wantedModules);
       # phramware generates an image which boots from the "fake" phram mtd
       # device - required if you want to boot from u-boot without
       # writing the image to flash first
       phramware =
         let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "6";
+              offset = "0xa00000"; sizeMB = "7";
             });
             m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);

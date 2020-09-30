@@ -19,7 +19,7 @@ image?=firmware  # build flashable image
 SSID?=NixWRT
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
--include secrets
+-include $(SECRETS)
 
 ## Per-target config
 
