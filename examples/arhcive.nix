@@ -1,10 +1,10 @@
 # Status Sep 2019: builds, boots, Works On My Network
 
-{ rsyncPassword ? "urbancookie"
-, myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, loghost ? "loghost"
-, sshHostKey ? "----FAKING RSA PRIVATE KEY----" }:
-let nixwrt = (import <nixwrt>) { targetBoard = "mt300n_v2"; }; in
+{ rsyncPassword
+, myKeys
+, loghost
+, sshHostKey }:
+let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
@@ -28,9 +28,10 @@ let
       packages = [ ];
       filesystems = {} ;
       busybox = {
+        applets = [];
         # because I have empirically determined that
-	# being able to see which copy of a file is more recent
-	# is an essential feature of a storage server
+	      # being able to see which copy of a file is more recent
+	      # is an essential feature of a storage server
         config.feature_ls_timestamps = "y";
         config.feature_ls_sortfiles = "y";
       };
@@ -38,7 +39,8 @@ let
 
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
-       nixwrt.device.hwModule
+       (import <nixwrt/modules/lib.nix> {})
+       (import <nixwrt/devices/gl-mt300n-v2.nix> {})
        (rsyncd { password = rsyncPassword; })
        (sshd { hostkey = sshHostKey ; })
        busybox
