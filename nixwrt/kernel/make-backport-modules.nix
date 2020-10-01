@@ -17,7 +17,6 @@ let writeConfig = name : config: writeText name
           ));
     config = kconfig;
     kconfigFile = writeConfig "nixwrt_backports_kconfig" config;
-#    checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
     lib = stdenv.lib; in
 stdenv.mkDerivation rec {
   src = backportedSrc;
@@ -42,7 +41,6 @@ stdenv.mkDerivation rec {
             "butcherPkgconfig"
             "patchFromOpenwrt"
             "configurePhase"
-  #           "checkConfigurationPhase"
             "buildPhase"
             "installPhase"
            ];
