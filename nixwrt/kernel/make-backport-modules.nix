@@ -75,25 +75,19 @@ stdenv.mkDerivation rec {
      grep ATH9K .config
    '';
 
-  # checkConfigurationPhase = ''
-  #   echo Checking required config items:
-  #   if comm -2 -3 <(grep 'CONFIG' ${checkedConfigFile} |sort) <(grep 'CONFIG' .config|sort) |grep '.'    ; then
-  #     echo -e "^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
-  #     exit 0
-  #   fi
-  #   echo "OK"
-  # '';
-
    KBUILD_BUILD_HOST = "nixwrt.builder";
 
    buildPhase = ''
     patchShebangs scripts/
     make V=1 SHELL=`type -p bash` KLIB_BUILD=${klibBuild} modules
+    find . -name \*.ko | xargs ${CROSS_COMPILE}strip --strip-debug
    '';
 
    installPhase = ''
      mkdir -p $out
-     find . -name \*.ko -o -name \*.mod.o | cpio --make-directories --verbose -p $out
+#     find . -name \*.ko -o -name \*.mod.o | cpio --make-directories --verbose -p $out
+     find . -name \*.ko | cpio --make-directories -p $out
+     find $out -ls
    ''   ;
 
 }
