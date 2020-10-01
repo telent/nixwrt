@@ -1,12 +1,11 @@
 # Status May 2019: builds, but missing some needed packages
-
-{ targetBoard ? "ar750"
-, ssid
+#        Sep 2020: builds, ...?
+{ ssid
 , psk
-, loghost ? "loghost"
-, myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
-let nixwrt = (import <nixwrt>) { inherit targetBoard; }; in
+, loghost
+, myKeys
+, sshHostKey }:
+let nixwrt = (import <nixwrt>) { endian = "big"; }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
@@ -21,24 +20,25 @@ let
         };
         "wlan0" = {
           type = "hostap";
-          ssid = "telent1";
-          country_code = "US";
-          channel = 9;
-          wpa_psk = psk;
-          hw_mode = "g";
           memberOf = "br0";
+          params = {
+            inherit ssid;
+            country_code = "US";
+            channel = 9;
+            wpa_psk = psk;
+            hw_mode = "g";
+          };
         };
         "wlan1" = {
           type = "hostap";
-          ssid = "telent1";
-          country_code = "US";
-          channel = 36;
-          wpa_psk = psk;
-          hw_mode = "a";
-#          debug = true;
-#          logger_stdout = "-1";
-#          logger_stdout_level = "2";
           memberOf = "br0";
+          params = {
+            inherit ssid;
+            country_code = "US";
+            channel = 36;
+            wpa_psk = psk;
+            hw_mode = "a";
+          };
         };
         "br0" = {
           type = "bridge";
@@ -52,12 +52,15 @@ let
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
       packages = [ ];
+      busybox = { applets = []; };
+
       filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
-       nixwrt.device.hwModule
+       (import <nixwrt/modules/lib.nix> {})
+       (import <nixwrt/devices/gl-ar750.nix> {})
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
@@ -68,7 +71,7 @@ let
 	         "1" = "0t 1 2 3 4";           # lan (0 is cpu)
 	       };
        })
-       haveged
+#       haveged
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
 #       (syslog { inherit loghost; })
 #       (ntpd { host = "pool.ntp.org"; })
@@ -83,7 +86,7 @@ let
       # writing the image to flash first
       phramware =
         let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "5";
+              offset = "0xa00000"; sizeMB = "6";
             });
             m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);

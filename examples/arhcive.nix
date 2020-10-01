@@ -1,4 +1,5 @@
 # Status Sep 2019: builds, boots, Works On My Network
+#        Sep 2020: builds, not tested since kernel 5.4 upgrade
 
 { rsyncPassword
 , myKeys

@@ -61,6 +61,7 @@ stdenv.mkDerivation rec {
      mac80211=${openwrtSrc}/package/kernel/mac80211
      cat $mac80211/patches/build/* |patch -p1 -N
      cat $mac80211/patches/rt2x00/* |patch -p1 -N
+     cat $mac80211/patches/ath/* |patch -p1 -N
   '';
 
 
