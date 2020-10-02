@@ -17,6 +17,8 @@ default:
 #image?=phramware  # build runnable-from-ram image
 image?=firmware  # build flashable image
 SSID?=NixWRT
+ARHCIVE_RSYNC_PASSWORD?=helloworld
+LOGHOST?=loghost.lan
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 -include $(SECRETS)
