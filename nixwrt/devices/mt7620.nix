@@ -88,7 +88,6 @@ let
       };
     klibBuild = vmlinux.modulesupport;
     kconfig = {
-      "ATH9K"="m";
       "CFG80211"="m";
       "CFG80211_WEXT"="n";
       "CRYPTO_ARC4" = "y";

@@ -52,7 +52,7 @@ let
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
-      packages = [ ];
+      packages = [ pkgs.iproute ];
       busybox = { applets = []; };
       filesystems = {} ;
     };
@@ -62,6 +62,7 @@ let
        (import <nixwrt/modules/lib.nix> {})
        (import <nixwrt/devices/gl-mt300a.nix> {})
        (sshd { hostkey = sshHostKey ; })
+       (_ : _ : super : { packages = super.packages ++ [ pkgs.iperf3 ] ; })
        busybox
        kernelMtd
        haveged
