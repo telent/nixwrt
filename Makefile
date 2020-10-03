@@ -27,6 +27,8 @@ ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
 
+upstaisr/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
+
 defalutroute/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
 
 arhcive/firmware.bin: ATTRS=--argstr loghost $(LOGHOST) --argstr rsyncPassword $(ARHCIVE_RSYNC_PASSWORD)
