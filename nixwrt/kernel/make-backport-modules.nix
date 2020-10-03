@@ -28,7 +28,6 @@ stdenv.mkDerivation rec {
                         [bc bison flex pkgconfig openssl
                          which kmod cpio
                          ncurses.all ncurses.dev perl]);
-  #  CC = "${stdenv.cc.bintools.targetPrefix}gcc";
   CC = "${buildPackages.stdenv.cc}/bin/gcc";
   HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include -I${buildPackages.pkgs.ncurses.dev}/include";
   HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib -L${buildPackages.pkgs.ncurses.out}/lib " ;
@@ -38,7 +37,7 @@ stdenv.mkDerivation rec {
   dontStrip = true;
   dontPatchELF = true;
   phases = ["unpackPhase"
-            "butcherPkgconfig"
+#            "butcherPkgconfig"
             "patchFromOpenwrt"
             "configurePhase"
             "buildPhase"
@@ -69,9 +68,7 @@ stdenv.mkDerivation rec {
      cp ${kconfigFile} .config
      cp ${kconfigFile} .config.orig
      chmod +w .config .config.orig
-     echo $TMPDIR
      make V=1 CC=${CC} SHELL=`type -p bash` LEX=flex KLIB_BUILD=${klibBuild} olddefconfig
-     grep ATH9K .config
    '';
 
    KBUILD_BUILD_HOST = "nixwrt.builder";
@@ -84,7 +81,6 @@ stdenv.mkDerivation rec {
 
    installPhase = ''
      mkdir -p $out
-#     find . -name \*.ko -o -name \*.mod.o | cpio --make-directories --verbose -p $out
      find . -name \*.ko | cpio --make-directories -p $out
      find $out -ls
    ''   ;
