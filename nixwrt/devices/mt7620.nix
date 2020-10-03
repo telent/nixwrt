@@ -43,19 +43,8 @@ let
     checkedConfig = checkConfig // extraConfig;
     inherit (nixpkgs) stdenv buildPackages writeText runCommand;
   };
-  modules = (import ../kernel/make-backport-modules.nix) {
-    inherit (nixpkgs) stdenv buildPackages runCommand writeText;
-    openwrtSrc = ralink.openwrt;
-    backportedSrc =
-      nixpkgs.buildPackages.callPackage ../kernel/backport.nix {
-        donorTree = nixpkgs.fetchgit {
-          url =
-            "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git";
-          rev = "bcf876870b95592b52519ed4aafcf9d95999bc9c";
-          sha256 = "1jffq83jzcvkvpf6afhwkaj0zlb293vlndp1r66xzx41mbnnra0x";
-        };
-      };
-    klibBuild = vmlinux.modulesupport;
+  modloaderservice = ralink.module_loader {
+    inherit vmlinux;
     kconfig = {
       "CFG80211"="m";
       "CFG80211_WEXT"="n";
@@ -69,8 +58,17 @@ let
       "WLAN"="y";
       "WLAN_VENDOR_RALINK"="y";
     };
+    module_paths = [
+      "net/wireless/cfg80211.ko"
+      "net/mac80211/mac80211.ko"
+      "drivers/net/wireless/ralink/rt2x00/rt2x00lib.ko"
+      "drivers/net/wireless/ralink/rt2x00/rt2x00mmio.ko"
+      "drivers/net/wireless/ralink/rt2x00/rt2x00soc.ko"
+      "drivers/net/wireless/ralink/rt2x00/rt2800lib.ko"
+      "drivers/net/wireless/ralink/rt2x00/rt2800mmio.ko"
+    ];
   };
-  regulatory = nixpkgs.stdenv.mkDerivation {
+  firmware = nixpkgs.stdenv.mkDerivation {
     name = "regdb";
     phases = ["installPhase"];
     installPhase = ''
@@ -78,26 +76,7 @@ let
       cp ${nixpkgs.wireless-regdb}/lib/firmware/regulatory.db* $out/firmware
     '';
   };
-  modloaderservice = {
-    type = "oneshot";
-    start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
-      #!${nixpkgs.busybox}/bin/sh
-      echo ${regulatory}/firmware/ > /sys/module/firmware_class/parameters/path
-      cd ${modules}
-      insmod ./compat/compat.ko
-      insmod ./net/wireless/cfg80211.ko
-      insmod ./net/mac80211/mac80211.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00lib.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00mmio.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00soc.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800lib.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800mmio.ko
-      insmod ./drivers/net/wireless/ralink/rt2x00/rt2800soc.ko
-    ''; in "${s}/bin/load-modules.sh";
-  };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
-  packages = ( if super ? packages then super.packages else [] )
-             ++ [modules regulatory];
   services.modloader = modloaderservice;
   busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
   kernel = rec {
@@ -107,6 +86,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
       (kb.readDefconfig "${ralink.openwrtKernelFiles}/generic/config-5.4") //
       (kb.readDefconfig "${ralink.openwrtKernelFiles}/ramips/mt7620/config-5.4") //
       extraConfig;
+    inherit firmware;
     package =
       let fdt = kb.makeFdt {
             dts = options.dts {inherit (ralink) openwrt;};

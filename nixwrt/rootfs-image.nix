@@ -16,7 +16,7 @@ let
     busybox
     monit
     monitrc
-  ];
+  ] ++ lib.optional (configuration.kernel ? firmware) configuration.kernel.firmware;
   dropbearHostKey = runCommand "makeHostKey" {
     name= "makeHostKey"; preferLocalBuild = true;
     inkey=configuration.services.dropbear.hostKey;

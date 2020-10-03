@@ -43,19 +43,8 @@ let
     checkedConfig = checkConfig // extraConfig;
     inherit (nixpkgs) stdenv buildPackages writeText runCommand;
   };
-  modules = (import ../kernel/make-backport-modules.nix) {
-    inherit (nixpkgs) stdenv buildPackages runCommand writeText;
-    openwrtSrc = ralink.openwrt;
-    backportedSrc =
-      nixpkgs.buildPackages.callPackage ../kernel/backport.nix {
-        donorTree = nixpkgs.fetchgit {
-          url =
-            "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git";
-          rev = "bcf876870b95592b52519ed4aafcf9d95999bc9c";
-          sha256 = "1jffq83jzcvkvpf6afhwkaj0zlb293vlndp1r66xzx41mbnnra0x";
-        };
-      };
-    klibBuild = vmlinux.modulesupport;
+  modloaderservice = ralink.module_loader {
+    inherit vmlinux;
     kconfig = {
       "CFG80211"="m";
       "CFG80211_WEXT"="n";
@@ -69,41 +58,33 @@ let
       "WLAN_VENDOR_RALINK"="y";
       "WLAN_VENDOR_MEDIATEK"="y";
     };
+    module_paths = [
+      "net/wireless/cfg80211.ko"
+      "net/mac80211/mac80211.ko"
+      "drivers/net/wireless/mediatek/mt76/mt76.ko"
+      "drivers/net/wireless/mediatek/mt76/mt7603/mt7603e.ko"
+    ];
   };
-  firmware = nixpkgs.fetchurl {
+  firmware_blob = nixpkgs.fetchurl {
     url = "https://github.com/openwrt/mt76/raw/8167074dab20b4f434f882b3ceb737bc953c2f61/firmware/mt7628_e2.bin";
     sha256 = "1dkhfznmdz6s50kwc841x3wj0h6zg6icg5g2bim9pvg66as2vmh9";
   };
-  regulatory = nixpkgs.stdenv.mkDerivation {
-    name = "regdb";
+  firmware = nixpkgs.stdenv.mkDerivation {
+    name = "firmware";
     phases = ["installPhase"];
     installPhase = ''
       mkdir -p $out/firmware
       cp ${nixpkgs.wireless-regdb}/lib/firmware/regulatory.db* $out/firmware
-      cp ${firmware} $out/firmware/mt7628_e2.bin
+      cp ${firmware_blob} $out/firmware/mt7628_e2.bin
       ( cd $out/firmware && find .)
     '';
   };
-  modloaderservice = {
-    type = "oneshot";
-    start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
-      #!${nixpkgs.busybox}/bin/sh
-      cd ${modules}
-      insmod ./compat/compat.ko
-      insmod ./net/wireless/cfg80211.ko
-      insmod ./net/mac80211/mac80211.ko
-      insmod ./drivers/net/wireless/mediatek/mt76/mt76.ko
-      insmod ./drivers/net/wireless/mediatek/mt76/mt7603/mt7603e.ko
-   ''; in "${s}/bin/load-modules.sh";
-  };
 
 in nixpkgs.lib.attrsets.recursiveUpdate super {
-  packages = ( if super ? packages then super.packages else [] )
-             ++ [modules regulatory];
   services.modloader = modloaderservice;
   busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
   kernel = rec {
-    firmware = regulatory;
+    inherit firmware;
     inherit (ralink) tree;
     config =
       (kb.readDefconfig "${ralink.openwrtKernelFiles}/generic/config-5.4") //
