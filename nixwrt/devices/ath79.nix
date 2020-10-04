@@ -23,39 +23,18 @@ let
   };
   listFiles = dir: builtins.attrNames (builtins.readDir dir);
   extraConfig = {
-    # this is copied from the monolithic kernel and
-    # probably needs adjusting
-    # "ATH9K" = "y";
-    # "ATH9K_AHB" = "y";
-    # "ATH9K_DEBUGFS" = "y";
-    # "ATH_DEBUG" = "y";
-    # "ATH10K" = "y";
-    # "ATH10K_PCI" = "y";
-    # "ATH10K_DEBUG" = "y";
     "BLK_DEV_INITRD" = "n";
-    #    "CFG80211" = "y";
-    # can't get signed regdb to work rn, it just gives me
-    # "loaded regulatory.db is malformed or signature is
-    # missing/invalid"
-    # "CFG80211_REQUIRE_SIGNED_REGDB" = "n";
-    # "CFG80211_DEBUGFS" = "y";
-    # I am reluctant to have to enable this but can't transmit on
-    # 5GHz bands without it (they are all marked NO-IR)
-    # "CFG80211_CERTIFICATION_ONUS" = "y";
-    # We don't need userspace agent (requires udev), we bake the
-    # db into the kernel as firmware
-    # "CFG80211_CRDA_SUPPORT" = "n";
     "CMDLINE_PARTITION" = "y";
     "DEBUG_INFO" = "y";
     "DEVTMPFS" = "y";
     "EARLY_PRINTK" = "y";
+    "FW_LOADER" = "y";
     # we don't have a user helper, so we get multiple 60s pauses
     # at boot time unless we disable trying to call it
-    # "FW_LOADER_USER_HELPER" = "n";
+    "FW_LOADER_USER_HELPER" = "n";
     "IMAGE_CMDLINE_HACK" = "n";
     "IP_PNP" = "y";
     "JFFS2_FS" = "n";
-    # "MAC80211" = "y";
     "MIPS_RAW_APPENDED_DTB" = "y";
     "MODULE_SIG" = "y";
     "MTD_CMDLINE_PARTS" = "y";
@@ -64,7 +43,6 @@ let
     "PRINTK_TIME" = "y";
     "SQUASHFS" = "y";
     "SQUASHFS_XZ" = "y";
-
 
     "ASN1" = "y";
     "ASYMMETRIC_KEY_TYPE" = "y";
@@ -82,7 +60,6 @@ let
     "CRYPTO_SHA1" = "y";
     "ENCRYPTED_KEYS" = "y";
     "KEYS" = "y";
-    
   };
   checkConfig = { };
   tree = kb.patchSourceTree {
@@ -97,6 +74,7 @@ let
           (builtins.filter
             (n: ! (strings.hasPrefix "230-" n))
             (listFiles "${openwrtKernelFiles}/generic/hack-5.4/")))
+        ../kernel/552-ahb_of.patch
       ];
     files = [ "${openwrtKernelFiles}/generic/files/"
               "${openwrtKernelFiles}/ath79/files/"
@@ -124,8 +102,25 @@ let
     klibBuild = vmlinux.modulesupport;
     kconfig = {
       "ATH9K"="m";
+      "ATH9K_AHB" = "m";
+      "ATH9K_DEBUGFS" = "m";
+      "ATH_DEBUG" = "y";
+      "ATH10K" = "m";
+      "ATH10K_AHB" = "m";
+      "ATH10K_PCI" = "m";
+      "ATH10K_DEBUG" = "y";
       "CFG80211"="m";
+      # can't get signed regdb to work rn, it just gives me
+      # "loaded regulatory.db is malformed or signature is
+      # missing/invalid"
+      "CFG80211_REQUIRE_SIGNED_REGDB" = "n";
+      # I am reluctant to have to enable this but can't transmit on
+      # 5GHz bands without it (they are all marked NO-IR)
+      "CFG80211_CERTIFICATION_ONUS" = "y";
+      "CFG80211_DEBUGFS" = "y";
       "CFG80211_WEXT"="n";
+      "CFG80211_CRDA_SUPPORT" = "n";
+
       "CRYPTO_ARC4" = "y";
       "MAC80211"="m";
       "MAC80211_LEDS"="y";
@@ -135,7 +130,7 @@ let
       "WLAN_VENDOR_ATH"="y";
     };
   };
-  regulatory = nixpkgs.stdenv.mkDerivation {
+  firmware = nixpkgs.stdenv.mkDerivation {
     name = "regdb";
     phases = ["installPhase"];
     installPhase = ''
@@ -143,6 +138,7 @@ let
       cp ${nixpkgs.wireless-regdb}/lib/firmware/regulatory.db* $out/firmware
       blobdir=${firmwareBlobs}/QCA9887/hw1.0
       cp $blobdir/10.2.4-1.0/firmware-5.bin_10.2.4-1.0-00047 $out/firmware/ath10k/QCA9887/hw1.0/firmware-5.bin
+      cp ${./ar750-ath10k-cal.bin} $out/firmware/ath10k/cal-pci-0000:00:00.0.bin
       cp $blobdir/board.bin  $out/firmware/ath10k/QCA9887/hw1.0/
     '';
   };
@@ -150,26 +146,25 @@ let
     type = "oneshot";
     start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
       #!${nixpkgs.busybox}/bin/sh
-      echo ${regulatory}/firmware/ > /sys/module/firmware_class/parameters/path
       cd ${modules}
       insmod ./compat/compat.ko
       insmod ./net/wireless/cfg80211.ko
       insmod ./net/mac80211/mac80211.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00lib.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00mmio.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2x00soc.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2800lib.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2800mmio.ko
-      # insmod ./drivers/net/wireless/ralink/rt2x00/rt2800soc.ko
+      insmod drivers/net/wireless/ath/ath.ko
+      #insmod drivers/net/wireless/ath/ath9k/ath9k_hw.ko
+      #insmod drivers/net/wireless/ath/ath9k/ath9k_common.ko
+      #insmod drivers/net/wireless/ath/ath9k/ath9k.ko debug=0xffffffff
+      insmod drivers/net/wireless/ath/ath10k/ath10k_core.ko debug_mask=0x00000432
+      insmod drivers/net/wireless/ath/ath10k/ath10k_pci.ko
     ''; in "${s}/bin/load-modules.sh";
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
   packages = ( if super ? packages then super.packages else [] )
-             ++ [modules regulatory];
+             ++ [modules];
   services.modloader = modloaderservice;
   busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
   kernel = rec {
-    inherit vmlinux tree;
+    inherit vmlinux tree firmware;
     config =
       (kb.readDefconfig "${openwrtKernelFiles}/generic/config-5.4") //
       (kb.readDefconfig "${openwrtKernelFiles}/ath79/config-5.4") //

@@ -19,7 +19,7 @@ image?=firmware  # build flashable image
 SSID?=NixWRT
 ARHCIVE_RSYNC_PASSWORD?=helloworld
 LOGHOST?=loghost.lan
-PSK?=12345
+PSK?=c1e965c0824405b08779388b7f5b402322f71776a0dca8bca24754832d90ca9c
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 -include $(SECRETS)

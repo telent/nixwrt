@@ -24,7 +24,12 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
          (setUp name attrs)
          ];
       hostap = name : attrs :
-        let cfg = { logger_stdout = -1; logger_stdout_level = 99; } // attrs.params;
+        let cfg = {
+              logger_stdout = -1; logger_stdout_level = 99;
+              logger_syslog_level = 1;
+              ctrl_interface = "/run/hostapd-${name}";
+              ctrl_interface_group = 0;
+            } // attrs.params;
             conf = writeText "hostap-${name}.conf" (import ./hostapd-conf.nix lib cfg);
             debug = (if attrs ? debug then "-d" else "" );
         in lib.flatten

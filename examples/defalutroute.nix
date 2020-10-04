@@ -1,5 +1,6 @@
-# Status May 2019: builds, but missing some needed packages
-#        Sep 2020: builds, ...?
+# Some day this will be the config for my PPPoE router that connects
+# to my ISP.  There's a little way to go yet to make that happen.
+# Status Oct 2020: WIP: builds, boots,
 { ssid
 , psk
 , loghost
@@ -18,25 +19,28 @@ let
           type = "vlan"; id = 2; parent = "eth1"; depends = []; # lan
           memberOf = "br0";
         };
+        # "wlan0" = {
+        #   type = "hostap";
+        #   memberOf = "br0";
+        #   debug = true;
+        #   params = {
+        #     inherit ssid;
+        #     country_code = "US";
+        #     channel = 9;
+        #     wmm_enabled = 1;
+        #     ieee80211n = 1;
+        #     hw_mode = "g";
+        #   };
+        # };
         "wlan0" = {
           type = "hostap";
           memberOf = "br0";
-          params = {
-            inherit ssid;
-            country_code = "US";
-            channel = 9;
-            wpa_psk = psk;
-            hw_mode = "g";
-          };
-        };
-        "wlan1" = {
-          type = "hostap";
-          memberOf = "br0";
+          debug = true;
           params = {
             inherit ssid;
             country_code = "US";
             channel = 36;
-            wpa_psk = psk;
+            ieee80211ac = 1;
             hw_mode = "a";
           };
         };
@@ -51,7 +55,7 @@ let
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
-      packages = [ ];
+      packages = [ pkgs.iproute ];
       busybox = { applets = []; };
 
       filesystems = {} ;
