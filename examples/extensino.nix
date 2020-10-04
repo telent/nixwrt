@@ -29,7 +29,7 @@ let
             wpa = 2;
             wpa_key_mgmt = "WPA-PSK";
             wpa_psk = psk;
-            wpa_pairwise = "TKIP CCMP"; # do we need TKIP here?
+            wpa_pairwise = "CCMP";
 
             # to get 40MHz channels, we would need to set something
             # like
