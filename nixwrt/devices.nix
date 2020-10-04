@@ -1,3 +1,7 @@
+
+# This is no longer used and is only being kept for reference until all the
+# configs have been migrated into individual device/filename.nix modules
+
 let
   readDefconfig = import ./util/read_defconfig.nix;
   kernelSrcUrl = v : "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${v}.tar.xz";

@@ -1,12 +1,22 @@
-# Status May 2019: builds, but missing some needed packages
+# Some day this will be the config for my PPPoE router that connects
+# to my ISP.  There's a little way to go yet to make that happen.
+# Status Oct 2020: WIP
+#   [x] builds
+#   [x] boots
+#   [x] wifi works
+#   [ ] wifi configured correctly (country code, wide channel on 5GHz)
+#   [ ] ipv6
+#   [ ] routing
+#   [ ] pppoe
+#   [ ] dnsmasq
+#   [ ] ntp
 
-{ targetBoard ? "ar750"
-, ssid
+{ ssid
 , psk
-, loghost ? "loghost"
-, myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
-, sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
-let nixwrt = (import <nixwrt>) { inherit targetBoard; }; in
+, loghost
+, myKeys
+, sshHostKey }:
+let nixwrt = (import <nixwrt>) { endian = "big"; }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
@@ -21,24 +31,28 @@ let
         };
         "wlan0" = {
           type = "hostap";
-          ssid = "telent1";
-          country_code = "US";
-          channel = 9;
-          wpa_psk = psk;
-          hw_mode = "g";
           memberOf = "br0";
+          debug = true;
+          params = {
+            inherit ssid;
+            country_code = "US";
+            channel = 36;
+            ieee80211ac = 1;
+            hw_mode = "a";
+          };
         };
         "wlan1" = {
           type = "hostap";
-          ssid = "telent1";
-          country_code = "US";
-          channel = 36;
-          wpa_psk = psk;
-          hw_mode = "a";
-#          debug = true;
-#          logger_stdout = "-1";
-#          logger_stdout_level = "2";
           memberOf = "br0";
+          debug = true;
+          params = {
+            inherit ssid;
+            country_code = "US";
+            channel = 9;
+            wmm_enabled = 1;
+            ieee80211n = 1;
+            hw_mode = "g";
+          };
         };
         "br0" = {
           type = "bridge";
@@ -51,13 +65,16 @@ let
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
-      packages = [ ];
+      packages = [ pkgs.iproute ];
+      busybox = { applets = []; };
+
       filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
-       nixwrt.device.hwModule
+       (import <nixwrt/modules/lib.nix> {})
+       (import <nixwrt/devices/gl-ar750.nix> {})
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
@@ -68,7 +85,7 @@ let
 	         "1" = "0t 1 2 3 4";           # lan (0 is cpu)
 	       };
        })
-       haveged
+#       haveged
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
 #       (syslog { inherit loghost; })
 #       (ntpd { host = "pool.ntp.org"; })
@@ -83,7 +100,7 @@ let
       # writing the image to flash first
       phramware =
         let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "5";
+              offset = "0xa00000"; sizeMB = "6";
             });
             m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);

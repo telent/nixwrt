@@ -1,3 +1,5 @@
+# this is another wireless access point/bridge like extensino,
+# but different hardware device
 { psk
 , ssid
 , loghost
@@ -7,7 +9,7 @@ let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
     baseConfiguration = {
-      hostname = "extensino";
+      hostname = "upstaisr";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
         "eth0" = {
@@ -22,7 +24,7 @@ let
           params = {
             ssid = ssid;
             country_code = "UK";
-            channel = 1;
+            channel = 10;
             hw_mode = "g";
             ieee80211n = 1;
             wmm_enabled = 1;
@@ -30,14 +32,6 @@ let
             wpa_key_mgmt = "WPA-PSK";
             wpa_psk = psk;
             wpa_pairwise = "CCMP";
-
-            # to get 40MHz channels, we would need to set something
-            # like
-            #  ht_capab = "[HT40-][HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40]";
-            # or
-            # ht_capab = "[SHORT-GI-40][HT40+][HT40-][DSSS_CCK-40]";
-            # but (maybe some regulatory misconfiguration) my hardware
-            # doesn't like that and refuses to start hostapd
           };
           memberOf = "br0";
        };
@@ -53,14 +47,14 @@ let
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.iproute ];
-      busybox = { applets = []; };
+      busybox = { applets = ["ln"]; };
       filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        (import <nixwrt/modules/lib.nix> {})
-       (import <nixwrt/devices/gl-mt300a.nix> {})
+       (import <nixwrt/devices/gl-mt300n-v2.nix> {})
        (sshd { hostkey = sshHostKey ; })
        (_ : _ : super : { packages = super.packages ++ [ pkgs.iperf3 ] ; })
        busybox
@@ -86,7 +80,7 @@ let
       # writing the image to flash first
       phramware =
         let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "7";
+              offset = "0x900000"; sizeMB = "7";
             });
             m = wantedModules ++ [phram_];
         in nixwrt.firmware (nixwrt.mergeModules m);

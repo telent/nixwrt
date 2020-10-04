@@ -11,7 +11,6 @@ Just so I know it's expected and you're not wasting time doing something I won't
 have a variety of licences.  I have no intention of asking for copyright assignment: just like when submitting to the
 Linux kernel you retain the copyright on the code you contribute.
 
-* Project Governance falls into the "nice problems to have" class of undone things at this point. Right now I am the
-"Benevolent" "Dictator" Pro Tem (c.f. BFDL) but don't expect that to be set in stone for eternity
+* Please govern yourself in NixWRT project venues according to the guidance in the [geekfeminism "Community Anti-harassment Policy"](https://geekfeminism.wikia.org/wiki/Community_anti-harassment/Policy).
 
 * If you've read the preceding bullets and don't find anything to disagree with, open a PR

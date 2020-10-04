@@ -1,3 +1,40 @@
+# On this branch
+
+I am rearranging the kernel significantly
+
+- split devices.nix into a subdirectory with one file per device
+- build a kernel with no wireless, and with module support
+- build wireless subsystem and drivers from linux-next or other "modern"
+   tree, using linux-backports project
+
+As of Wed Sep 16 21:47:59 BST 2020 this is WIP and I am focussing
+exclusively on extensino.nix (gl-mt300a), which has ostensibly working
+ethernet and absolitely no wifi.  I will revisit the other
+targets/boards when this one is back to working again
+
+
+---
+
+Some notes to myself towards this aim:
+
+For example, we can apparently successfully make a backported ath10k
+driver given a backports git master, plus
+git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/ath.git on master
+or ath-next branch, given a couple of small mods to backports.  I
+guess we will want all the *80211 modules from this tree also
+
+when we build the base kernel we'll need to enable modules
+we also need to add insmod (maybe there's a busybox applet for it) to userland
+
+./gentree.py --verbose --clean --git-revision master --copy-list copy-list.ath10k ../ath ../backports-output
+
+The copy-list is taken from 
+
+https://wireless.wiki.kernel.org/en/users/drivers/ath10k/backports#compiling_custom_ath10k_backports
+
+original readme follows:
+---
+
 ![status: works on my machine](https://img.shields.io/badge/status-works%20on%20my%20machine-green.svg)
 
 # What is it?

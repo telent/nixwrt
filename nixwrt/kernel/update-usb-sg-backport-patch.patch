@@ -1,0 +1,22 @@
+The hunk we remove here no longer applies, because it now says
+"fallthrough;" instead of "/* fall through */"
+--- a/patches/0025-usb-sg/usbnet.patch	1970-01-01 01:00:01.000000000 +0100
+--- b/patches/0025-usb-sg/usbnet.patch	1970-01-01 01:00:01.000000000 +0100
+@@ -51,16 +51,6 @@
+  			usb_free_urb(urb);
+  		}
+  	} else
+-@@ -1528,7 +1544,9 @@ static void usbnet_bh (struct timer_list
+- 			rx_process (dev, skb);
+- 			continue;
+- 		case tx_done:
+-+#if LINUX_VERSION_IS_GEQ(3,35,0)
+- 			kfree(entry->urb->sg);
+-+#endif
+- 			/* fall through */
+- 		case rx_cleanup:
+- 			usb_free_urb (entry->urb);
+ @@ -1903,7 +1921,9 @@ int usbnet_resume (struct usb_interface
+  			retval = usb_submit_urb(res, GFP_ATOMIC);
+  			if (retval < 0) {
+

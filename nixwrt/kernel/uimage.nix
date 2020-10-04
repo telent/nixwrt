@@ -2,11 +2,12 @@
   vmlinux
 , commandLine
 , fdt ? null
-, entryPoint ? "0x80000000"
+, entryPoint
 , extraName ? ""                # e.g. socFamily
-, loadAddress ? "0x80000000"
-, lzma
+, loadAddress
+
 , patchImage
+, lzma
 , stdenv
 , ubootTools
 } :

@@ -17,13 +17,18 @@ default:
 #image?=phramware  # build runnable-from-ram image
 image?=firmware  # build flashable image
 SSID?=NixWRT
+ARHCIVE_RSYNC_PASSWORD?=helloworld
+LOGHOST?=loghost.lan
+PSK?=c1e965c0824405b08779388b7f5b402322f71776a0dca8bca24754832d90ca9c
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
--include secrets
+-include $(SECRETS)
 
 ## Per-target config
 
 extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
+
+upstaisr/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
 
 defalutroute/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
 
@@ -34,8 +39,11 @@ arhcive/firmware.bin: ATTRS=--argstr loghost $(LOGHOST) --argstr rsyncPassword $
 
 INCLUDE=-I nixpkgs=../nixpkgs -I nixwrt=./nixwrt
 
-NIX_BUILD=nix-build --show-trace $(INCLUDE)  -A $(image)
+NIX_BUILD=nix-build -j1
+NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE)  -A $(image)
 
+# nixpkgs doesn't recognise mips-linux as a supported system
+export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
 
 ## Implementation
 
@@ -64,7 +72,7 @@ $(foreach x,$(EXAMPLES),$(eval $(call shortcut_to_example,$(x))))
 
 
 %/firmware.bin: examples/%.nix %-host-key
-	$(NIX_BUILD) \
+	$(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
 	 --argstr sshHostKey "`cat $(@D)-host-key`" \

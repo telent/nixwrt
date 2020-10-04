@@ -1,3 +1,7 @@
+
+This was helpful to me in 2018 before I had a serial controlled USB
+power switch. I have no idea if it still applies in recent kernels
+
 --- a/drivers/watchdog/ath79_wdt.c~	2017-11-21 08:49:25.000000000 +0000
 +++ b/drivers/watchdog/ath79_wdt.c	2018-01-04 22:49:24.396466091 +0000
 @@ -61,6 +61,11 @@

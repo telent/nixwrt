@@ -1,0 +1,24 @@
+diff --git a/drivers/net/wireless/ath/ath9k/ahb.c b/drivers/net/wireless/ath/ath9k/ahb.c
+index 63019c3..06955ea 100644
+--- a/drivers/net/wireless/ath/ath9k/ahb.c
++++ b/drivers/net/wireless/ath/ath9k/ahb.c
+@@ -163,11 +163,19 @@ static int ath_ahb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+
++static const struct of_device_id ath9k_ahb_wmac_match[] = {
++	{ .compatible = "qca,qca9530-wmac" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, ath9k_ahb_wmac_match);
++
++
+ static struct platform_driver ath_ahb_driver = {
+ 	.probe      = ath_ahb_probe,
+ 	.remove     = ath_ahb_remove,
+ 	.driver		= {
+ 		.name	= "ath9k",
++		.of_match_table = ath9k_ahb_wmac_match,
+ 	},
+ 	.id_table    = ath9k_platform_id_table,
+ };

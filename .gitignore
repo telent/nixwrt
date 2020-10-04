@@ -3,4 +3,6 @@ result
 *-key
 secrets
 \#*
-.#*
+.#**.rej
+*-host-key
+*-host-key.pub

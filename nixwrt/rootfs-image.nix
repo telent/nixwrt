@@ -16,7 +16,7 @@ let
     busybox
     monit
     monitrc
-  ];
+  ] ++ lib.optional (configuration.kernel ? firmware) configuration.kernel.firmware;
   dropbearHostKey = runCommand "makeHostKey" {
     name= "makeHostKey"; preferLocalBuild = true;
     inkey=configuration.services.dropbear.hostKey;
@@ -81,6 +81,8 @@ let
     /sys d 0555 root root
     /tmp d 1777 root root
     /var d 0755 root root
+    /lib d 0755 root root
+    /lib/firmware s 0755 root root ${configuration.kernel.firmware}/firmware
     ${lib.strings.concatStringsSep "\n"
        (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
          configuration.filesystems)}
@@ -98,7 +100,7 @@ let
 in stdenv.mkDerivation rec {
   name = "nixwrt-root";
   phases = [ "installPhase" ];
-  nativeBuildInputs = [ buildPackages.qprint buildPackages.squashfsTools ];
+  nativeBuildInputs = with buildPackages; [ qprint squashfsTools ];
   installPhase =
     let linkFarm = p : "( cd $out/bin; for i in ${p}/bin/* ; do ln -fs $i . ; done )"; in ''
       mkdir -p $out/sbin $out/bin $out/nix/store

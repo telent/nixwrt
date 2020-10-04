@@ -1,12 +1,13 @@
-{ overlays ? [] , targetBoard }:
-let overlay = import ./overlay.nix;
-  device = (import ./devices.nix).${targetBoard};
+{ overlays ? []
+, endian }:
+let
+  overlay = import ./overlay.nix;
   modules = import ./modules/default.nix;
-  system = (import ./mksystem.nix) device;
+  system = (import ./mksystem.nix) { inherit endian; };
   nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ++ overlays;} );
 in
 with nixpkgs; rec {
-  inherit device modules system nixpkgs;
+  inherit  modules system nixpkgs;
 
   mergeModules = ms:
     let extend = lhs: rhs: lhs // rhs lhs;
