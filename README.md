@@ -1,43 +1,7 @@
-# On this branch
-
-I am rearranging the kernel significantly
-
-- split devices.nix into a subdirectory with one file per device
-- build a kernel with no wireless, and with module support
-- build wireless subsystem and drivers from linux-next or other "modern"
-   tree, using linux-backports project
-
-As of Wed Sep 16 21:47:59 BST 2020 this is WIP and I am focussing
-exclusively on extensino.nix (gl-mt300a), which has ostensibly working
-ethernet and absolitely no wifi.  I will revisit the other
-targets/boards when this one is back to working again
-
-
----
-
-Some notes to myself towards this aim:
-
-For example, we can apparently successfully make a backported ath10k
-driver given a backports git master, plus
-git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/ath.git on master
-or ath-next branch, given a couple of small mods to backports.  I
-guess we will want all the *80211 modules from this tree also
-
-when we build the base kernel we'll need to enable modules
-we also need to add insmod (maybe there's a busybox applet for it) to userland
-
-./gentree.py --verbose --clean --git-revision master --copy-list copy-list.ath10k ../ath ../backports-output
-
-The copy-list is taken from 
-
-https://wireless.wiki.kernel.org/en/users/drivers/ath10k/backports#compiling_custom_ath10k_backports
-
-original readme follows:
----
 
 ![status: works on my machine](https://img.shields.io/badge/status-works%20on%20my%20machine-green.svg)
 
-# What is it?
+# What is this?
 
 An experiment, currently, to see if Nixpkgs is a good way to build an
 OS for a domestic wifi router or IoT device, of the kind that OpenWrt
@@ -47,25 +11,26 @@ This is not NixOS-on-your-router.  This is an immutable "turnkey"
 image that can be flashed onto a router (or other IoT device), built
 using the Nix language and the Nix package collection.
 
+## "Supported" hardware
+
+We use the OpenWrt kernel sources (approximately), so it should be not
+impossible to get anything working that they have already ported to. I use
+
+- devices based on Mediatek MT7620 and MT7628 (GL-MT300A and GL-MT300N-v2)
+- devices based on Atheros ath79 (as of Oct 2020, GL-AR750)
+
+Previously we built on some ar71xx devices as well (Trendnet
+TEW-731BR/Atheros AR9341 and Arduino Yun/AR9331) but support for those
+has not been brought forwards to kernel 5.x.
+
 ## Applications and use cases (former, current and prospective)
 
-* Milestone 0: backup server on GL-MT300A (based on Mediatek MT7620A)
-  with attached USB disk.  This works now.
+* Working: Rsync backup server (see examples/arhcive.nix)
 
-* Milestone 1: wireless range extender on a Trendnet TEW-731BR
-  (Atheros AR9341).  This used to work, but small flash makes it
-  painful to maintain.
+* Working: Wireless extender (see examples/{extensino.nix,upstaisr.nix}
 
-* Milestone 1b: wireless range extender on GL-MT300A.  Working but
-  slow as of May 2019, may be a simple misconfiguration.
+* WIP: PPPoE router/access point (examples/defalutroute.nix)
 
-* Milestone 2: home router (PPPOE, wireless, ethernet) on GL-AR750.
-  This is Atheros again, but needs the driver situation investigating
-  for the 5GHz wireless
-
-* Milestone 3: put a lot of GPIOs in my cheap robot vacuum cleaner and
-  turn it into a smart robot vacuum cleaner.  Probably never get to
-  this.
 
 # What's it made of?
 
@@ -99,11 +64,6 @@ ssh server, more will be added over time (that's not a promise, but
 somewhere between a prediction and a prophecy), and you can write your
 own (details later).  If you write your own and then send pull
 requests, you will have helped fulfill the prophecy.
-
-## Some examples
-
-Complete examples (some more functional than others) are to be found
-in the `examples` directory
 
 # How to build it
 
@@ -213,12 +173,6 @@ If you're sure you want to toast a perfectly good OpenWrt installation
 ... read on.  I accept no responsibility for anything bad that might
 happen as a result of following these instructions.
 
-_This procedure is fairly new and experimental, but it works on my
-machine.  Do not follow it blindly without making some attempt to
-understand if it'll work for you_.  There are a number of magic
-numbers which are most likely correct if you have the same hardware as
-I have and almost certainly incorrect if you don't.
-
 ### The moderately straightforward way
 
 If you have a working NixWRT with a running ssh daemon (usually by
@@ -253,6 +207,12 @@ Step 4: reboot the device
     # reboot
 
 ### The complicated way
+
+_This procedure is a good way to brick your router if you get it
+wrong. Do not follow it blindly without making some attempt to
+understand if it'll work for you_.  There are a number of magic
+numbers which are most likely correct if you have the same hardware as
+I have and almost certainly incorrect if you don't.
 
 #### Find the flash address
 
@@ -304,11 +264,6 @@ If that looked like it worked, type `reset` to find out if you were right.
 * or use [Binwalk](https://github.com/ReFirmLabs/binwalk) to unpack
   the image on the host
 
-* On Atheros-based devices (the Yun) you can change `ath79-wdt.from_boot=n` to `ath79-wdt.from_boot=y`: this
-  will cause the board to reboot after 21 seconds, which is handy if
-  it's wedging during the boot process - especially if you're not
-  physically colocated with it.
-
 * There is a `syslog` module: if it seems to work mostly but services
   are failing and you think they may be generating error messages, add
   the syslog module to your config and point it at a syslog server.
@@ -317,12 +272,14 @@ If that looked like it worked, type `reset` to find out if you were right.
   use [RSYSLOG](https://www.rsyslog.com/): other choices are
   available.
 
+* I find a remote-controlled power switch is invaluable. You might too.
+  See [here](https://ww.telent.net/2018/7/20/power_play) or [here](https://ww.telent.net/2019/11/18/got_the_power)
 
 # Feedback
 
 Is very welcome.  Please open an issue on Github for anything that
 involves more than a line of text, or find me in the "Fediverse"
-[@dan@terse.telent/net](https://terse.telent.net) (preferred) or on
+[@dan@terse.telent.net](https://terse.telent.net) (preferred) or on
 Twitter [@telent_net](https://twitter.com/telent_net) (less preferred)
 if not.
 
