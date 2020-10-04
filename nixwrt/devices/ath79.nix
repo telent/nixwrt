@@ -102,7 +102,7 @@ let
     klibBuild = vmlinux.modulesupport;
     kconfig = {
       "ATH9K"="m";
-      "ATH9K_AHB" = "m";
+      "ATH9K_AHB" = "y";
       "ATH9K_DEBUGFS" = "m";
       "ATH_DEBUG" = "y";
       "ATH10K" = "m";
@@ -151,11 +151,11 @@ let
       insmod ./net/wireless/cfg80211.ko
       insmod ./net/mac80211/mac80211.ko
       insmod drivers/net/wireless/ath/ath.ko
-      #insmod drivers/net/wireless/ath/ath9k/ath9k_hw.ko
-      #insmod drivers/net/wireless/ath/ath9k/ath9k_common.ko
-      #insmod drivers/net/wireless/ath/ath9k/ath9k.ko debug=0xffffffff
-      insmod drivers/net/wireless/ath/ath10k/ath10k_core.ko debug_mask=0x00000432
+      insmod drivers/net/wireless/ath/ath10k/ath10k_core.ko
       insmod drivers/net/wireless/ath/ath10k/ath10k_pci.ko
+      insmod drivers/net/wireless/ath/ath9k/ath9k_hw.ko
+      insmod drivers/net/wireless/ath/ath9k/ath9k_common.ko
+      insmod drivers/net/wireless/ath/ath9k/ath9k.ko debug=0xffffffff
     ''; in "${s}/bin/load-modules.sh";
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {

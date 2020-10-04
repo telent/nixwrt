@@ -1,6 +1,16 @@
 # Some day this will be the config for my PPPoE router that connects
 # to my ISP.  There's a little way to go yet to make that happen.
-# Status Oct 2020: WIP: builds, boots,
+# Status Oct 2020: WIP
+#   [x] builds
+#   [x] boots
+#   [x] wifi works
+#   [ ] wifi configured correctly (country code, wide channel on 5GHz)
+#   [ ] ipv6
+#   [ ] routing
+#   [ ] pppoe
+#   [ ] dnsmasq
+#   [ ] ntp
+
 { ssid
 , psk
 , loghost
@@ -19,19 +29,6 @@ let
           type = "vlan"; id = 2; parent = "eth1"; depends = []; # lan
           memberOf = "br0";
         };
-        # "wlan0" = {
-        #   type = "hostap";
-        #   memberOf = "br0";
-        #   debug = true;
-        #   params = {
-        #     inherit ssid;
-        #     country_code = "US";
-        #     channel = 9;
-        #     wmm_enabled = 1;
-        #     ieee80211n = 1;
-        #     hw_mode = "g";
-        #   };
-        # };
         "wlan0" = {
           type = "hostap";
           memberOf = "br0";
@@ -42,6 +39,19 @@ let
             channel = 36;
             ieee80211ac = 1;
             hw_mode = "a";
+          };
+        };
+        "wlan1" = {
+          type = "hostap";
+          memberOf = "br0";
+          debug = true;
+          params = {
+            inherit ssid;
+            country_code = "US";
+            channel = 9;
+            wmm_enabled = 1;
+            ieee80211n = 1;
+            hw_mode = "g";
           };
         };
         "br0" = {
