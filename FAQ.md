@@ -2,7 +2,7 @@
 
 ## What triggered all this?
 
-A long time ago (last October) in a <del>galaxy</del> spare bedroom
+A long time ago (October 2018) in a <del>galaxy</del> spare bedroom
 far away, I built a new desktop/home server/media storage machine, and
 wanted more robust/less easily trashable backups than simply mirroring
 stuff onto an external USB drive then forgetting to unmount it.  But I
@@ -12,43 +12,39 @@ router with a USB port that's not doing much, maybe I could
 use that somehow?
 
 Since that first thought, the eventual scope has grown a bit and the
-next steps in NixWRT are to replace the OpenWRT on all the other
-embedded MIPS systems in the house - one router, one wifi extender,
+next steps in NixWRT are to replace the OpenWrt on all the other
+embedded MIPS systems in the house - one router, two wifi extenders,
 and maybe try it on some ARM devices as well.
+
+## How do you pronounce the name?
+
+As in "NICK'S Whut", because I'm the kind of person who likes to
+pronounce acronyms instead of spelling them out. You don't have to, though.
+
 
 ## What can I use it for?
 
-Right now it's definitely a bit raw, and the truthful but unappealing answer is "not a lot unless you know Nix quite well".  I use it 
-
-* on a [GL.Inet GL-MT300A](https://www.gl-inet.com/products/gl-mt300a/) plugged into an external USB2 disk drive, to back up my home server over rsync.  This involves Linux USB support, wired ethernet (with dhcp client, vlans) and an rsync daemon
-* on a [TrendNET TEW-712BR](https://wiki.openwrt.org/toh/trendnet/tew-712br), to extend the range of my home wifi so I can reliably get a signal upstairs.  This involves wifi infrastructure mode (with WPA2) via hostapd, plus linux bridge support, and  some of the stuff in the previous case.
-
-It should be noted that the former of those two use cases is broken as of June 2018 and you will need to go backwards in Git history to make it work.
+See [Applications and use cases](https://github.com/telent/nixwrt/blob/master/README.md#applications-and-use-cases-former-current-and-prospective)
 
 
-## Why not "just" use OpenWRT?
+## Why not "just" use OpenWrt?
 
-I have an [uneasy relationship with OpenWRT](https://ww.telent.net/2011/6/22/openwrt_backfire_first_impressions) - anything I want to achieve with it tends to involve a lot of "maybe
-I'll flash a newer version" and "what if I edit that file" and "I'll
-just change that thing in the web thing", with the result that
-generally by the time I have the system performing the specified task
-I
-[no longer know which change was the required one](https://ww.telent.net/2016/11/12/huawei_e3372_with_openwrt),
-and sometimes can't even remember all the changes I made. This is
-not
-[infrastructure as code](https://martinfowler.com/bliki/InfrastructureAsCode.html) ,
-kids
+The developers of OpenWrt (and the related projects DD-WRT, Tomato etc
+etc) are a bunch of - from my observation - fantastically
+knowledgable, talented and hard-working people without whom NixWRT
+would not exist. 
 
-## Do you realise that comes across as very mean/ungrateful?
-
-Yes, I worry that it may do.  OpenWRT (and the related projects
-DD-WRT, Tomato etc etc) are a bunch of - from my observation -
-fantastically knowledgable, talented and hard-working people without
-whom NixWRT would not exist (I'm using their kernel patches as-is, for
-example, and that represents a lot of work).  NixWRT is an argumentum
-ad "show me the code" that Nix is useful in this problem space, but
-it's very definitely meant as a contribution to the community and not
-an attack on it.
+That said, configuration management - in the sense of being able to
+see what you changed on a device, why you changed it, and repeat the
+configuration on another device or using a newer version of the base
+system - is not (IMO) one of its strong points. Anything I want to
+achieve with it tends to involve a lot of "maybe I'll flash a newer
+version" and "what if I edit that file" and "I'll just change that
+thing in the web thing", with the result that generally by the time I
+have the system performing the specified task I [no longer know which
+change was the required one](https://ww.telent.net/2016/11/12/huawei_e3372_with_openwrt), and sometimes can't even remember all the changes I made. This is not
+[infrastructure as
+code](https://martinfowler.com/bliki/InfrastructureAsCode.html) , kids
 
 
 ## What about Puppet? (Or Chef or Ansible or ...)
@@ -73,11 +69,11 @@ and look around, and it will look quite Nixy (it has `/nix/store` and
 stuff like that) but it's a read-only "appliance" where to change
 anything I build a new image.
 
-Some of the packages are from Nixpkgs (some others are custom).
+Most of the packages are from Nixpkgs (some others are custom).
 There's a "service" abstraction a bit like NixOS but not the same (we
 use Monit not systemd as service manager).  We build our own kernels,
 because we need to do complicated things with merging huge swathes of
-OpenWRT patches into them and it was easier to do this starting from
+OpenWrt patches into them and it was easier to do this starting from
 the upstream kernel build than to understand the Nix special kernel
 sauce.
 
@@ -95,7 +91,13 @@ are up and how many Mb/second the network is moving.
 
 ## Do you have wireless?
 
-Wireless support for the AR933x SoC is present, though has only been tested in "Access Point" mode - i.e. you can set up a network for others to connect to but i haven't yet needed to make it connect to anyone else's network yet.
+There is "Access Point" support (using hostapd) for the wireless
+hardware on the devices it supports (ath9k, ath10k, mt7620, mt7628)
+using drivers taken from the linux-backports project. If your device
+is supported there it should be relatively[*] trouble free to get it
+running here.
+
+[*] relative to what exactly, I'm not saying
 
 ## And wired ethernet?
 
