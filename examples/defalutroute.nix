@@ -23,21 +23,25 @@ let
       hostname = "defalutroute";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
-        "eth0" = { } ;          # WAN
+        "eth0" = { } ;          # LAN
         "eth1" = { } ;
-        "eth1.1" = {
-          type = "vlan"; id = 2; parent = "eth1"; depends = []; # lan
+        "eth0.1" = {
+          type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
           memberOf = "br0";
         };
         "wlan0" = {
           type = "hostap";
           memberOf = "br0";
           debug = true;
-          params = {
+          params = rec   {
             inherit ssid;
+            ht_capab = "[HT40+]";
+            vht_oper_chwidth = 1;
+            vht_oper_centr_freq_seg0_idx = channel + 6;
             country_code = "US";
             channel = 36;
             ieee80211ac = 1;
+            wmm_enabled = 1;
             hw_mode = "a";
           };
         };
