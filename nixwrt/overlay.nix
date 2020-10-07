@@ -61,20 +61,25 @@ in {
   };
 
   monit = stripped (super.monit.override { usePAM = false; useSSL = false; openssl = null; });
-  ppp = (super.ppp.override { libpcap = null; }).overrideAttrs (o : {
+
+  ppp = (super.ppp.override {
+    libpcap = null;
+  }).overrideAttrs (o : {
      stripAllList = [ "bin" ];
      buildInputs = [];
      buildPhase = ''
        runHook preBuild
-       make -C pppd USE_TDB= HAVE_MULTILINK=
+       make -C pppd USE_TDB= HAVE_MULTILINK= USE_EAPTLS= USE_CRYPT=y
        make -C pppd/plugins/rp-pppoe
+       make -C pppd/plugins/pppol2tp
        runHook postBuild;
      '';
      installPhase = ''
       runHook preInstall
-      mkdir -p $out/bin $out/lib/pppd/2.4.7
+      mkdir -p $out/bin $out/lib/pppd/2.4.8
       cp pppd/pppd pppd/plugins/rp-pppoe/pppoe-discovery $out/bin
-      cp pppd/plugins/rp-pppoe/rp-pppoe.so $out/lib/pppd/2.4.7
+      cp pppd/plugins/rp-pppoe/rp-pppoe.so $out/lib/pppd/2.4.8
+      cp pppd/plugins/pppol2tp/{open,pppo}l2tp.so $out/lib/pppd/2.4.8
       runHook postInstall
     '';
     postFixup = "";
