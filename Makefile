@@ -16,23 +16,35 @@ default:
 
 #image?=phramware  # build runnable-from-ram image
 image?=firmware  # build flashable image
-SSID?=NixWRT
-ARHCIVE_RSYNC_PASSWORD?=helloworld
-LOGHOST?=loghost.lan
-PSK?=c1e965c0824405b08779388b7f5b402322f71776a0dca8bca24754832d90ca9c
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 -include $(SECRETS)
 
 ## Per-target config
 
-extensino/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
+e=$(or $(value $(1)),$(error "$(1) undefined (add it to your SECRETS file?)"))
 
-upstaisr/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
+arhcive/firmware.bin: ATTRS=\
+ --argstr loghost $(call e,LOGHOST)\
+ --argstr rsyncPassword $(call e,ARHCIVE_RSYNC_PASSWORD)
 
-defalutroute/firmware.bin: ATTRS=--argstr ssid $(SSID) --argstr psk $(PSK) --argstr loghost $(LOGHOST)
+defalutroute/firmware.bin: ATTRS=\
+ --argstr ssid $(call e,SSID) \
+ --argstr psk $(call e,PSK) \
+ --argstr loghost $(call e,LOGHOST) \
+ --argstr l2tpUsername $(call e,L2TP_USERNAME) \
+ --argstr l2tpPassword $(call e,L2TP_PASSWORD) \
+ --argstr l2tpPeer $(call e,L2TP_PEER)
 
-arhcive/firmware.bin: ATTRS=--argstr loghost $(LOGHOST) --argstr rsyncPassword $(ARHCIVE_RSYNC_PASSWORD)
+extensino/firmware.bin: ATTRS=\
+ --argstr ssid $(call e,SSID) \
+ --argstr psk $(call e,PSK) \
+ --argstr loghost $(call e,LOGHOST)
+
+upstaisr/firmware.bin: ATTRS=\
+ --argstr ssid $(call e,SSID) \
+ --argstr psk $(call e,PSK) \
+ --argstr loghost $(call e,LOGHOST)
 
 
 ## Variables & Functions
