@@ -8,7 +8,8 @@
 let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
-    baseConfiguration = {
+  baseConfiguration = lib.recursiveUpdate
+    nixwrt.emptyConfig {
       hostname = "upstaisr";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
@@ -48,7 +49,6 @@ let
       ];
       packages = [ pkgs.iproute ];
       busybox = { applets = ["ln"]; };
-      filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;

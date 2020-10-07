@@ -19,7 +19,8 @@
 let nixwrt = (import <nixwrt>) { endian = "big"; }; in
 with nixwrt.nixpkgs;
 let
-    baseConfiguration = {
+  baseConfiguration = lib.recursiveUpdate
+    nixwrt.emptyConfig {
       hostname = "defalutroute";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
@@ -64,15 +65,11 @@ let
         };
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
-      etc = { };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.iproute ];
-      busybox = { applets = []; };
-
-      filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;

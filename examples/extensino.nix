@@ -6,7 +6,8 @@
 let nixwrt = (import <nixwrt>) { endian = "little";  }; in
 with nixwrt.nixpkgs;
 let
-    baseConfiguration = {
+  baseConfiguration = lib.recursiveUpdate
+    nixwrt.emptyConfig {
       hostname = "extensino";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
@@ -53,8 +54,6 @@ let
          shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.iproute ];
-      busybox = { applets = []; };
-      filesystems = {} ;
     };
 
     wantedModules = with nixwrt.modules;
