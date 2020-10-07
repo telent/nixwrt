@@ -187,6 +187,14 @@ in {
         '';
       }));
 
+
+  xl2tpd = super.xl2tpd.overrideAttrs (o: {
+    postPatch = ''
+      substituteInPlace l2tp.h --replace /usr/sbin/pppd ${self.ppp}/bin/pppd
+
+   '';
+  });
+
   iprouteFull = super.iproute;
   iproute = stripped ((super.iproute.override {
     # db dep is only if we need arpd

@@ -5,6 +5,8 @@
 
   syslog = import ./syslog.nix;
 
+  l2tp = import ./l2tp.nix;
+
   rsyncd = options: nixpkgs: self: super:
     with nixpkgs;
     nixpkgs.lib.attrsets.recursiveUpdate super  {
