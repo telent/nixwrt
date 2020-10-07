@@ -4,28 +4,36 @@
 #   [x] builds
 #   [x] boots
 #   [x] wifi works
-#   [ ] wifi configured correctly (country code, wide channel on 5GHz)
+#   [x] wifi wide channel on 5GHz
+#   [ ] wifi configured correctly inc. country code
 #   [ ] ipv6
 #   [ ] routing
 #   [ ] pppoe
 #   [ ] dnsmasq
 #   [ ] ntp
 
-{ ssid
-, psk
-, loghost
+{
+  loghost
+, l2tpUsername
+, l2tpPassword
+, l2tpPeer
 , myKeys
-, sshHostKey }:
-let nixwrt = (import <nixwrt>) { endian = "big"; }; in
+, psk
+, sshHostKey
+, ssid
+}:
+let nixwrt = (import <nixwrt>) { endian = "big"; };
+in
 with nixwrt.nixpkgs;
 let
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
       hostname = "defalutroute";
-      webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
+      busybox  = { applets = ["stty"] ; };
+      webadmin = { allow = ["localhost" "{192.168.1.0/24"]; };
       interfaces = {
-        "eth0" = { } ;          # LAN
-        "eth1" = { } ;
+        "eth0" = { } ;
+        "eth1" = { ipv4Address = "10.0.0.5/24"; };
         "eth0.1" = {
           type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
           memberOf = "br0";
@@ -86,9 +94,14 @@ let
 	         "1" = "0t 1 2 3 4";           # lan (0 is cpu)
 	       };
        })
+       (l2tp {
+         username = l2tpUsername;
+         password = l2tpPassword;
+         endpoint = l2tpPeer;
+       })
 #       haveged
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
-#       (syslog { inherit loghost; })
+       (syslog { inherit loghost; })
 #       (ntpd { host = "pool.ntp.org"; })
 #       (dhcpClient { interface = "eth0.2"; })
     ];
