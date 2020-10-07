@@ -6,7 +6,7 @@
 #   [x] wifi works
 #   [x] wifi wide channel on 5GHz
 #   [ ] wifi configured correctly inc. country code
-#   [.] l2tp tunnel
+#   [.] l2tp tunnel https://github.com/xelerance/xl2tpd/blob/cd86560b3eb9abc090d9fb717b6f4cedeaae5688/l2tp.h#L44
 #   [ ] odhcp6c: get ipv6 prefix address & network from upstream
 #   [ ] dnsmasq: enable-ra, delegate (some or all) of the address space to lan
 #   [ ] dnsmasq: dhcp for ipv4
@@ -102,6 +102,9 @@ let
          username = l2tpUsername;
          password = l2tpPassword;
          endpoint = l2tpPeer;
+         lac = "aaisp";
+         ifname = "l2tp-aaisp";
+
        })
 #       haveged
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
