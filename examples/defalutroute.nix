@@ -6,11 +6,15 @@
 #   [x] wifi works
 #   [x] wifi wide channel on 5GHz
 #   [ ] wifi configured correctly inc. country code
-#   [ ] ipv6
-#   [ ] routing
-#   [ ] pppoe
-#   [ ] dnsmasq
+#   [.] l2tp tunnel
+#   [ ] odhcp6c: get ipv6 prefix address & network from upstream
+#   [ ] dnsmasq: enable-ra, delegate (some or all) of the address space to lan
+#   [ ] dnsmasq: dhcp for ipv4
+#   [ ] dnsmasq: dns and any other services
+#   [ ] ipv6 firewall
+#   [ ] ipv4 nat + firewall
 #   [ ] ntp
+#   [ ] pppoe
 
 {
   loghost
@@ -33,11 +37,11 @@ let
       webadmin = { allow = ["localhost" "{192.168.1.0/24"]; };
       interfaces = {
         "eth0" = { } ;
-        "eth1" = { ipv4Address = "10.0.0.5/24"; };
         "eth0.1" = {
           type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
           memberOf = "br0";
         };
+        "eth1" = { ipv4Address = "10.0.0.5/24"; };
         "wlan0" = {
           type = "hostap";
           memberOf = "br0";
@@ -103,7 +107,6 @@ let
 #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
        (syslog { inherit loghost; })
 #       (ntpd { host = "pool.ntp.org"; })
-#       (dhcpClient { interface = "eth0.2"; })
     ];
 
     in {
