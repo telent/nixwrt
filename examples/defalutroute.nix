@@ -34,7 +34,7 @@ let
     nixwrt.emptyConfig {
       hostname = "defalutroute";
       busybox  = { applets = ["stty"] ; };
-      webadmin = { allow = ["localhost" "{192.168.1.0/24"]; };
+      webadmin = { allow = ["localhost" "192.168.1.0/24"]; };
       interfaces = {
         "eth0" = { } ;
         "eth0.1" = {
