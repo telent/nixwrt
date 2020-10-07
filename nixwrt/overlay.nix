@@ -176,6 +176,9 @@ in {
   }).overrideAttrs (o : {
      stripAllList = [ "bin" ];
      buildInputs = [];
+     postPatch = ''
+       echo 'CFLAGS += -D_PATH_VARRUN="/run/"' >> pppd/Makefile.linux
+     '';
      buildPhase = ''
        runHook preBuild
        make -C pppd USE_TDB= HAVE_MULTILINK= USE_EAPTLS= USE_CRYPT=y
