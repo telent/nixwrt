@@ -177,7 +177,7 @@ in {
      stripAllList = [ "bin" ];
      buildInputs = [];
      postPatch = ''
-       echo 'CFLAGS += -D_PATH_VARRUN="/run/"' >> pppd/Makefile.linux
+       sed -i -e  's@_PATH_VARRUN@"/run/"@'  pppd/main.c
      '';
      buildPhase = ''
        runHook preBuild
