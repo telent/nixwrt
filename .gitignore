@@ -2,6 +2,7 @@
 result
 *-key
 secrets
+secrets.*
 \#*
 .#**.rej
 *-host-key
