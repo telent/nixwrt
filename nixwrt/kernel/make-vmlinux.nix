@@ -74,6 +74,7 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
+    ${CROSS_COMPILE}strip -d vmlinux
     cp vmlinux $out
     make clean
     mkdir -p $modulesupport
