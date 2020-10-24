@@ -30,6 +30,11 @@ with nixpkgs; rec {
     # default busybox config is quite minimal but you can add applets here
     busybox = { applets = []; };
 
+    # every device needs this except qemu, because qemu doesn't use dtb :-(
+    kernel.config = {
+      "MIPS_CMDLINE_FROM_DTB" = "y";
+    };
+
     filesystems = {} ;
   };
 

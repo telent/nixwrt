@@ -12,9 +12,7 @@ let writeConfig = name : config: writeText name
           "\n"
           (lib.mapAttrsToList
             (name: value: (if value == "n" then "# CONFIG_${name} is not set" else "CONFIG_${name}=${value}"))
-            (config // {
-              "MIPS_CMDLINE_FROM_DTB" = "y";
-            } )
+            config
           ));
     kconfigFile = writeConfig "nixwrt_kconfig" config;
     checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
