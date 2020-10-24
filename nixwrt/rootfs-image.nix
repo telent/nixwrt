@@ -82,7 +82,9 @@ let
     /tmp d 1777 root root
     /var d 0755 root root
     /lib d 0755 root root
-    /lib/firmware s 0755 root root ${configuration.kernel.firmware}/firmware
+    ${lib.optionalString
+      (configuration.kernel ? firmware)
+      "/lib/firmware s 0755 root root ${configuration.kernel.firmware}/firmware"}
     ${lib.strings.concatStringsSep "\n"
        (lib.attrsets.mapAttrsToList (n: a: "${n} d 0755 root root")
          configuration.filesystems)}

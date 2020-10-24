@@ -28,6 +28,9 @@ arhcive/firmware.bin: ATTRS=\
  --argstr loghost $(call e,LOGHOST)\
  --argstr rsyncPassword $(call e,ARHCIVE_RSYNC_PASSWORD)
 
+emu/firmware.bin: ATTRS=\
+ --argstr loghost $(call e,LOGHOST)
+
 defalutroute/firmware.bin: ATTRS=\
  --argstr ssid $(call e,SSID) \
  --argstr psk $(call e,PSK) \
