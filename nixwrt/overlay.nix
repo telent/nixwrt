@@ -232,12 +232,6 @@ in {
 
   tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
 
-  ubootMalta = self.pkgs.buildUBoot rec {
-    name = "uboot-malta";
-    defconfig = "qemu_mipsel_defconfig";
-    extraMeta.platforms = self.stdenv.lib.platforms.linux;# ["mipsel-unknown-linux-musl"];
-    filesToInstall = ["u-boot.bin"];
-  };
 
   xl2tpd = super.xl2tpd.overrideAttrs (o: {
     postPatch = ''
