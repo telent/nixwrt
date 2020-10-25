@@ -18,10 +18,15 @@ impossible to get anything working that they have already ported to. I use
 
 - devices based on Mediatek MT7620 and MT7628 (GL-MT300A and GL-MT300N-v2)
 - devices based on Atheros ath79 (as of Oct 2020, GL-AR750)
+- Qemu, for quick and easy testing of userland changes without real hardware
 
 Previously we built on some ar71xx devices as well (Trendnet
 TEW-731BR/Atheros AR9341 and Arduino Yun/AR9331) but support for those
-has not been brought forwards to kernel 5.x.
+has not been brought forwards to kernel 5.x as I don't have hardware
+(or inclination) to test them. Anything that was previously supported
+by ar71xx *should* be buildable with ath79, but may require more or
+less faff to port depending on whether someone else has written the
+device tree for it already.
 
 ## Applications and use cases (former, current and prospective)
 
@@ -70,6 +75,11 @@ requests, you will have helped fulfill the prophecy.
 ## One-time setup
 
 You will need
+
+* a target device (unless you only want to run it on Qemu). I have
+  used various of the cheap "travel routers" from
+  [GL.iNet](https://www.gl-inet.com/) because they're cheap and
+  hobbyist-friendly and they have adequate RAM.
 
 * some kind of PC or other reasonably well-powered machine to build
   everything on.  This is entirely cross-compiled, there is no
@@ -250,6 +260,15 @@ The magic numbers here are
 
 If that looked like it worked, type `reset` to find out if you were right.
 
+
+## Running it in Qemu
+
+The build process for Qemu is subtly different because Qemu wants an
+ELF kernel image and a root filesystem instead of a combined firmware
+image, and also because Qemu doesn't appear to support device trees. 
+
+    $ make emu LOGHOST=loghost.lan image=emulator
+    $ nix run nixpkgs.qemu -c sh emu/bin/emulator 
 
 
 ## Troubleshooting

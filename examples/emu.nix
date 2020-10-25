@@ -17,6 +17,7 @@ let
            shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
         ];
         packages = [ pkgs.iproute ];
+        busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
       };
 
     wantedModules = with nixwrt.modules;
@@ -26,8 +27,8 @@ let
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
-       (syslog { inherit loghost ; })
-       (ntpd { host = "pool.ntp.org"; })
+#       (syslog { inherit loghost ; })
+#       (ntpd { host = "pool.ntp.org"; })
        (dhcpClient {
          resolvConfFile = "/run/resolv.conf";
          interface = "eth0";
@@ -42,12 +43,9 @@ dtb=${allConfig.kernel.package}/kernel.dtb
 set +x
 qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
   -append ${builtins.toJSON allConfig.boot.commandLine} \
-    -drive if=virtio,readonly=on,file=''$rootfs \
+  -netdev user,id=mynet0,net=10.8.6.0/24,dhcpstart=10.8.6.4 \
+  -device virtio-net-pci,netdev=mynet0 \
+  -drive if=virtio,readonly=on,file=''$rootfs \
     -nographic
-# qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
-#  -append ${builtins.toJSON allConfig.boot.commandLine} \
-#    -blockdev driver=file,node-name=squashed,read-only=on,filename=''$rootfs \
-#      -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on \
-#        -device ide-cd,drive=rootfs -nographic
 '';
 }

@@ -40,6 +40,7 @@ let
     "SQUASHFS_XZ" = "y";
     "VIRTIO" = "y";
     "VIRTIO_BLK" = "y";
+    "VIRTIO_NET" = "y";
     "VIRTIO_PCI" = "y"; # only because VIRTIO can't be enabled without it
   };
   checkConfig = { };
@@ -66,11 +67,7 @@ let
     inherit (nixpkgs) stdenv buildPackages writeText runCommand;
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
-  packages = ( if super ? packages then super.packages else [] )
-  #             ++ [modules]
-  ;
-#  services.modloader = modloaderservice;
-  busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
+  packages = ( if super ? packages then super.packages else [] );
   kernel = rec {
     inherit vmlinux tree;
     config =
