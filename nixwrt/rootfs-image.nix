@@ -12,6 +12,11 @@
 , monitrc
 , ...}:
 let
+  extraInittab = lib.strings.concatStringsSep "\n"
+    (lib.attrsets.mapAttrsToList
+      (n: { id ? "", action, process }:"${id}::${action}:${process}")
+      configuration.inittab);
+
   packagesToInstall = configuration.packages ++ [
     busybox
     monit
@@ -45,6 +50,7 @@ let
       ::askfirst:-/bin/sh
       ::sysinit:/etc/rc
       ::respawn:${monit}/bin/monit -I -c /etc/monitrc
+      ${extraInittab}
     '';};
     "mdev.conf" = { content = ''
       -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
@@ -62,6 +68,7 @@ let
       echo ${configuration.hostname} > /proc/sys/kernel/hostname
       echo /bin/mdev > /proc/sys/kernel/hotplug
       mdev -s
+      mkdir /run/swarm /run/swarm/services
     '';};
 
   } // configuration.etc) ;

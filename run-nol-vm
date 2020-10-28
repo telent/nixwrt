@@ -1,0 +1,36 @@
+#! /nix/store/hrpvwkjz04s9i4nmli843hyw9z4pwhww-bash-4.4-p23/bin/bash
+
+NIX_DISK_IMAGE=$(readlink -f ${NIX_DISK_IMAGE:-./nol.qcow2})
+
+if ! test -e "$NIX_DISK_IMAGE"; then
+    /nix/store/4ky8dn3v3s83xlj7f7l66rrfbnkfb5ax-qemu-host-cpu-only-for-vm-tests-4.2.0/bin/qemu-img create -f qcow2 "$NIX_DISK_IMAGE" \
+      512M || exit 1
+fi
+
+# Create a directory for storing temporary data of the running VM.
+if [ -z "$TMPDIR" -o -z "$USE_TMPDIR" ]; then
+    TMPDIR=$(mktemp -d nix-vm.XXXXXXXXXX --tmpdir)
+fi
+
+# Create a directory for exchanging data with the VM.
+mkdir -p $TMPDIR/xchg
+
+
+
+cd $TMPDIR
+idx=0
+
+
+# Start QEMU.
+exec /nix/store/4ky8dn3v3s83xlj7f7l66rrfbnkfb5ax-qemu-host-cpu-only-for-vm-tests-4.2.0/bin/qemu-kvm -cpu host \
+    -name nol \
+    -m 384 \
+    -smp 1 \
+    -device virtio-rng-pci \
+    -virtfs local,path=/nix/store,security_model=none,mount_tag=store \
+    -virtfs local,path=$TMPDIR/xchg,security_model=none,mount_tag=xchg \
+    -virtfs local,path=${SHARED_DIR:-$TMPDIR/xchg},security_model=none,mount_tag=shared \
+    -drive cache=writeback,file=$NIX_DISK_IMAGE,id=drive1,if=none,index=1,werror=report -device virtio-blk-pci,drive=drive1 \
+    -vga std -usb -device usb-tablet,bus=usb-bus.0 -kernel /nix/store/nclsmivhp193z27sgrmzq3dyr2scarlh-nixos-system-nol-20.03.3101.0d0660fde3b/kernel -initrd /nix/store/nclsmivhp193z27sgrmzq3dyr2scarlh-nixos-system-nol-20.03.3101.0d0660fde3b/initrd -append "$(cat /nix/store/nclsmivhp193z27sgrmzq3dyr2scarlh-nixos-system-nol-20.03.3101.0d0660fde3b/kernel-params) init=/nix/store/nclsmivhp193z27sgrmzq3dyr2scarlh-nixos-system-nol-20.03.3101.0d0660fde3b/init regInfo=/nix/store/z7vj8nlnrc1jadzpzxrma3zm3zqx4571-closure-info/registration console=ttyS0,115200n8 console=tty0 $QEMU_KERNEL_PARAMS" \
+    $QEMU_OPTS \
+    "$@"

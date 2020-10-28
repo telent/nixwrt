@@ -1,4 +1,7 @@
 { myKeys
+, l2tpUsername
+, l2tpPassword
+, l2tpPeer
 , loghost
 , sshHostKey }:
 let nixwrt = (import <nixwrt>) { endian = "big";  }; in
@@ -16,8 +19,8 @@ let
           {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
            shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
         ];
-        packages = [ pkgs.iproute ];
         busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
+        packages = [ pkgs.iproute pkgs.swarm ];
       };
 
     wantedModules = with nixwrt.modules;
@@ -27,6 +30,13 @@ let
        (sshd { hostkey = sshHostKey ; })
        busybox
        kernelMtd
+       (l2tp {
+         username = l2tpUsername;
+         password = l2tpPassword;
+         endpoint = l2tpPeer;
+         lac = "aaisp";
+         ifname = "l2tp-aaisp";
+       })
 #       (syslog { inherit loghost ; })
 #       (ntpd { host = "pool.ntp.org"; })
        (dhcpClient {

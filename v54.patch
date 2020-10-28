@@ -1,0 +1,444 @@
+diff --git a/examples/extensino.nix b/examples/extensino.nix
+index 2e64f7a..2d7d1fd 100644
+--- a/examples/extensino.nix
++++ b/examples/extensino.nix
+@@ -3,7 +3,7 @@
+ , loghost ? "loghost"
+ , myKeys ? "ssh-rsa AAAAATESTFOOBAR dan@example.org"
+ , sshHostKey ? "----NOT A REAL RSA PRIVATE KEY---" }:
+-let nixwrt = (import <nixwrt>) { targetBoard = "mt300a"; }; in
++let nixwrt = (import <nixwrt>) { endian = "little";  }; in
+ with nixwrt.nixpkgs;
+ let
+     baseConfiguration = {
+@@ -24,7 +24,7 @@ let
+           channel = 2;
+           hw_mode = "g";
+           wpa_psk = psk;
+-          memberOf = "br0";
++#          memberOf = "br0";
+         };
+         "br0" = {
+           type = "bridge";
+@@ -51,7 +51,8 @@ let
+ 
+     wantedModules = with nixwrt.modules;
+       [(_ : _ : _ : baseConfiguration)
+-       nixwrt.device.hwModule
++       (import <nixwrt/modules/lib.nix> {})
++       (import <nixwrt/devices/gl-mt300a.nix> {})
+        (sshd { hostkey = sshHostKey ; })
+        busybox
+        kernelMtd
+@@ -70,7 +71,7 @@ let
+ 
+     in {
+       firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
+-
++      kernel = nixwrt.kernel (nixwrt.mergeModules wantedModules);
+       # phramware generates an image which boots from the "fake" phram mtd
+       # device - required if you want to boot from u-boot without
+       # writing the image to flash first
+diff --git a/nixwrt/default.nix b/nixwrt/default.nix
+index 4624017..c57770b 100644
+--- a/nixwrt/default.nix
++++ b/nixwrt/default.nix
+@@ -1,12 +1,13 @@
+-{ overlays ? [] , targetBoard }:
+-let overlay = import ./overlay.nix;
+-  device = (import ./devices.nix).${targetBoard};
++{ overlays ? []
++, endian }:
++let
++  overlay = import ./overlay.nix;
+   modules = import ./modules/default.nix;
+-  system = (import ./mksystem.nix) device;
++  system = (import ./mksystem.nix) { inherit endian; };
+   nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ++ overlays;} );
+ in
+ with nixpkgs; rec {
+-  inherit device modules system nixpkgs;
++  inherit  modules system nixpkgs;
+ 
+   mergeModules = ms:
+     let extend = lhs: rhs: lhs // rhs lhs;
+@@ -20,7 +21,7 @@ with nixpkgs; rec {
+     monitrc = (monitrc configuration);
+     inherit configuration;
+   };
+-
++  kernel = configuration : configuration.kernel.package;
+   firmware = configuration:
+     pkgs.callPackage ./firmware.nix {
+       kernelImage = configuration.kernel.package;
+diff --git a/nixwrt/devices/README.md b/nixwrt/devices/README.md
+new file mode 100644
+index 0000000..e9eadff
+--- /dev/null
++++ b/nixwrt/devices/README.md
+@@ -0,0 +1,16 @@
++things that are/might be per-device or partly per-device
++
++- the kernel
++  - upstream kernel
++  - openwrt release to get patches from
++  - patch application criteria
++  - local patches
++  - config options [some other modules may change these]
++  
++- the base dts (may come from openwrt) [boot command line may change this]
++- boot parameters
++  - command line [other modules may change this]
++  - load address
++  - entry point
++
++
+diff --git a/nixwrt/devices/gl-mt300a.nix b/nixwrt/devices/gl-mt300a.nix
+new file mode 100644
+index 0000000..8281c74
+--- /dev/null
++++ b/nixwrt/devices/gl-mt300a.nix
+@@ -0,0 +1,5 @@
++options: nixpkgs: self: super:
++let
++  soc = import ./mt7620.nix;
++  dts = {openwrt}: "${openwrt}/target/linux/ramips/dts/mt7620a_glinet_gl-mt300a.dts";
++in soc (options // { inherit dts ;}) nixpkgs self super
+diff --git a/nixwrt/devices/gl-mt300n-v2.nix b/nixwrt/devices/gl-mt300n-v2.nix
+new file mode 100644
+index 0000000..f6dc636
+--- /dev/null
++++ b/nixwrt/devices/gl-mt300n-v2.nix
+@@ -0,0 +1,5 @@
++options: nixpkgs: self: super:
++let
++  soc = import ./mt7620.nix;    # XXX doesn't quite work
++  dts = {openwrt}: "${openwrt}/target/linux/ramips/dts/mt7628an_glinet_gl-mt300n-v2.dts";
++in soc (options // { inherit dts ;}) nixpkgs self super
+diff --git a/nixwrt/devices/mt7620.nix b/nixwrt/devices/mt7620.nix
+new file mode 100644
+index 0000000..7febd5a
+--- /dev/null
++++ b/nixwrt/devices/mt7620.nix
+@@ -0,0 +1,102 @@
++options: nixpkgs: self: super:
++with nixpkgs.lib;
++let
++  kb = self.nixwrt.kernel;
++  openwrt =  nixpkgs.fetchFromGitHub {
++    owner = "openwrt";
++    repo = "openwrt";
++    name = "openwrt-src" ;
++    rev = "252197f014932c03cea7c080d8ab90e0a963a281";
++    sha256 = "1n30rhg7vwa4zq4sw1c27634wv6vdbssxa5wcplzzsbz10z8cwj9";
++  };
++  openwrtKernelFiles = "${openwrt}/target/linux";
++  kernelVersion = [5 4 64];
++  upstream = kb.fetchUpstreamKernel {
++    version = kernelVersion;
++    sha256 = "1vymhl6p7i06gfgpw9iv75bvga5sj5kgv46i1ykqiwv6hj9w5lxr";
++  };
++  listFiles = dir: builtins.attrNames (builtins.readDir dir);
++  extraConfig = {
++    # "IKCONFIG" = "y";
++    # "IKCONFIG_PROC" = "y";
++    "JFFS2_FS" = "n";
++    "DEVTMPFS" = "y";
++    "BLK_DEV_INITRD" = "n";
++    "BLK_DEV_RAM" = "n";
++    "CMDLINE_PARTITION" = "y";
++  };
++  checkConfig = {
++"SERIAL_MCTRL_GPIO" = "y";
++# "GPIOLIB" = "y";
++# "OF_GPIO" = "y";
++# "GPIO_SYSFS" = "y";
++# # "GPIO_RALINK" = "y";
++
++# #     "NET_RALINK_GSW_MT7620" = "y";
++# #     "NET_RALINK_MT7620" = "y";
++#     "SERIAL_8250_CONSOLE"="y";
++#     "SERIAL_8250_RT288X"="y";
++#     "SERIAL_CORE"="y";
++#     "SERIAL_CORE_CONSOLE"="y";
++#     "SERIAL_EARLYCON" = "y";
++#     "SERIAL_OF_PLATFORM"="y";
++#     "TTY"="y";
++  };
++in nixpkgs.lib.attrsets.recursiveUpdate super {
++  kernel = rec {
++    tree = kb.patchSourceTree {
++      inherit upstream openwrt;
++      inherit (nixpkgs) buildPackages patchutils stdenv;
++      version = kernelVersion;
++      patches = lists.flatten
++        [ "${openwrtKernelFiles}/ramips/patches-5.4/"
++          "${openwrtKernelFiles}/generic/backport-5.4/"
++          "${openwrtKernelFiles}/generic/pending-5.4/"
++          (map (n: "${openwrtKernelFiles}/generic/hack-5.4/${n}")
++            (builtins.filter
++              (n: ! (strings.hasPrefix "230-" n))
++              (listFiles "${openwrtKernelFiles}/generic/hack-5.4/")))
++        ];
++      files = [ "${openwrtKernelFiles}/generic/files/"
++                "${openwrtKernelFiles}/ramips/files/"
++                "${openwrtKernelFiles}/ramips/files-5.4/"
++              ];
++    };
++    config =
++      (kb.readDefconfig "${openwrtKernelFiles}/generic/config-5.4") //
++      (kb.readDefconfig "${openwrtKernelFiles}/ramips/mt7620/config-5.4") //
++      # (kb.readDefconfig "${openwrtKernelFiles}/ramips/mt76x8/config-5.4") //
++      extraConfig;#' //
++    # (if (super ? kernel) then super.kernel else {});
++    package =
++      let vmlinux = kb.makeVmlinux {
++            inherit tree ;
++            inherit (self.kernel) config;
++            checkedConfig = checkConfig // extraConfig;
++            inherit (nixpkgs) stdenv buildPackages writeText runCommand;
++          };
++          fdt = kb.makeFdt {
++            dts = options.dts {inherit openwrt;};
++            inherit (nixpkgs) stdenv;
++            inherit (nixpkgs.buildPackages) dtc;
++            inherit (self.boot) commandLine;
++            includes = [
++              "${openwrtKernelFiles}/ramips/dts"
++              "${tree}/arch/mips/boot/dts"
++              "${tree}/arch/mips/boot/dts/include"
++              "${tree}/include/"];
++          };
++      in kb.makeUimage {
++        inherit vmlinux fdt;
++        inherit (self.boot) entryPoint loadAddress commandLine;
++        extraName = "mt76x8"; # "mt7620";
++        inherit (nixpkgs) patchImage stdenv;
++        inherit (nixpkgs.buildPackages) lzma ubootTools;
++      };
++  };
++  boot = {
++    loadAddress = "0x80000000";
++    entryPoint = "0x80000000";
++    commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
++  };
++}
+diff --git a/nixwrt/firmware.nix b/nixwrt/firmware.nix
+index 50ab68a..b7ace88 100644
+--- a/nixwrt/firmware.nix
++++ b/nixwrt/firmware.nix
+@@ -1,4 +1,5 @@
+ { stdenv
++, lib
+ , kernelImage
+ , rootImage } :
+ stdenv.mkDerivation rec {
+@@ -9,4 +10,7 @@ stdenv.mkDerivation rec {
+     dd if=${kernelImage} of=$out/firmware.bin bs=128k conv=sync
+     dd if=${rootImage}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
+   '';
++  meta = {
++    platforms = ["mips-linux" "mipsel-linux"] ;# stdenv.lib.platforms.all;
++  };
+ }
+diff --git a/nixwrt/kernel/make-vmlinux.nix b/nixwrt/kernel/make-vmlinux.nix
+new file mode 100644
+index 0000000..29a513b
+--- /dev/null
++++ b/nixwrt/kernel/make-vmlinux.nix
+@@ -0,0 +1,75 @@
++{  stdenv
++ , buildPackages
++ , runCommand
++ , writeText
++
++ , config
++ , checkedConfig ? {}
++ , tree
++} :
++let writeConfig = name : config: writeText name
++        (builtins.concatStringsSep
++          "\n"
++          (lib.mapAttrsToList
++            (name: value: (if value == "n" then "# CONFIG_${name} is not set" else "CONFIG_${name}=${value}"))
++            (config // {
++              "MIPS_CMDLINE_FROM_DTB" = "y";
++            } )
++          ));
++    kconfigFile = writeConfig "nixwrt_kconfig" config;
++    checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
++    lib = stdenv.lib; in
++stdenv.mkDerivation rec {
++  name = "vmlinux";
++
++  hardeningDisable = ["all"];
++  nativeBuildInputs = [buildPackages.stdenv.cc] ++
++                      (with buildPackages.pkgs;
++                        [bc bison flex pkgconfig openssl ncurses.all perl]);
++  CC = "${stdenv.cc.bintools.targetPrefix}gcc";
++  HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include -I${buildPackages.pkgs.ncurses}/include";
++  HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib -L${buildPackages.pkgs.ncurses.out}/lib " ;
++  PKG_CONFIG_PATH = "./pkgconfig";
++  CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
++  ARCH = "mips";  # kernel uses "mips" here for both mips and mipsel
++  dontStrip = true;
++  dontPatchELF = true;
++  phases = ["butcherPkgconfig"
++            "configurePhase"
++            "checkConfigurationPhase"
++            "buildPhase"
++            "installPhase"
++           ];
++
++  butcherPkgconfig = ''
++    cp -r ${buildPackages.pkgs.ncurses.dev}/lib/pkgconfig .
++    chmod +w pkgconfig pkgconfig/*.pc
++    for i in pkgconfig/*.pc; do test -f $i && sed -i 's/^Libs:/Libs: -L''${libdir} /'  $i;done
++  '';
++
++  configurePhase = ''
++    export KBUILD_OUTPUT=`pwd`
++    cp ${kconfigFile} .config
++    cp ${kconfigFile} .config.orig
++    ( cd ${tree} && make V=1 olddefconfig )
++  '';
++
++  checkConfigurationPhase = ''
++    echo Checking required config items:
++    if comm -2 -3 <(grep 'CONFIG' ${checkedConfigFile} |sort) <(grep 'CONFIG' .config|sort) |grep '.'    ; then
++      echo -e "^^^ Some configuration lost :-(\nPerhaps you have mutually incompatible settings, or have disabled options on which these depend.\n"
++      exit 0
++    fi
++    echo "OK"
++  '';
++
++  KBUILD_BUILD_HOST = "nixwrt.builder";
++  buildPhase = ''
++    make -C ${tree} vmlinux
++  '';
++
++  installPhase = ''
++    cp vmlinux $out
++  '';
++
++}
+diff --git a/nixwrt/kernel/patch-source-tree.nix b/nixwrt/kernel/patch-source-tree.nix
+new file mode 100644
+index 0000000..77938a3
+--- /dev/null
++++ b/nixwrt/kernel/patch-source-tree.nix
+@@ -0,0 +1,59 @@
++{ upstream
++, openwrt
++, version
++, patches
++, files
++
++, stdenv
++, buildPackages
++, patchutils
++} :
++let versionScalar = v :
++      let nth = n : builtins.elemAt v n;
++      in (nth 2) + ((nth 1) * 1000) + ((nth 0) * 1000000);
++    versionExceeds = a : b : (versionScalar a) > (versionScalar b) ;
++    lib = stdenv.lib; in
++stdenv.mkDerivation rec {
++    name = "kernel-source-tree";
++    phases = [ "unpackPhase" "allThePatchesPhase" "buildPhase" "installPhase" ];
++    src = upstream;
++    nativeBuildInputs = [ patchutils ];
++
++    allThePatchesPhase = let
++      majmin = "${toString (builtins.elemAt version 0)}.${toString (builtins.elemAt version 1)}";
++    in ''
++      patchv() {
++        for i in "$@"; do
++          echo $i;
++          patch -N -p1 -i $i
++        done
++      }
++      q_apply() {
++        echo "Checking $1 for patches:"
++        if test -d $1 ; then patchv $(find $1 -type f | sort)  ;fi
++        if test -f $1 ; then patchv $1 ; fi
++      }
++      ${lib.concatMapStringsSep "\n" (x: "test -d ${x} && cp -dRv ${x}/* .")
++        files}
++      ${lib.concatMapStringsSep "\n" (x: "q_apply ${x}") patches}
++      chmod -R +w .
++    '';
++
++    # patches = [ ./kernel-ath79-wdt-at-boot.patch
++    #             ./kernel-lzma-command.patch
++    #             ./kexec_copy_from_user_return.patch
++    #           ]
++    # ++ lib.optionals (socFamily == "ath79") [
++    #   ./552-ahb_of.patch
++    # ];
++
++    buildPhase = ''
++      substituteInPlace scripts/ld-version.sh --replace /usr/bin/awk ${buildPackages.pkgs.gawk}/bin/awk
++      substituteInPlace Makefile --replace /bin/pwd ${buildPackages.pkgs.coreutils}/bin/pwd
++    '';
++
++    installPhase = ''
++      cp -a . $out
++    '';
++
++  }
+diff --git a/nixwrt/modules/default.nix b/nixwrt/modules/default.nix
+index 0a2b1ff..457f2fb 100644
+--- a/nixwrt/modules/default.nix
++++ b/nixwrt/modules/default.nix
+@@ -175,8 +175,8 @@
+       kernel.config."MTD_PHRAM" = "y";
+       kernel.config."MTD_SPLIT_FIRMWARE" = "y";
+       kernel.config."MTD_SPLIT_FIRMWARE_NAME" = builtins.toJSON "nixwrt";
+-      kernel.commandLine =
+-        "${super.kernel.commandLine} mtdparts=phram0:${sizeMB}M(nixwrt) phram.phram=phram0,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
++      boot.commandLine =
++        "${super.boot.commandLine} mtdparts=phram0:${sizeMB}M(nixwrt) phram.phram=phram0,${offset},${sizeMB}Mi memmap=${sizeMB}M\$${offset}";
+     };
+   kexec = _: nixpkgs: self: super:
+     with nixpkgs;
+diff --git a/nixwrt/modules/lib.nix b/nixwrt/modules/lib.nix
+new file mode 100644
+index 0000000..86c8177
+--- /dev/null
++++ b/nixwrt/modules/lib.nix
+@@ -0,0 +1,34 @@
++options: nixpkgs: self: super:
++let
++  applyVersion = tokens : fn :
++    builtins.foldl' (f: x: f x) fn (map toString tokens);
++
++  fetchUpstreamKernel = { version, sha256 } :
++    let
++      url = applyVersion version (maj : min : p : "https://cdn.kernel.org/pub/linux/kernel/v${maj}.x/linux-${maj}.${min}.${p}.tar.xz");
++    in builtins.fetchurl {
++      inherit sha256 url;
++    };
++  lib = nixpkgs.lib;
++  readDefconfig = file:
++    let f = nixpkgs.pkgs.runCommand "defconfig.json"  { } ''
++      echo -e "{\n" > $out
++      (source ${file} ; for v in ''${!CONFIG@} ; do printf "  \"%s\": \"%s\",\n" "$v" "''${!v}" ;done ) >> $out
++      echo -e "  \042SWALLOW_COMMA\042: \042n\042 \n}" >> $out
++    '';
++        attrset = builtins.fromJSON ( builtins.readFile f ); in
++      lib.mapAttrs'
++        (n: v: (lib.nameValuePair (lib.removePrefix "CONFIG_" n) v))
++        attrset;
++  patchSourceTree = import <nixwrt/kernel/patch-source-tree.nix>;
++  makeVmlinux = import <nixwrt/kernel/make-vmlinux.nix>;
++  makeUimage = import <nixwrt/kernel/uimage.nix>;
++  makeFdt = import <nixwrt/kernel/build-fdt.nix>;
++in {
++  nixwrt = {
++    kernel = {
++      inherit fetchUpstreamKernel readDefconfig patchSourceTree
++        makeVmlinux makeUimage makeFdt;
++    };
++  };
++}

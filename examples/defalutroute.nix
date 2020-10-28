@@ -105,7 +105,6 @@ let
          endpoint = l2tpPeer;
          lac = "aaisp";
          ifname = "l2tp-aaisp";
-
        })
        (pkgs : _ : super : {
          services = super.services // {

@@ -1,0 +1,4 @@
+rootfs=/nix/store/cin1r1xfq8wd7w2g5p5z9727hj3rlbrs-nixwrt-root-mips-unknown-linux-musl/image.squashfs
+vmlinux=/nix/store/5rz7gdsrqxa5wyhm0n0kycdrzdknivgn-vmlinux-mips-unknown-linux-musl
+# vmlinux=./vmlinux
+strace -f -o/tmp/foo qemu-system-mips  -M malta -m 128 -nographic -kernel $vmlinux -append 'root=/dev/sr0 console=ttyS0 init=/bin/init' -blockdev driver=file,node-name=squashed,read-only=on,filename=$rootfs -blockdev driver=raw,node-name=rootfs,file=squashed,read-only=on -device ide-cd,drive=rootfs -nographic
