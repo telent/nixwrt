@@ -68,7 +68,7 @@ let
       echo ${configuration.hostname} > /proc/sys/kernel/hostname
       echo /bin/mdev > /proc/sys/kernel/hotplug
       mdev -s
-      mkdir /run/swarm /run/swarm/services
+      mkdir /run/swarm /run/swarm/services /run/swarm/services/odhcp6c-script
     '';};
 
   } // configuration.etc) ;

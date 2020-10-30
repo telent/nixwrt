@@ -24,7 +24,7 @@ let
     pppoptfile = ${ppp_options}
   '';
 
-  watcherFile = writeText "${ifname}.lua" ''
+  watcherFile = writeScript "${ifname}.lua" ''
     #!${swarm}/bin/lua-swarm
     package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
     xl2tpd = require("xl2tpd")
@@ -42,7 +42,7 @@ let
   '';
 
   # only here temporarily
-  eth0WatcherFile = writeText "eth0.lua" ''
+  eth0WatcherFile = writeScript "eth0.lua" ''
     #!${swarm}/bin/lua-swarm
     package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
     (require("ethernet"))({
@@ -53,10 +53,34 @@ let
         xl2tpd = "${xl2tpd}/bin/xl2tpd"
       }
     })
-  ''
-;
+  '';
+
+
+  # only here temporarily
+  odhcp6cWatcherFile =
+    let odhcp6UpdateScript = writeScript "odhcp6c-update" ''
+      #!/bin/sh
+      mkdir -p /run/swarm/services/odhcp6c-script/
+      exec /bin/cp /proc/self/environ /run/swarm/services/odhcp6c-script/environ
+    '';
+    in
+      writeScript "odhcp6c.lua" ''
+        #!${swarm}/bin/lua-swarm
+        package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
+        (require("odhcp6c"))({
+          name = "odhcp6c",
+          updatescript = "${odhcp6UpdateScript}",
+          iface = "${ifname}",
+          paths = {
+            odhcp6c = "${odhcp6c}/bin/odhcp6c",
+          }
+        })
+  '';
 in lib.attrsets.recursiveUpdate super {
-  packages = super.packages ++ [ pkgs.ppp watcherFile eth0WatcherFile ];
+  packages = super.packages ++ [
+    pkgs.ppp watcherFile eth0WatcherFile
+    odhcp6cWatcherFile
+  ];
   busybox = { applets = super.busybox.applets ++ ["echo"];}; # unneeded?
 
   kernel.config."L2TP" = "y";
@@ -74,13 +98,18 @@ in lib.attrsets.recursiveUpdate super {
 
   inittab."${lac}" = {
     action = "respawn";
-    process = "${swarm}/bin/lua-swarm ${watcherFile}";
+    process = watcherFile;
   };
 
   # only here temporarily
   inittab.eth0 = {
     action = "respawn";
-    process = "${swarm}/bin/lua-swarm ${eth0WatcherFile}";
+    process = eth0WatcherFile;
+  };
+
+  inittab.odhcp6c = {
+    action = "respawn";
+    process = odhcp6cWatcherFile;
   };
 
 }
