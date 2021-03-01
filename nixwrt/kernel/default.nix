@@ -18,7 +18,7 @@ let writeConfig = name : config: writeText name
           ));
     kconfigFile = writeConfig "nixwrt_kconfig" config;
     checkedConfigFile = writeConfig "checked_kconfig" checkedConfig ;
-    lib = stdenv.lib; in
+    inherit lib; in
 stdenv.mkDerivation rec {
   name = "kernel";
 

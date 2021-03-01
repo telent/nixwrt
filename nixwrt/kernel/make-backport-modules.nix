@@ -17,7 +17,7 @@ let writeConfig = name : config: writeText name
           ));
     config = kconfig;
     kconfigFile = writeConfig "nixwrt_backports_kconfig" config;
-    lib = stdenv.lib; in
+    inherit lib; in
 stdenv.mkDerivation rec {
   src = backportedSrc;
   name = "backported-modules";

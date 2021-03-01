@@ -21,7 +21,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
         {name="store"; uid=500; gid=500; gecos="Storage owner"; dir="/srv";
          shell="/dev/null"; authorizedKeys = [];}
       ];
