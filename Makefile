@@ -16,7 +16,7 @@ default:
 
 #image?=phramware  # build runnable-from-ram image
 image?=firmware  # build flashable image
-ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
+ssh_public_key_file?=/home/${USER}/authorized_keys
 
 -include $(SECRETS)
 
@@ -40,6 +40,11 @@ defalutroute/firmware.bin: ATTRS=\
  --argstr l2tpPeer $(call e,L2TP_PEER)
 
 extensino/firmware.bin: ATTRS=\
+ --argstr ssid $(call e,SSID) \
+ --argstr psk $(call e,PSK) \
+ --argstr loghost $(call e,LOGHOST)
+
+wrt1900acs/firmware.bin: ATTRS=\
  --argstr ssid $(call e,SSID) \
  --argstr psk $(call e,PSK) \
  --argstr loghost $(call e,LOGHOST)

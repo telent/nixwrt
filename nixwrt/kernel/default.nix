@@ -30,7 +30,7 @@ stdenv.mkDerivation rec {
   HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include";
   HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib ";
   CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
-  ARCH = "mips";              # use "mips" here for both mips and mipsel
+  ARCH = "arm";              # use "mips" here for both mips and mipsel
   dontStrip = true;
   dontPatchELF = true;
   phases = ["configurePhase"

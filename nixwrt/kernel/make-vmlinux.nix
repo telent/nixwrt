@@ -29,7 +29,7 @@ stdenv.mkDerivation rec {
   HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib -L${buildPackages.pkgs.ncurses.out}/lib " ;
   PKG_CONFIG_PATH = "./pkgconfig";
   CROSS_COMPILE = stdenv.cc.bintools.targetPrefix;
-  ARCH = "mips";  # kernel uses "mips" here for both mips and mipsel
+  ARCH = "arm";  # kernel uses "mips" here for both mips and mipsel
   dontStrip = true;
   dontPatchELF = true;
   outputs = ["out"  "modulesupport"];

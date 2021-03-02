@@ -30,7 +30,7 @@ stdenv.mkDerivation {
     ${patchDtbCommand}
     rm -f vmlinux.stripped.lzma
     lzma -k -z  vmlinux.stripped
-    mkimage -A mips -O linux -T kernel -C lzma -a ${loadAddress} -e ${entryPoint} -n 'MIPS NixWrt Linux ${extraName}' -d vmlinux.stripped.lzma kernel.image
+    mkimage -A arm -O linux -T kernel -C lzma -a ${loadAddress} -e ${entryPoint} -n 'MIPS NixWrt Linux ${extraName}' -d vmlinux.stripped.lzma kernel.image
   '';
   installPhase = ''
     cp kernel.image $out
