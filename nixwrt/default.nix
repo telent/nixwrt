@@ -1,9 +1,9 @@
 { overlays ? []
-, endian }:
+}:
 let
   overlay = import ./overlay.nix;
   modules = import ./modules/default.nix;
-  system = (import ./mksystem.nix) { inherit endian; };
+  system = (import ./mksystem.nix) {};
   nixpkgs = import <nixpkgs> (system // { overlays = [overlay] ++ overlays;} );
 in
 with nixpkgs; rec {
