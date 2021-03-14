@@ -13,7 +13,7 @@ let writeConfig = name : config: writeText name
           (lib.mapAttrsToList
             (name: value: (if value == "n" then "# CONFIG_${name} is not set" else "CONFIG_${name}=${value}"))
             (config // {
-              "MIPS_CMDLINE_FROM_DTB" = "y";
+              "ARM_CMDLINE_FROM_DTB" = "y";
             } )
           ));
     kconfigFile = writeConfig "nixwrt_kconfig" config;
@@ -23,9 +23,9 @@ stdenv.mkDerivation rec {
   name = "kernel";
 
   hardeningDisable = ["all"];
-  nativeBuildInputs = [buildPackages.stdenv.cc] ++
+  nativeBuildInputs = [buildPackages.stdenv.cc breakpointHook ] ++
                       (with buildPackages.pkgs;
-                        [bc bison flex openssl perl]);
+                        [bc bison flex openssl perl musl ]);
   CC = "${stdenv.cc.bintools.targetPrefix}gcc";
   HOSTCC = "gcc -I${buildPackages.pkgs.openssl}/include";
   HOST_EXTRACFLAGS = "-I${buildPackages.pkgs.openssl.dev}/include -L${buildPackages.pkgs.openssl.out}/lib ";
@@ -57,7 +57,7 @@ stdenv.mkDerivation rec {
 
   KBUILD_BUILD_HOST = "nixwrt.builder";
   buildPhase = ''
-    make -C ${source} vmlinux
+    make -C ${source} vmlinux V=s
   '';
 
   installPhase = ''

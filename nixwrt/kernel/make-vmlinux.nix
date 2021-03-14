@@ -6,6 +6,7 @@
  , config
  , checkedConfig ? {}
  , tree
+ , breakpointHook
 } :
 let writeConfig = name : config: writeText name
         (builtins.concatStringsSep
@@ -21,7 +22,7 @@ stdenv.mkDerivation rec {
   name = "vmlinux";
 
   hardeningDisable = ["all"];
-  nativeBuildInputs = [buildPackages.stdenv.cc] ++
+  nativeBuildInputs = [buildPackages.stdenv.cc breakpointHook] ++
                       (with buildPackages.pkgs;
                         [rsync bc bison flex pkgconfig openssl ncurses.all perl]);
   CC = "${stdenv.cc.bintools.targetPrefix}gcc";
@@ -70,7 +71,7 @@ stdenv.mkDerivation rec {
 
   KBUILD_BUILD_HOST = "nixwrt.builder";
   buildPhase = ''
-    make -C ${tree} vmlinux
+    make -C ${tree} vmlinux V=s
   '';
 
   installPhase = ''

@@ -1,6 +1,7 @@
 options: nixpkgs: self: super:
 with nixpkgs.lib;
 let
+  breakpointHook = nixpkgs.breakpointHook;
   kb = self.nixwrt.kernel;
   openwrt =  nixpkgs.fetchFromGitHub {
     owner = "openwrt";
@@ -21,45 +22,46 @@ let
     rev = "5d63529ffc6e24974bc7c45b28fd1c34573126eb";
     sha256 = "1bwpifrwl5mvsmbmc81k8l22hmkwk05v7xs8dxag7fgv2kd6lv2r";
   };
+
   listFiles = dir: builtins.attrNames (builtins.readDir dir);
   extraConfig = {
-    "BLK_DEV_INITRD" = "n";
-    "CMDLINE_PARTITION" = "y";
-    "DEBUG_INFO" = "y";
-    "DEVTMPFS" = "y";
-    "EARLY_PRINTK" = "y";
-    "FW_LOADER" = "y";
-    # we don't have a user helper, so we get multiple 60s pauses
-    # at boot time unless we disable trying to call it
-    "FW_LOADER_USER_HELPER" = "n";
-    "IMAGE_CMDLINE_HACK" = "n";
-    "IP_PNP" = "y";
-    "JFFS2_FS" = "n";
-    "MIPS_RAW_APPENDED_DTB" = "y";
-    "MODULE_SIG" = "y";
-    "MTD_CMDLINE_PARTS" = "y";
-    "MTD_SPLIT_FIRMWARE" = "y";
-    "PARTITION_ADVANCED" = "y";
-    "PRINTK_TIME" = "y";
+#    "BLK_DEV_INITRD" = "n";
+#    "CMDLINE_PARTITION" = "y";
+#    "DEBUG_INFO" = "y";
+#    "DEVTMPFS" = "y";
+#    "EARLY_PRINTK" = "y";
+#    "FW_LOADER" = "y";
+#    # we don't have a user helper, so we get multiple 60s pauses
+#    # at boot time unless we disable trying to call it
+#    "FW_LOADER_USER_HELPER" = "n";
+#    "IMAGE_CMDLINE_HACK" = "n";
+#    "IP_PNP" = "y";
+#    "JFFS2_FS" = "n";
+#    "ARM_APPENDED_DTB" = "y";
+#    "MODULE_SIG" = "y";
+#    "MTD_CMDLINE_PARTS" = "y";
+#    "MTD_SPLIT_FIRMWARE" = "y";
+#    "PARTITION_ADVANCED" = "y";
+#    "PRINTK_TIME" = "y";
     "SQUASHFS" = "y";
     "SQUASHFS_XZ" = "y";
-
-    "ASN1" = "y";
-    "ASYMMETRIC_KEY_TYPE" = "y";
-    "ASYMMETRIC_PUBLIC_KEY_SUBTYPE" = "y";
-    "CRC_CCITT" = "y";
-    "CRYPTO" = "y";
-    "CRYPTO_ARC4" = "y";
-    "CRYPTO_CBC" = "y";
-    "CRYPTO_CCM" = "y";
-    "CRYPTO_CMAC" = "y";
-    "CRYPTO_GCM" = "y";
-    "CRYPTO_HASH_INFO" = "y";
-    "CRYPTO_LIB_ARC4" = "y";
-    "CRYPTO_RSA" = "y";
-    "CRYPTO_SHA1" = "y";
-    "ENCRYPTED_KEYS" = "y";
-    "KEYS" = "y";
+#
+#    "ASN1" = "y";
+#    "ASYMMETRIC_KEY_TYPE" = "y";
+#    "ASYMMETRIC_PUBLIC_KEY_SUBTYPE" = "y";
+#    "CRC_CCITT" = "y";
+#    "CRYPTO" = "y";
+#    "CRYPTO_ARC4" = "y";
+#    "CRYPTO_CBC" = "y";
+#    "CRYPTO_CCM" = "y";
+#    "CRYPTO_CMAC" = "y";
+#    "CRYPTO_GCM" = "y";
+#    "CRYPTO_HASH_INFO" = "y";
+#    "CRYPTO_LIB_ARC4" = "y";
+#    "CRYPTO_RSA" = "y";
+#    "CRYPTO_SHA1" = "y";
+#    "ENCRYPTED_KEYS" = "y";
+#    "KEYS" = "y";
   };
   checkConfig = { };
   tree = kb.patchSourceTree {
@@ -81,7 +83,7 @@ let
             ];
   };
   vmlinux = kb.makeVmlinux {
-    inherit tree ;
+    inherit tree breakpointHook;
     inherit (self.kernel) config;
     checkedConfig = checkConfig // extraConfig;
     inherit (nixpkgs) stdenv buildPackages writeText runCommand;
@@ -177,8 +179,8 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
             inherit (self.boot) commandLine;
             includes = [
               "${openwrtKernelFiles}/ath79/dts"
-              "${tree}/arch/mips/boot/dts"
-              "${tree}/arch/mips/boot/dts/include"
+              "${tree}/arch/arm/boot/dts"
+              "${tree}/arch/arm/boot/dts/include"
               "${tree}/include/"];
           };
       in kb.makeUimage {
@@ -190,8 +192,8 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
       };
   };
   boot = {
-    loadAddress = "0x80060000";
-    entryPoint  = "0x80060000";
+    loadAddress = "0x00008000";
+    entryPoint  = "0x00008000";
     commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
   };
 }

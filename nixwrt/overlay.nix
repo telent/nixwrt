@@ -9,6 +9,12 @@ in {
     # to be required when musl *is* the system libc, and for me it seems to be
     # picking up the wrong musl.  So let's get rid of it
     postConfigure = "true";
+
+    src = self.fetchgit{
+		url = "https://git.busybox.net/busybox";
+		rev = "f25d254dfd4243698c31a4f3153d4ac72aa9e9bd";
+		sha256 = "ArjFhuc8z06Anjj0axRqnHHU6/35NxkNoAj2vOC0B6Q=";
+		};
   }));
 
   coreutils =  super.coreutils.overrideAttrs (o: {
