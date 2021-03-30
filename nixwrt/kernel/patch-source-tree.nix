@@ -12,7 +12,7 @@ let versionScalar = v :
       let nth = n : builtins.elemAt v n;
       in (nth 2) + ((nth 1) * 1000) + ((nth 0) * 1000000);
     versionExceeds = a : b : (versionScalar a) > (versionScalar b) ;
-    lib = stdenv.lib; in
+    inherit lib; in
 stdenv.mkDerivation rec {
     name = "kernel-source-tree";
     phases = [ "unpackPhase" "allThePatchesPhase" "buildPhase" "installPhase" ];

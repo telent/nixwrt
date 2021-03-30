@@ -45,7 +45,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (stdenv.lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.iproute ];
       busybox = { applets = ["ln"]; };

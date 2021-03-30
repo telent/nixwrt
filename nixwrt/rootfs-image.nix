@@ -96,7 +96,7 @@ let
     let excludeWildcards = [ "... lib*.a" "... man/man[1-9]" ];
     in pkgs.callPackage <nixpkgs/nixos/lib/make-squashfs.nix> {
       storeContents = packagesToInstall ;
-      comp = "xz -Xdict-size 100% -wildcards ${stdenv.lib.concatStringsSep " " (map (f: "-e '${f}' ") excludeWildcards)}";
+      comp = "xz -Xdict-size 100% -wildcards ${lib.concatStringsSep " " (map (f: "-e '${f}' ") excludeWildcards)}";
 
     };
 in stdenv.mkDerivation rec {
