@@ -15,7 +15,10 @@ in {
     config = ends.${endian}.config;
     openssl.system = "linux-generic32";
     withTLS = true;
-    gcc = { abi = "32"; arch = "mips32"; } ;
+    gcc = {
+      abi = "32";
+      arch = "mips32";          # maybe mips_24kc
+    } ;
     linuxArch = "mips";
     bfdEmulation = ends.${endian}.bfd;
     # platform = {
