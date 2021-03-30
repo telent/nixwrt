@@ -54,6 +54,14 @@ in {
 
   }));
 
+  git = super.git.override {
+    # git manual uses various graphic libraries which use X
+    # libraries which depend on Wayland (don't ask) which depends on
+    # llvm, and llvm for some reason doesn't build today.
+    perlSupport = false;
+    withManual = false;
+    pythonSupport = false;
+  };
   hostapd =
     let configuration = [
           "CONFIG_DRIVER_NL80211=y"
