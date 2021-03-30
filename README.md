@@ -41,9 +41,10 @@ device tree for it already.
 
 ## The Nix Package Collection
 
-As of May 2020 it has been tested with nixpkgs master git rev
-bc675971dae581ec653fa6. If you're using a later or earlier version,
-your mileage may vary.
+As of March 2021 it has been tested with nixpkgs master git rev
+ad47284f8b01f, which at the time of writing was the latest commit on
+nixos-unstable to have built on Hydra. If you're using a later or
+earlier version, your mileage may vary.
 
 ## a Nixpkgs overlay
 
