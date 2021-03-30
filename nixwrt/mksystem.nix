@@ -15,11 +15,11 @@ in {
     config = ends.${endian}.config;
     openssl.system = "linux-generic32";
     withTLS = true;
-    platform = {
-      inherit endian;
-      kernelArch = "mips";
-      gcc = { abi = "32"; } ;
-      bfdEmulation = ends.${endian}.bfd;
-    };
+    gcc = { abi = "32"; arch = "mips32"; } ;
+    linuxArch = "mips";
+    bfdEmulation = ends.${endian}.bfd;
+    # platform = {
+    #   inherit endian;
+    # };
   };
 }
