@@ -41,7 +41,7 @@ let
     inherit (ralink) tree ;
     inherit (self.kernel) config;
     checkedConfig = checkConfig // extraConfig;
-    inherit (nixpkgs) stdenv buildPackages writeText runCommand;
+    inherit (nixpkgs) stdenv lib buildPackages writeText runCommand;
   };
   modloaderservice = ralink.module_loader {
     inherit vmlinux;

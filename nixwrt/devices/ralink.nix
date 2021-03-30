@@ -18,7 +18,7 @@ in rec {
   };
   tree =  kb.patchSourceTree {
       inherit upstream openwrt;
-      inherit (nixpkgs) buildPackages patchutils stdenv;
+      inherit (nixpkgs) buildPackages patchutils stdenv lib;
       version = kernelVersion;
       patches = nixpkgs.lib.lists.flatten
         [ "${openwrtKernelFiles}/ramips/patches-5.4/"
@@ -36,7 +36,7 @@ in rec {
   };
   module_loader = { vmlinux, kconfig, module_paths }:
     let modules = (import ../kernel/make-backport-modules.nix) {
-          inherit (nixpkgs) stdenv buildPackages runCommand writeText;
+          inherit (nixpkgs) stdenv lib buildPackages runCommand writeText;
           openwrtSrc = openwrt;
           backportedSrc =
             nixpkgs.buildPackages.callPackage ../kernel/backport.nix {

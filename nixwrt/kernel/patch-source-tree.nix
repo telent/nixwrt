@@ -5,6 +5,7 @@
 , files
 
 , stdenv
+, lib
 , buildPackages
 , patchutils
 } :

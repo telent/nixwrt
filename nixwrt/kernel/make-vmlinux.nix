@@ -2,6 +2,7 @@
  , buildPackages
  , runCommand
  , writeText
+ , lib
 
  , config
  , checkedConfig ? {}

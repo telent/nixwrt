@@ -46,7 +46,7 @@ let
   checkConfig = { };
   tree = kb.patchSourceTree {
     inherit upstream openwrt;
-    inherit (nixpkgs) buildPackages patchutils stdenv;
+    inherit (nixpkgs) buildPackages patchutils stdenv lib;
     version = kernelVersion;
     patches = lists.flatten
       [ "${openwrtKernelFiles}/generic/backport-5.4/"
@@ -64,7 +64,7 @@ let
     inherit tree ;
     inherit (self.kernel) config;
     checkedConfig = checkConfig // extraConfig;
-    inherit (nixpkgs) stdenv buildPackages writeText runCommand;
+    inherit (nixpkgs) stdenv lib buildPackages writeText runCommand;
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
   packages = ( if super ? packages then super.packages else [] );
@@ -77,7 +77,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
     package =
       let fdt = kb.makeFdt {
             dts = "${tree}/arch/mips/boot/dts/mti/malta.dts";
-            inherit (nixpkgs) stdenv;
+            inherit (nixpkgs) stdenv ;
             inherit (nixpkgs.buildPackages) dtc;
             inherit (self.boot) commandLine;
             includes = [
