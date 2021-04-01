@@ -179,6 +179,13 @@ in {
 
   odhcp6c = stripped (self.callPackage ./pkgs/odhcp6c.nix { });
 
+  patchelf = super.patchelf.overrideAttrs(o@{patches ? [], ...} :
+    let u = self.fetchurl {
+          url = "https://patch-diff.githubusercontent.com/raw/NixOS/patchelf/pull/269.patch" ;
+          sha256 = "0g0qas9hng092vi61m080fkjyfi1b48rx1qwzix2yncycdmln8js";
+        }; in {
+          patches = patches ++ [u];
+        });
 
   patchImage = self.stdenv.mkDerivation {
     name = "patch-dtb";
