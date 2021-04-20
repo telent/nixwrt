@@ -24,7 +24,7 @@
        )
 
 (mocks :ppp
-       "up?" (fn [dev] true)
+       "up?" (fn [dev] false)
        "find-device"  (fn [name] { "name" name })
        "device-name" (fn [dev] dev.name)
        "ipstate-script" (fn [dev] (.. "/run/services/ipstate-" dev.name))
@@ -58,25 +58,70 @@
 
 (local all-tests
        [
-        (lambda daemon-starts []
-          (var joined false)
-          (var started false)
-          (set my-events [1 2 3 4 5 6 7 8 ])
-          (mock :process :join #(set joined true))
-          (mock :process "start-process" #(set started true))
-          (pppoe "eth0" "ppp0")
-          (assert joined "ifconfig process did not join")
-          (assert started "daemon did not start"))
+        ;; (lambda daemon-starts []
+        ;;   (var joined false)
+        ;;   (var started false)
+        ;;   (set my-events [1 2 3 4 5 6 7 8 ])
+        ;;   (mock :process :join #(set joined true))
+        ;;   (mock :process "start-process" #(set started true))
+        ;;   (pppoe "eth0" "ppp0")
+        ;;   (assert joined "ifconfig process did not join")
+        ;;   (assert started "daemon did not start"))
 
         (lambda backoff-increases-on-failure []
-          ;; given the process is started
 
-          ;; when it stops without achieving health
-          ;; there is a delay before it can be restarted
-          )
+          (let [p {:command "started" :running false}]
+            (mock :process "new-process"
+                  (fn [command]
+                    (if (command:find "pppd")
+                        p
+                        {})))
+            (mock :process :join #(print "join"))
+            (var delay 0)
+            (var delay2 0)
+            (set my-events [;; given the process is started
+                            1 2 3 4 5 6 7 8
+                            ;; when it stops without achieving health
+                            #(set p.running false)
+                            ;; there is a delay before it can be restarted
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            #(if (not p.running) (set delay (+ 1 delay)))
+                            ;; when it stops again without achieving health
+                            #(set p.running false)
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            ;; then the delay is longer
+                            ])
 
-
+            (pppoe "eth0" "ppp0")
+            (print delay) (print delay2)
+            (assert (> delay 1) )
+            (assert (>  delay2 (* 1.5 delay)))))
         ])
-
 
 (each [_ value (pairs all-tests)] (value))

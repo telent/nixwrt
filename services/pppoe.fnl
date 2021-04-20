@@ -32,6 +32,8 @@
                  backoff-until
                  (< backoff-until (now)))
         (print "starting")
+        (print backoff-until (now))
+        (set backoff-until nil)
         (process.join (process.new-process
                        (f. "ifconfig %s up"
                            (netdev.device-name transport-device))))
