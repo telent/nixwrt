@@ -102,6 +102,40 @@
             (print delay) (print delay2)
             (assert (> delay 1) )
             (assert (>  delay2 (* 2 (- delay 1))))))
+
+        (lambda backoff-resets-on-connect []
+          (var delay 0)
+          (var delay2 0)
+          (let [p (new-process "pppd")
+                mark-time #(+ $1 (if p.running 0 1))
+                count1 #(set delay (mark-time delay))
+                count2 #(set delay2 (mark-time delay2))]
+            (mock :process :join #true)
+            (mock :process "new-process"
+                  (fn [c]
+                    (if (c:match "pppd") p (new-process))))
+            (set my-events [;; given the process is started
+                            1 2 3 4 5 6 7 8
+                            ;; when it stops without achieving health
+                            #(p:stop)
+                            ;; there is a delay before it can be restarted
+                            count1 count1 count1 count1 count1
+                            count1 count1 count1 count1 count1
+                            count1 count1 count1 count1 count1
+                            ;; but if it has successfully opened a connection
+                            #(mock :ppp "up?" #true)
+                            9
+                            ;; when it stops again
+                            #(p:stop)
+                            count2 count2 count2 count2 count2
+                            count2 count2 count2 count2 count2
+                            count2 count2 count2 count2 count2
+                            ;; then the delay was reset
+                            ])
+            (pppoe "eth0" "ppp0")
+            (print delay) (print delay2)
+            (assert (> delay 1) )
+            (assert (<=  delay2 delay))))
         ])
 
 (each [_ value (pairs all-tests)] (value))
