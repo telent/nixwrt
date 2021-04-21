@@ -73,56 +73,35 @@
             (assert started "daemon did not start")))
 
         (lambda backoff-increases-on-failure []
-          (let [p (new-process "pppd")]
+          (var delay 0)
+          (var delay2 0)
+          (let [p (new-process "pppd")
+                mark-time #(+ $1 (if p.running 0 1))
+                count1 #(set delay (mark-time delay))
+                count2 #(set delay2 (mark-time delay2))]
             (mock :process :join #(+ 1))
             (mock :process "new-process"
                   (fn [c]
                     (if (c:match "pppd") p (new-process))))
-            (var delay 0)
-            (var delay2 0)
             (set my-events [;; given the process is started
                             1 2 3 4 5 6 7 8
                             ;; when it stops without achieving health
-                            #(set p.running false)
+                            #(p:stop)
                             ;; there is a delay before it can be restarted
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
-                            #(if (not p.running) (set delay (+ 1 delay)))
+                            count1 count1 count1 count1 count1
+                            count1 count1 count1 count1 count1
+                            count1 count1 count1 count1 count1
                             ;; when it stops again without achieving health
-                            #(set p.running false)
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
-                            #(if (not p.running) (set delay2 (+ 1 delay2)))
+                            #(p:stop)
+                            count2 count2 count2 count2 count2
+                            count2 count2 count2 count2 count2
+                            count2 count2 count2 count2 count2
                             ;; then the delay is longer
                             ])
-
             (pppoe "eth0" "ppp0")
             (print delay) (print delay2)
             (assert (> delay 1) )
-            (assert (>  delay2 (* 1.5 delay)))))
+            (assert (>  delay2 (* 2 (- delay 1))))))
         ])
 
 (each [_ value (pairs all-tests)] (value))
