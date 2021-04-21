@@ -32,18 +32,18 @@
 
 (var my-events [])
 
+(fn new-process [command]
+  {
+   :command command
+   :running false
+   :start (fn [p] (set p.running true))
+   :stop (fn [p] (set p.running false))
+   })
+
 (mocks :process
-       "new-process"
-       (fn [command]
-         (assert
-          (or
-           (command:find "ipstate-%ppp.")
-           (command:find "ifconfig"))
-          command)
-         {:command command :running false})
        "clock" (fn [p] (- 123456 (length my-events)))
-       "start-process" (fn [p] (set p.running true))
-       "stop-process" (fn [p] (set p.running false))
+       "start-process" (fn [p] (p:start))
+       "stop-process" (fn [p] (p:stop))
        "running?" (fn [p] p.running))
 
 (mock :event "next-event"
@@ -58,25 +58,26 @@
 
 (local all-tests
        [
-        ;; (lambda daemon-starts []
-        ;;   (var joined false)
-        ;;   (var started false)
-        ;;   (set my-events [1 2 3 4 5 6 7 8 ])
-        ;;   (mock :process :join #(set joined true))
-        ;;   (mock :process "start-process" #(set started true))
-        ;;   (pppoe "eth0" "ppp0")
-        ;;   (assert joined "ifconfig process did not join")
-        ;;   (assert started "daemon did not start"))
+        (lambda daemon-starts []
+          (let [p (new-process "pppd")]
+            (mock :process "new-process"
+                  (fn [c]
+                    (if (c:match "pppd") p (new-process))))
+            (var joined false)
+            (var started false)
+            (set my-events [1 2 3 4 5 6 7 8 ])
+            (mock :process :join #(set joined true))
+            (tset p "start" #(set started true))
+            (pppoe "eth0" "ppp0")
+            (assert joined "ifconfig process did not join")
+            (assert started "daemon did not start")))
 
         (lambda backoff-increases-on-failure []
-
-          (let [p {:command "started" :running false}]
+          (let [p (new-process "pppd")]
+            (mock :process :join #(+ 1))
             (mock :process "new-process"
-                  (fn [command]
-                    (if (command:find "pppd")
-                        p
-                        {})))
-            (mock :process :join #(print "join"))
+                  (fn [c]
+                    (if (c:match "pppd") p (new-process))))
             (var delay 0)
             (var delay2 0)
             (set my-events [;; given the process is started

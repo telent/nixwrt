@@ -25,14 +25,13 @@
                  (nil? backoff-until))
         (set backoff-interval (* 2 backoff-interval))
         (set backoff-until (+ (now) backoff-interval))
-        (print "backoff" event backoff-interval backoff-until)
+;        (print "backoff" event backoff-interval backoff-until)
         )
       (when (and (not (process.running? pppd))
                  (netdev.link-up? transport-device)
                  backoff-until
                  (< backoff-until (now)))
-        (print "starting")
-        (print backoff-until (now))
+;        (print backoff-until (now))
         (set backoff-until nil)
         (process.join (process.new-process
                        (f. "ifconfig %s up"
