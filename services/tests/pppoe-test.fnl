@@ -37,11 +37,11 @@
 (fn new-process [command]
   {
    :command command
-   :running false
+   "running?" false
    :start (fn [p]
             (set p.backoff-until nil)
-            (set p.running true))
-   :stop (fn [p] (set p.running false))
+            (set p.running? true))
+   :stop (fn [p] (set p.running? false))
    "backoff-until" nil
    "backoff-interval" 1
    :backoff
@@ -59,7 +59,7 @@
        "clock" clock
        "start-process" (fn [p] (p:start))
        "stop-process" (fn [p] (p:stop))
-       "running?" (fn [p] p.running))
+       "running?" (fn [p] p.running?))
 
 (mock :event "next-event"
       (fn []
@@ -91,7 +91,7 @@
           (var delay 0)
           (var delay2 0)
           (let [p (new-process "pppd")
-                mark-time #(+ $1 (if p.running 0 1))
+                mark-time #(+ $1 (if p.running? 0 1))
                 count1 #(set delay (mark-time delay))
                 count2 #(set delay2 (mark-time delay2))]
             (mock :process :join #(+ 1))
@@ -121,7 +121,7 @@
           (var delay 0)
           (var delay2 0)
           (let [p (new-process "pppd")
-                mark-time #(+ $1 (if p.running 0 1))
+                mark-time #(+ $1 (if p.running? 0 1))
                 count1 #(set delay (mark-time delay))
                 count2 #(set delay2 (mark-time delay2))]
             (mock :process :join #true)
@@ -165,12 +165,12 @@
                             #(mock :netdev "link-up?" #false)
                             9
                             ;; the process is stopped
-                            #(assert (not p.running))
+                            #(assert (not p.running?))
                             1 2 3
                             ;; when the link goes up again
                             #(mock :netdev "link-up?" #true)
                             ;; then the process resumes without backoff
-                            #(assert  p.running)
+                            #(assert  p.running?)
                             ])
             (pppoe "eth0" "ppp0")
             ))

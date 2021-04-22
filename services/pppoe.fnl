@@ -18,18 +18,18 @@
                   ipstate-script
                   ipstate-script))]
     (each [event (event.next-event transport-device pppd)]
-      (when (not (process.running? pppd))
+      (when (not pppd.running?)
         (pppd:backoff))
-      (when (and (not (process.running? pppd))
+      (when (and (not pppd.running?)
                  (netdev.link-up? transport-device)
                  (pppd:backoff-expired?))
         (process.join (process.new-process
                        (f. "ifconfig %s up"
                            (netdev.device-name transport-device))))
-        (process.start-process pppd))
-      (when (and (process.running? pppd)
+        (pppd:start))
+      (when (and pppd.running?
                  (not (netdev.link-up? transport-device)))
-        (process.stop-process pppd))
+        (pppd:stop))
       (when  (ppp.up? ppp-device)
         (pppd:aver-health))
       )))
