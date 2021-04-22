@@ -46,8 +46,12 @@
    "backoff-interval" 1
    :backoff
    (fn [p]
-     (set p.backoff-until (+ (clock) p.backoff-interval))
-     (set p.backoff-interval (* 2 p.backoff-interval)))
+     (when (= nil p.backoff-until)
+       (set p.backoff-until (+ (clock) p.backoff-interval))
+       (set p.backoff-interval (* 2 p.backoff-interval))))
+   "backoff-expired?"
+   (fn [p]
+     (and p.backoff-until (<= p.backoff-until (clock))))
    "aver-health" (fn [p] (set p.backoff-interval 1))
    })
 
