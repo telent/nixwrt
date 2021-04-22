@@ -38,10 +38,12 @@
   {
    :command command
    "running?" false
+   "exit-status" nil
    :start (fn [p]
             (set p.backoff-until nil)
             (set p.running? true))
    :stop (fn [p] (set p.running? false))
+   :join (fn [p] (set p.exit-status 0))
    "backoff-until" nil
    "backoff-interval" 1
    :backoff
@@ -75,16 +77,14 @@
 (local all-tests
        [
         (lambda daemon-starts []
-          (let [p (new-process "pppd")]
+          (let [p (new-process "pppd")
+                ifc (new-process "ifconfig")]
             (mock :process "new-process"
                   (fn [c]
-                    (if (c:match "pppd") p (new-process))))
-            (var joined false)
-            (var started false)
+                    (if (c:match "pppd") p ifc)))
             (set my-events [1 2 3 4 5 6 7 8 ])
-            (mock :process :join #(set joined true))
             (pppoe "eth0" "ppp0")
-            (assert joined "ifconfig process did not join")
+            (assert (= ifc.exit-status 0) "ifconfig process failed")
             (assert p.running? "daemon did not start")))
 
         (lambda backoff-increases-on-failure []
@@ -94,7 +94,6 @@
                 mark-time #(+ $1 (if p.running? 0 1))
                 count1 #(set delay (mark-time delay))
                 count2 #(set delay2 (mark-time delay2))]
-            (mock :process :join #(+ 1))
             (mock :process "new-process"
                   (fn [c]
                     (if (c:match "pppd") p (new-process))))
@@ -124,7 +123,6 @@
                 mark-time #(+ $1 (if p.running? 0 1))
                 count1 #(set delay (mark-time delay))
                 count2 #(set delay2 (mark-time delay2))]
-            (mock :process :join #true)
             (mock :process "new-process"
                   (fn [c]
                     (if (c:match "pppd") p (new-process))))
@@ -155,7 +153,6 @@
         (lambda process-quits-on-link-loss []
           (let [p (new-process "pppd")]
             (set p.backoff-interval 10)
-            (mock :process :join #true)
             (mock :process "new-process"
                   (fn [c]
                     (if (c:match "pppd") p (new-process))))
