@@ -149,6 +149,37 @@
             (pppoe "eth0" "ppp0")
             (assert (> delay 1) )
             (assert (<=  delay2 delay))))
+
+        ;; test that we kill the process when link device drops
+        ;; and resume instantly (no backoff) when it reappears
+        (lambda process-quits-on-link-loss []
+          (let [p (new-process "pppd")]
+            (set p.backoff-interval 10)
+            (mock :process :join #true)
+            (mock :process "new-process"
+                  (fn [c]
+                    (if (c:match "pppd") p (new-process))))
+            (set my-events [;; given the process is started
+                            1 2 3 4 5 6 7 8
+                            ;; when the link dies
+                            #(mock :netdev "link-up?" #false)
+                            9
+                            ;; the process is stopped
+                            #(assert (not p.running))
+                            1 2 3
+                            ;; when the link goes up again
+                            #(mock :netdev "link-up?" #true)
+                            ;; then the process resumes without backoff
+                            #(assert  p.running)
+                            ])
+            (pppoe "eth0" "ppp0")
+            ))
+
+
+        ;; EXTRA CREDIT - could we do a kind of property based testing
+        ;; by injecting a random event stream of upness/downness/
+        ;; connection/disconnection/process killing/etc? what would
+        ;; the properties be?
         ])
 
 (each [_ value (pairs all-tests)] (value))
