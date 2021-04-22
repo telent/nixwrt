@@ -38,6 +38,8 @@
    :running false
    :start (fn [p] (set p.running true))
    :stop (fn [p] (set p.running false))
+   "backoff-until" nil
+   "backoff-interval" 1
    })
 
 (mocks :process
