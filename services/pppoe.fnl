@@ -23,15 +23,13 @@
     (each [event (event.next-event transport-device pppd)]
       (when (and (not (process.running? pppd))
                  (nil? backoff-until))
-        (set backoff-interval (* 2 backoff-interval))
         (set backoff-until (+ (now) backoff-interval))
-;        (print "backoff" event backoff-interval backoff-until)
+        (set backoff-interval (* 2 backoff-interval))
         )
       (when (and (not (process.running? pppd))
                  (netdev.link-up? transport-device)
                  backoff-until
-                 (< backoff-until (now)))
-;        (print backoff-until (now))
+                 (<= backoff-until (now)))
         (set backoff-until nil)
         (process.join (process.new-process
                        (f. "ifconfig %s up"

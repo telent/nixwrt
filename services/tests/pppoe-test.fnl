@@ -99,9 +99,8 @@
                             ;; then the delay is longer
                             ])
             (pppoe "eth0" "ppp0")
-            (print delay) (print delay2)
             (assert (> delay 1) )
-            (assert (>  delay2 (* 2 (- delay 1))))))
+            (assert (=  delay2 (* 2 delay)))))
 
         (lambda backoff-resets-on-connect []
           (var delay 0)
