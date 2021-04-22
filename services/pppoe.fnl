@@ -21,14 +21,11 @@
     (each [event (event.next-event transport-device pppd)]
       (when (and (not (process.running? pppd))
                  (nil? pppd.backoff-until))
-        (set pppd.backoff-until (+ (now) pppd.backoff-interval))
-        (set pppd.backoff-interval (* 2 pppd.backoff-interval))
-        )
+        (pppd:backoff))
       (when (and (not (process.running? pppd))
                  (netdev.link-up? transport-device)
                  pppd.backoff-until
                  (<= pppd.backoff-until (now)))
-        (set pppd.backoff-until nil)
         (process.join (process.new-process
                        (f. "ifconfig %s up"
                            (netdev.device-name transport-device))))
@@ -37,7 +34,7 @@
                  (not (netdev.link-up? transport-device)))
         (process.stop-process pppd))
       (when (and (ppp.up? ppp-device) (> pppd.backoff-interval 1))
-        (set pppd.backoff-interval 1))
+        (pppd:aver-health))
       )))
 
 (lambda main [eth-device-name ppp-device-name]

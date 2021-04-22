@@ -32,18 +32,27 @@
 
 (var my-events [])
 
+(fn clock [] (- 123456 (length my-events)))
+
 (fn new-process [command]
   {
    :command command
    :running false
-   :start (fn [p] (set p.running true))
+   :start (fn [p]
+            (set p.backoff-until nil)
+            (set p.running true))
    :stop (fn [p] (set p.running false))
    "backoff-until" nil
    "backoff-interval" 1
+   :backoff
+   (fn [p]
+     (set p.backoff-until (+ (clock) p.backoff-interval))
+     (set p.backoff-interval (* 2 p.backoff-interval)))
+   "aver-health" (fn [p] (set p.backoff-interval 1))
    })
 
 (mocks :process
-       "clock" (fn [p] (- 123456 (length my-events)))
+       "clock" clock
        "start-process" (fn [p] (p:start))
        "stop-process" (fn [p] (p:stop))
        "running?" (fn [p] p.running))
@@ -134,7 +143,6 @@
                             ;; then the delay was reset
                             ])
             (pppoe "eth0" "ppp0")
-            (print delay) (print delay2)
             (assert (> delay 1) )
             (assert (<=  delay2 delay))))
         ])
