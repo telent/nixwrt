@@ -4,19 +4,15 @@
 (local event (require :event))
 (local inspect (require :inspect))
 
-(fn f. [fmt ...]
-  (string.format fmt ...))
-
 (fn nil? [x] (= x nil))
 
 (fn pppoe-daemon [transport-device ppp-device]
   (let [ppp-device-name (ppp.device-name ppp-device)
         ipstate-script (ppp.ipstate-script ppp-device)
         pppd (process.new-process
-              (f. "pppd %s  --ip-up-script %s --ip-down-script %s "
-                  (netdev.device-name transport-device)
-                  ipstate-script
-                  ipstate-script))]
+              (.. "pppd " (netdev.device-name transport-device)
+                  " --ip-up-script " ipstate-script
+                  " --ip-down-script " ipstate-script))]
     (each [event (event.next-event transport-device pppd)]
       (when (pppd:died?) (pppd:backoff))
       (when (and (netdev.link-up? transport-device)
@@ -24,8 +20,9 @@
                  (pppd:backoff-expired?))
         (:
          (process.new-process
-          (f. "ifconfig %s up"
-              (netdev.device-name transport-device)))
+          (.. "ifconfig "
+              (netdev.device-name transport-device)
+              " up"))
          :join)
         (pppd:start))
       (when (and pppd.running?
