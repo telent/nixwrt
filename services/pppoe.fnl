@@ -18,8 +18,7 @@
                   ipstate-script
                   ipstate-script))]
     (each [event (event.next-event transport-device pppd)]
-      (when (not pppd.running?)
-        (pppd:backoff))
+      (when (pppd:died?) (pppd:backoff))
       (when (and (not pppd.running?)
                  (netdev.link-up? transport-device)
                  (pppd:backoff-expired?))

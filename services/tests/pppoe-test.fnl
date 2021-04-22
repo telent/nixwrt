@@ -49,6 +49,7 @@
      (when (= nil p.backoff-until)
        (set p.backoff-until (+ (clock) p.backoff-interval))
        (set p.backoff-interval (* 2 p.backoff-interval))))
+   "died?" (fn [p] (and (not p.running?) (= p.backoff-until nil)))
    "backoff-expired?"
    (fn [p]
      (and p.backoff-until (<= p.backoff-until (clock))))
@@ -82,10 +83,9 @@
             (var started false)
             (set my-events [1 2 3 4 5 6 7 8 ])
             (mock :process :join #(set joined true))
-            (tset p "start" #(set started true))
             (pppoe "eth0" "ppp0")
             (assert joined "ifconfig process did not join")
-            (assert started "daemon did not start")))
+            (assert p.running? "daemon did not start")))
 
         (lambda backoff-increases-on-failure []
           (var delay 0)
