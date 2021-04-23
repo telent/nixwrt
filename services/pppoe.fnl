@@ -27,7 +27,7 @@
                  (not (netdev.link-up? transport-device)))
         (pppd:stop))
       (when  (ppp.up? ppp-device)
-        (pppd:aver-health))
+        (pppd:aver-healthy))
       )))
 
 (lambda main [eth-device-name ppp-device-name]

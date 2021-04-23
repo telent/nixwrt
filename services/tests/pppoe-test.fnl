@@ -55,7 +55,7 @@
    "backoff-expired?"
    (fn [p]
      (and p.backoff-until (<= p.backoff-until (clock))))
-   "aver-health" (fn [p] (set p.backoff-interval 1))
+   "aver-healthy" (fn [p] (set p.backoff-interval 1))
    })
 
 (mocks :process
