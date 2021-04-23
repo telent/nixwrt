@@ -60,9 +60,7 @@
 
 (mocks :process
        "clock" clock
-       "start-process" (fn [p] (p:start))
-       "stop-process" (fn [p] (p:stop))
-       "running?" (fn [p] p.running?))
+       )
 
 (mock :event "next-event"
       (fn []
