@@ -18,12 +18,10 @@
       (when (and (netdev.link-up? transport-device)
                  (not pppd.running?)
                  (pppd:backoff-expired?))
-        (:
-         (process.new-process
-          (.. "ifconfig "
-              (netdev.device-name transport-device)
-              " up"))
-         :join)
+        (process.run
+         (.. "ifconfig "
+             (netdev.device-name transport-device)
+             " up"))
         (pppd:start))
       (when (and pppd.running?
                  (not (netdev.link-up? transport-device)))

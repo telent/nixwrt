@@ -59,7 +59,8 @@
    })
 
 (mocks :process
-       "clock" clock
+       :clock clock
+       :run (fn [command] (let [p (new-process command)] (p:join)))
        )
 
 (mock :event "next-event"
@@ -75,14 +76,15 @@
 (local all-tests
        [
         (lambda daemon-starts []
-          (let [p (new-process "pppd")
-                ifc (new-process "ifconfig")]
+          (let [p (new-process "pppd")]
+            (var ifconfiged false)
             (mock :process "new-process"
                   (fn [c]
-                    (if (c:match "pppd") p ifc)))
+                    (if (c:match "pppd") p {})))
+            (mock :process "run" #(set ifconfiged true))
             (set my-events [1 2 3 4 5 6 7 8 ])
             (pppoe "eth0" "ppp0")
-            (assert (= ifc.exit-status 0) "ifconfig process failed")
+            (assert ifconfiged "ifconfig process failed")
             (assert p.running? "daemon did not start")))
 
         (lambda backoff-increases-on-failure []
