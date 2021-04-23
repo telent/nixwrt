@@ -63,13 +63,12 @@
        :run (fn [command] (let [p (new-process command)] (p:join)))
        )
 
-(mock :event "next-event"
+(mock :watches "watch"
       (fn []
-        (fn []
-          (let [e (table.remove my-events 1)]
-            (if (= (type e) "function")
-                (or (e) true)
-                e)))))
+        (let [e (table.remove my-events 1)]
+          (if (= (type e) "function")
+              (or (e) true)
+              e))))
 
 (local pppoe (require :pppoe))
 
