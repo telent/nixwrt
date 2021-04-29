@@ -22,10 +22,65 @@ let
     lns = ${endpoint}
     require authentication = no
     pppoptfile = ${ppp_options}
-  ''
-    ;
+  '';
+
+  watcherFile = writeScript "${ifname}.lua" ''
+    #!${swarm}/bin/lua-swarm
+    package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
+    xl2tpd = require("xl2tpd")
+    xl2tpd({
+      name = "${lac}",
+      transit_iface = "eth0",
+      lac = "${lac}",
+      config = "${configFile}",
+      secrets = "/etc/xl2tpd.secrets",
+      iface = "${ifname}",
+      paths = {
+        xl2tpd = "${xl2tpd}/bin/xl2tpd"
+      }
+    })
+  '';
+
+  # only here temporarily
+  eth0WatcherFile = writeScript "eth0.lua" ''
+    #!${swarm}/bin/lua-swarm
+    package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
+    (require("ethernet"))({
+      name = "eth0",
+      iface = "eth0",
+      paths = {
+        ip = "${iproute}/bin/ip",
+        xl2tpd = "${xl2tpd}/bin/xl2tpd"
+      }
+    })
+  '';
+
+
+  # only here temporarily
+  odhcp6cWatcherFile =
+    let odhcp6UpdateScript = writeScript "odhcp6c-update" ''
+      #!/bin/sh
+      mkdir -p /run/swarm/services/odhcp6c-script/
+      exec /bin/cp /proc/self/environ /run/swarm/services/odhcp6c-script/environ
+    '';
+    in
+      writeScript "odhcp6c.lua" ''
+        #!${swarm}/bin/lua-swarm
+        package.path = "${swarm}/lib/?.lua;${swarm}/share/swarm/scripts/?.lua;;"
+        (require("odhcp6c"))({
+          name = "odhcp6c",
+          updatescript = "${odhcp6UpdateScript}",
+          iface = "${ifname}",
+          paths = {
+            odhcp6c = "${odhcp6c}/bin/odhcp6c",
+          }
+        })
+  '';
 in lib.attrsets.recursiveUpdate super {
-  packages = super.packages ++ [ pkgs.xl2tpd pkgs.ppp ];
+  packages = super.packages ++ [
+    pkgs.ppp watcherFile eth0WatcherFile
+    odhcp6cWatcherFile
+  ];
   busybox = { applets = super.busybox.applets ++ ["echo"];}; # unneeded?
 
   kernel.config."L2TP" = "y";
@@ -36,23 +91,25 @@ in lib.attrsets.recursiveUpdate super {
   kernel.config."PPP_DEFLATE" = "y";
   kernel.config."PPP_SYNC_TTY" = "y";
 
-  interfaces."${ifname}" = {
-    type = "l2tp";
-    depends = ["xl2tpd"];
-    ifup = [
-      "/bin/echo c ${lac} > /run/xl2tpd.control"
-    ];
-    ifdown = [
-      "/bin/echo d ${lac} > /run/xl2tpd.control"
-    ];
-  };
-
   etc."xl2tpd.secrets" = {
     mode = "0400";
     content = "# empty apart from this comment\n";
   };
 
-  services.xl2tpd = {
-    start = "${pkgs.xl2tpd}/bin/xl2tpd -c ${configFile} -s /etc/xl2tpd.secrets -p /run/xl2tpd.pid -C /run/xl2tpd.control";
+  inittab."${lac}" = {
+    action = "respawn";
+    process = watcherFile;
   };
+
+  # only here temporarily
+  inittab.eth0 = {
+    action = "respawn";
+    process = eth0WatcherFile;
+  };
+
+  inittab.odhcp6c = {
+    action = "respawn";
+    process = odhcp6cWatcherFile;
+  };
+
 }

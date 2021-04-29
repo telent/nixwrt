@@ -1,0 +1,155 @@
+diff --git a/examples/defalutroute.nix b/examples/defalutroute.nix
+index 7bb399c..c72bef7 100644
+--- a/examples/defalutroute.nix
++++ b/examples/defalutroute.nix
+@@ -70,9 +70,8 @@ let
+        })
+        haveged
+ #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
+-#       (syslog { inherit loghost; })
++       (syslog { inherit loghost; })
+ #       (ntpd { host = "pool.ntp.org"; })
+-#       (dhcpClient { interface = "eth0.2"; })
+     ];
+ 
+     in {
+diff --git a/examples/extensino.nix b/examples/extensino.nix
+index d997663..895b496 100644
+--- a/examples/extensino.nix
++++ b/examples/extensino.nix
+@@ -53,6 +53,10 @@ let
+        nixwrt.device.hwModule
+        (sshd { hostkey = sshHostKey ; })
+        busybox
++       (nixpkgs : self: super:
++         nixpkgs.lib.attrsets.recursiveUpdate super {
++           busybox.applets = super.busybox.applets ++ ["nc" "netcat" "nc_server"];
++         })
+        kernelMtd
+        haveged
+        (switchconfig {
+diff --git a/nixwrt/devices.nix b/nixwrt/devices.nix
+index f3ab077..ad282d1 100644
+--- a/nixwrt/devices.nix
++++ b/nixwrt/devices.nix
+@@ -261,8 +261,9 @@ cp $blobdir/board.bin  $out/firmware/ath10k/QCA9887/hw1.0/
+           kconfig;
+         kernel.loadAddress = "0x80060000";
+         kernel.entryPoint = "0x80060000";
+-        #        kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs  ath10k_pci.debug_mask=0x432 ath10k_core.debug_mask=0x432";
++        kernel.dts = dtsPath;
+         kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
++        # kernel.commandLine = "earlyprintk=serial,ttyATH0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs ath9k.debug=0x604 ath10k_pci.debug_mask=0x432 ath10k_core.debug_mask=0x432";
+         kernel.source = ksrc;
+         kernel.package =
+           let
+diff --git a/nixwrt/firmware.nix b/nixwrt/firmware.nix
+index 50ab68a..03a7a66 100644
+--- a/nixwrt/firmware.nix
++++ b/nixwrt/firmware.nix
+@@ -9,4 +9,8 @@ stdenv.mkDerivation rec {
+     dd if=${kernelImage} of=$out/firmware.bin bs=128k conv=sync
+     dd if=${rootImage}/image.squashfs of=$out/firmware.bin bs=128k conv=sync,nocreat,notrunc oflag=append
+   '';
++
++  meta = with stdenv.lib; {
++    platforms = platforms.linux ++ [ "mipsel-linux-musl" ];
++  };
+ }
+diff --git a/nixwrt/mksystem.nix b/nixwrt/mksystem.nix
+index 90c7824..7be3189 100644
+--- a/nixwrt/mksystem.nix
++++ b/nixwrt/mksystem.nix
+@@ -1,12 +1,22 @@
+ { name, endian, ...}:
+ let ends = {
+-      "little" = {triples = "mipsel-linux-musl"; bfd = "elf32ltsmip"; };
+-      "big" = {triples = "mips-linux-musl"; bfd = "elf32btsmip"; };
++      "little" = {
++#        triples = "mipsel-linux-musl";
++        triples = "mipsel-linux";
++        config = "mipsel-unknown-linux-musl";
++        bfd = "elf32ltsmip";
++      };
++      "big" = {
++        config = "mips-unknown-linux-musl";
++        triples = "mips-linux-musl";
++        bfd = "elf32btsmip";
++      };
+     };
+ in {
+   crossSystem = rec {
+     libc = "musl";
+     system = ends.${endian}.triples;
++    config = ends.${endian}.config;
+     openssl.system = "linux-generic32";
+     withTLS = true;
+     platform = {
+diff --git a/nixwrt/monit-for-interface.nix b/nixwrt/monit-for-interface.nix
+index 55a60c7..f3fc541 100644
+--- a/nixwrt/monit-for-interface.nix
++++ b/nixwrt/monit-for-interface.nix
+@@ -24,7 +24,7 @@ let defaults = { up= true; routes = []; type = "hw"; depends = []; timeout = 30;
+          (setUp name attrs)
+          ];
+       hostap = name : attrs :
+-        let attrs' = { logger_stdout = -1; logger_stdout_level = 99; } // attrs;
++        let attrs' = { hw_mode="g"; logger_stdout = -1; logger_stdout_level = 99; } // attrs;
+             cfg = { inherit (attrs') channel country_code hw_mode logger_stdout logger_stdout_level ssid wpa_psk; };
+             conf = writeText "hostap-${name}.conf" (import ./hostapd-conf.nix lib cfg);
+             debug = (if attrs ? debug then "-d" else "" );
+diff --git a/nixwrt/overlay.nix b/nixwrt/overlay.nix
+index 5d92bb6..b19b4d3 100644
+--- a/nixwrt/overlay.nix
++++ b/nixwrt/overlay.nix
+@@ -9,13 +9,15 @@ in {
+   # non-streaming ones.  See
+   # https://sourceforge.net/p/squashfs/mailman/message/26599379/
+ 
+-  lzma = super.buildPackages.stdenv.mkDerivation {
+-    name = "lzma";
++  lzma = self.stdenv.mkDerivation {
++    pname = "lzma";
+     version = "4.32.7";
+     # workaround for "forbidden reference to /tmp" message which will one
+     # day be fixed by a new patchelf release
+     # https://github.com/NixOS/nixpkgs/commit/cbdcc20e7778630cd67f6425c70d272055e2fecd
+-    preFixup = ''rm -rf "$(pwd)" && mkdir "$(pwd)" '';
++    #    preFixup = ''rm -rf "$(pwd)" && mkdir "$(pwd)" '';
++    configureFlags = [ "--enable-static" "--disable-shared"];
++    nativeBuildInputs = [ self.pkgs.libtool ];
+     srcs = super.buildPackages.fetchurl {
+       url = "https://tukaani.org/lzma/lzma-4.32.7.tar.gz";
+       sha256 = "0b03bdvm388kwlcz97aflpr3ir1zpa3m0bq3s6cd3pp5a667lcwz";
+@@ -186,7 +188,8 @@ in {
+     db = null; iptables = null;
+   }).overrideAttrs (o: {
+     # we don't need these and they depend on bash
+-    postInstall = o.postInstall + ''
++    postInstall = # o.postInstall +
++      ''
+       rm $out/sbin/routef $out/sbin/routel $out/sbin/rtpr $out/sbin/ifcfg
+ 
+     '';
+diff --git a/nol.nix b/nol.nix
+index 521d2f5..88b7795 100644
+--- a/nol.nix
++++ b/nol.nix
+@@ -80,7 +80,8 @@ in
+     firewall = {
+       allowedUDPPorts = [ 69 # tftp
+                         ];
+-
++      allowedTCPPorts = [ 4005 ];
++    };
+     interfaces.eth1 = {
+       useDHCP = false;
+       ipv4.addresses = [ { address = "10.0.0.1"; prefixLength = 24;}];
+@@ -105,7 +106,5 @@ lcp-echo-failure 2
+   };
+   services.openssh.enable = true;
+   services.openssh.passwordAuthentication = true;
+-
+   system.stateVersion = "17.09"; # Did you read the comment?
+-
+ }

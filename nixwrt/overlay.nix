@@ -238,13 +238,21 @@ in {
 
   swconfig =  stripped (self.callPackage ./pkgs/swconfig.nix { });
 
-  tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
+  swarm = let
+    src1= self.fetchFromGitHub {
+      repo = "swarm";
+      owner = "telent";
+      rev = "418e1d64e26f49ca21ec5bba6577dc0568f2c08a";
+      sha256 = "1sny2crf4xsg6c7vk0457n0k2ill93g63cw1r57iacwgi8szdiyh";
+    };
+    src2 = builtins.getEnv("SWARM_PATH");
+  in (self.callPackage "${if src2 != "" then src2 else src1}/default.nix" {});
 
+  tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
 
   xl2tpd = super.xl2tpd.overrideAttrs (o: {
     postPatch = ''
       substituteInPlace l2tp.h --replace /usr/sbin/pppd ${self.ppp}/bin/pppd
-
    '';
   });
 

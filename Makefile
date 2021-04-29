@@ -29,6 +29,9 @@ arhcive/firmware.bin: ATTRS=\
  --argstr rsyncPassword $(call e,ARHCIVE_RSYNC_PASSWORD)
 
 emu/firmware.bin: ATTRS=\
+ --argstr l2tpUsername $(call e,L2TP_USERNAME) \
+ --argstr l2tpPassword $(call e,L2TP_PASSWORD) \
+ --argstr l2tpPeer $(call e,L2TP_PEER) \
  --argstr loghost $(call e,LOGHOST)
 
 defalutroute/firmware.bin: ATTRS=\

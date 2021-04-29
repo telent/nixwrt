@@ -1,0 +1,11 @@
+https://github.com/xelerance/xl2tpd/blob/cd86560b3eb9abc090d9fb717b6f4cedeaae5688/l2tp.h#L44
+
+within the monit check process for xl2tpd, we can connect to control socket
+and test status, but we can't send messages if the status is incorrect
+
+or we can "check network ppp0"
+  start program = "ifup ppp-l2tp blah"
+  if failed link then restart
+
+with enough retries inside the xl2tpd config I think that will suffice
+
