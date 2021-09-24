@@ -20,25 +20,18 @@ in t.examples [
   (t.example "it does not start when blocked by dependency" ''
       ${bar.package} start &
       ! test -f ${bar.ready} || fail "${bar.ready} found unexpectedly"
-      for wait in `seq 0 9`; do
-        test -f ${bar.blocked} && break
-        sleep 0.1
-      done
+      test-wait 9 -f ${bar.blocked}
       test -f ${bar.blocked} || fail "${bar.blocked} not found"
     '')
+  (t.example "it starts when dependency already satisfied" ''
+      ${foo.package} start
+      ${bar.package} start
+      test -f ${bar.ready} || fail "${bar.ready} not found"
+    '')
+  (t.example "it unblocks if dependency becomes ready while blocking" ''
+      ${bar.package} start &
+      ${foo.package} start
+      test-wait 10  -f ${bar.ready} || fail "${bar.ready} not found"
+      ! test -f ${bar.blocked} || fail "${bar.blocked} found unexpectedly"
+    '')
 ]
-
-# given a service definition bar depending on foo.ready
-# and foo/ready exists
-# when I start the bar service
-# then it creates a state file bar/ready
-
-# given a service definition bar depending on foo.ready
-# and foo/ready does not exist
-# when I start the bar service
-# then it creates a state file bar/pending
-
-# given a service definition bar depending on foo.ready
-# and foo/ready exists
-# when I start the bar service
-# then it creates a state file bar/pending

@@ -37,7 +37,7 @@ rec {
       package =
         let waitDepends =
               if depends != []
-              then "setstate blocked; until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done; rmstate blocked "
+              then "setstate blocked; until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done; rmstate blocked"
               else "";
         in writeScript "${name}-ctl" ''
           #! ${runtimeShell}
