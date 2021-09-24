@@ -33,11 +33,11 @@ rec {
                   (builtins.listToAttrs
                     [{name=el; value= "${baseDir}/${name}/${el}";}]))
         {}
-        outputs;
+        (["blocked"] ++ outputs);
       package =
         let waitDepends =
               if depends != []
-              then "until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done"
+              then "setstate blocked; until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done; rmstate blocked "
               else "";
         in writeScript "${name}-ctl" ''
           #! ${runtimeShell}
