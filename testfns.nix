@@ -8,6 +8,10 @@
     phases = ["testPhase"];
     testPhase = ''
       set -e
+      fail() {
+        echo "FAILED: ${name}: $*";
+        exit 1
+      };
       ${body}
       touch $out
     '';

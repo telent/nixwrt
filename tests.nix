@@ -7,9 +7,9 @@ in t.examples [
          start = "setstate ready true";
          outputs = ["ready"];
        };
-   in t.example "it creates a state file foo/ready" ''
-      # ${foo.package} start
-      test -f ${foo.ready} || echo "${foo.ready} not found"
+   in t.example "it creates a state file foo/ready when started" ''
+      ${foo.package} start
+      test -f ${foo.ready} || fail "${foo.ready} not found"
     ''
        )
 ]
