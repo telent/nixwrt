@@ -44,8 +44,13 @@ rec {
           . ${statefns} ${name}
           case $1 in
             start)
-              ${waitDepends}
-              ${start}
+              if test -d ${baseDir}/${name}; then
+                echo "service $name: already started"
+              else
+                mkdir ${baseDir}/${name}
+                ${waitDepends}
+                ${start}
+              fi
               ;;
             stop)
               ${stop'}

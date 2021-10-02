@@ -34,4 +34,17 @@ in t.examples [
       test-wait 10  -f ${bar.ready} || fail "${bar.ready} not found"
       ! test -f ${bar.blocked} || fail "${bar.blocked} found unexpectedly"
     '')
+  (let foo = svcnix.build {
+      name = "foo";
+      start = "setstate ready true; setstate pidnum \$$";
+      outputs = ["ready" "pidnum"];
+       }; in
+     t.example "it cannot be started a second time" ''
+       ${foo.package} start
+       pid1=`cat ${foo.pidnum}`
+       test -n $pid1
+       ${foo.package} start
+       pid2=`cat ${foo.pidnum}`
+       test "$pid1" = "$pid2" || fail "pids $pid1, $pid2 differ"
+    '')
 ]
