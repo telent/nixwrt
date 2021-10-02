@@ -28,16 +28,11 @@ rec {
               else if (pid != null)
               then "test -f ${pid} && ${utillinux}/bin/kill --signal 15 --timeout 15000 9 $(cat ${pid})"
               else "true";
-      outputSet = lib.lists.foldr
-        (el : m : m //
-                  (builtins.listToAttrs
-                    [{name=el; value= "${baseDir}/${name}/${el}";}]))
-        {}
-        (["blocked"] ++ outputs);
+      mkOutput = self : o : { service = self; outPath = o; };
       package =
         let waitDepends =
               if depends != []
-              then "setstate blocked; until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done; rmstate blocked"
+              then "until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done"
               else "";
         in writeScript "${name}-ctl" ''
           #! ${runtimeShell}
@@ -48,7 +43,12 @@ rec {
                 echo "service $name: already started"
               else
                 mkdir ${baseDir}/${name}
+                setstate blocked
+                for d in ${lib.strings.concatStringsSep " " (map (f: f.service) depends)}; do
+                  $d start &
+                done
                 ${waitDepends}
+                rmstate blocked
                 ${start}
               fi
               ;;
@@ -62,5 +62,11 @@ rec {
               ;;
            esac
       '';
+      outputSet = lib.lists.foldr
+        (el : m : m //
+                  (builtins.listToAttrs
+                    [{name=el; value= (mkOutput package "${baseDir}/${name}/${el}");}]))
+        {}
+        (["blocked"] ++ outputs);
     in { inherit package; } // outputSet;
 }
