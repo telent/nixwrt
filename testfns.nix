@@ -7,17 +7,18 @@
     name = lib.strings.sanitizeDerivationName name;
     phases = ["testPhase"];
     testPhase = ''
-      set -e
       fail() {
         echo "FAILED: ${name}: $*";
         exit 1
       };
       test-wait() {
-        tenths=$1; shift
+        tenths=$1; shift;
+        succeeded=
         for wait in `seq 0 $tenths`; do
-          test $* && break
+          if test $*; then succeeded=true; break; fi
           sleep 0.1
         done
+        test -n "$succeeded"
       }
       ${body}
       touch $out
