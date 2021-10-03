@@ -21,6 +21,7 @@ rec {
     , stop ? null
     , outputs ? []
     , depends ? []
+    , foreground ? false
   } :
     let
       stop' = if (stop != null)
@@ -50,6 +51,7 @@ rec {
                 ${waitDepends}
                 rmstate blocked
                 ${start}
+                ${if foreground then "$0 stop" else ""}
               fi
               ;;
             stop)

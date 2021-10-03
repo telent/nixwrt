@@ -54,6 +54,16 @@ in t.examples [
       test-wait 10  -f ${bar.ready} || fail "${bar.ready} not found"
       ! test -f ${bar.blocked} || fail "${bar.blocked} found unexpectedly"
     '')
+  (let slant = svcnix.build {
+         name  = "slant";
+         start = "setstate ready true; sleep 3";
+         outputs = ["ready"];
+         foreground = true;
+       }; in t.example "a foreground service stops when the process providing it exits" ''
+         ${slant.package} start &
+         test-wait 50  -f ${slant.ready} || fail "${slant.ready} not found"
+         test-wait 50 \! -f ${slant.ready} || fail "${slant.ready} found unexpectedly"
+       '')
   (let foo = svcnix.build {
       name = "foo";
       start = "setstate ready true; setstate pidnum \$$";
