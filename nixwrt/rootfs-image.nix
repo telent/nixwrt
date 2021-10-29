@@ -114,9 +114,9 @@ in stdenv.mkDerivation rec {
       cp ${squashfs} $out/image.squashfs
       chmod +w $out/image.squashfs
       # so we need to graft all the directories in the image back onto /nix/store
-      mksquashfs $out/.empty $out/image.squashfs -root-becomes store
+      mksquashfs $out/.empty $out/image.squashfs  -no-recovery -root-becomes store
       mksquashfs $out/sbin $out/bin  $out/image.squashfs  \
-       -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
+        -no-recovery -root-becomes nix -pf ${pseudoDev}  -pf ${pseudoEtc}
       chmod a+r $out/image.squashfs
     '';
 }
