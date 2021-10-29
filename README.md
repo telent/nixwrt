@@ -131,10 +131,10 @@ targets `firmware` and `phramware` which build firmware images.
 ## Build it
 
 There is a Makefile to help you get started on building any of the examples.
-To build the `extensino` example, run 
+To build the `extensino` example, run
 
     $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=phramware
-    
+
 This should create a file `extensino/firmware.bin` which you need
 to copy to your TFTP server.
 
@@ -266,10 +266,10 @@ If that looked like it worked, type `reset` to find out if you were right.
 
 The build process for Qemu is subtly different because Qemu wants an
 ELF kernel image and a root filesystem instead of a combined firmware
-image, and also because Qemu doesn't appear to support device trees. 
+image, and also because Qemu doesn't appear to support device trees.
 
-    $ make emu LOGHOST=loghost.lan image=emulator
-    $ nix run nixpkgs.qemu -c sh emu/bin/emulator 
+    $ make emu SSID=mysid PSK=whatevs  LOGHOST=loghost.lan image=emulator
+    $ ./emu
 
 
 ## Troubleshooting

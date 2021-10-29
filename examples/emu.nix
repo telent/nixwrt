@@ -35,13 +35,17 @@ let
         })
       ];
     allConfig =  nixwrt.mergeModules wantedModules;
+    qemu = nixwrt.nixpkgs.buildPackages.qemu.override {
+      sdlSupport = false;
+    };
 in rec {
-  emulator = writeScriptBin "emulator" ''
+  emulator = writeScript "emulator" ''
+#!${stdenv.shell}
 rootfs=${nixwrt.rootfs allConfig}/image.squashfs
 vmlinux=${allConfig.kernel.package}/vmlinux
 dtb=${allConfig.kernel.package}/kernel.dtb
 set +x
-qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
+${qemu}/bin/qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
   -append ${builtins.toJSON allConfig.boot.commandLine} \
   -netdev user,id=mynet0,net=10.8.6.0/24,dhcpstart=10.8.6.4 \
   -device virtio-net-pci,netdev=mynet0 \
