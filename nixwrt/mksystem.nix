@@ -2,27 +2,16 @@
 let ends = {
       "little" = {
         config = "mipsel-unknown-linux-musl";
-        bfd = "elf32ltsmip";
+#        bfd = "elf32ltsmip";
       };
       "big" = {
         config = "mips-unknown-linux-musl";
-        bfd = "elf32btsmip";
+#        bfd = "elf32btsmip";
       };
     };
 in {
-  crossSystem = rec {
-    libc = "musl";
+  localSystem = builtins.currentSystem;
+  crossSystem = {
     config = ends.${endian}.config;
-    openssl.system = "linux-generic32";
-    withTLS = true;
-    gcc = {
-      abi = "32";
-      arch = "mips32";          # maybe mips_24kc
-    } ;
-    linuxArch = "mips";
-    bfdEmulation = ends.${endian}.bfd;
-    # platform = {
-    #   inherit endian;
-    # };
   };
 }
