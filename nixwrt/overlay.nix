@@ -14,7 +14,7 @@ in {
 
   coreutils =  super.coreutils.overrideAttrs (o: {
     # one of the tests fails under docker
-    doCheck = false;
+    doCheck = !self.stdenv.isMips && o.doCheck;
   });
 
   dropbearSmall = stripped (super.dropbear.overrideAttrs (o: {
@@ -55,14 +55,18 @@ in {
 
   }));
 
-  git = super.git.override {
-    # git manual uses various graphic libraries which use X
-    # libraries which depend on Wayland (don't ask) which depends on
-    # llvm, and llvm for some reason doesn't build today.
-    perlSupport = false;
-    withManual = false;
-    pythonSupport = false;
-  };
+  git = if self.stdenv.isMips
+        then
+          super.git.override {
+            # git manual uses various graphic libraries which use X
+            # libraries which depend on Wayland (don't ask) which depends on
+            # llvm, and llvm for some reason doesn't build today.
+            perlSupport = false;
+            withManual = false;
+            pythonSupport = false;
+          }
+        else super.git;
+
   hostapd =
     let configuration = [
           "CONFIG_DRIVER_NL80211=y"
@@ -129,9 +133,8 @@ in {
   libpcap = super.libpcap.overrideAttrs (o: {
     # tcpdump only wants the shared libraries, not all the
     # headers and stuff
-    outputs = [ "lib" "out" ];
-    dontStrip = false;
-  });
+    outputs = if self.stdenv.isMips then [ "lib" "out" ] else ["out"];
+  } // (if self.stdenv.isMips then { dontStrip = false; } else {})  );
 
   # I don't know why I can't get nixpkgs lua to build without readline
   # but it seems simpler to start from upstream than figure it out
