@@ -52,7 +52,7 @@ upstaisr/firmware.bin: ATTRS=\
 
 ## Variables & Functions
 
-INCLUDE=-I nixpkgs=../nixpkgs -I nixwrt=./nixwrt
+INCLUDE=-I nixwrt=./nixwrt
 
 NIX_BUILD=nix-build -j1
 NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE)  -A $(image)

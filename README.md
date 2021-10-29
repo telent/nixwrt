@@ -41,10 +41,13 @@ device tree for it already.
 
 ## The Nix Package Collection
 
-As of March 2021 it has been tested with nixpkgs master git rev
-ad47284f8b01f, which at the time of writing was the latest commit on
+As of October 2021 it has most recently been built nixpkgs master git rev
+2deb07f3ac4, which at that time was the latest commit on
 nixos-unstable to have built on Hydra. If you're using a later or
 earlier version, your mileage may vary.
+
+To upgrade/downgrade the revision of nixpkgs that we build against,
+edit the definition of `nixpkgsTarball` in nixwrt/default.nix
 
 ## a Nixpkgs overlay
 
@@ -114,8 +117,6 @@ You will need
 Now, clone the nixwrt repo, and also the nixpkgs revision on which it depends
 
     $ git clone git@github.com:telent/nixwrt
-    $  git clone -n  git@github.com:nixos/nixpkgs.git && \
-       (cd nixpkgs && git checkout bc675971dae581ec653fa6)
     $ cd nixwrt
 
 The best way to get started is to look at one of the examples in
