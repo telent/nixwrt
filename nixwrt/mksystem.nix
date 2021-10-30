@@ -10,8 +10,11 @@ let ends = {
       };
     };
 in {
-  localSystem = builtins.currentSystem;
   crossSystem = {
     config = ends.${endian}.config;
+    gcc = {
+      abi = "32";
+      arch = "mips32";          # maybe mips_24kc-
+    };
   };
 }

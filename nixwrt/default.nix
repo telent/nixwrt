@@ -5,13 +5,15 @@ let
   modules = import ./modules/default.nix;
   system = (import ./mksystem.nix) { inherit endian; };
 
-  nixpkgsTarball = builtins.fetchTarball {
+  pinnedNixpkgs = builtins.fetchTarball {
     name = "nixos-unstable";
     url = "https://github.com/nixos/nixpkgs/archive/2deb07f3ac4eeb5de1c12c4ba2911a2eb1f6ed61.tar.gz";
     # Hash obtained using `nix-prefetch-url --unpack <url>`
     sha256 = "0036sv1sc4ddf8mv8f8j9ifqzl3fhvsbri4z1kppn0f1zk6jv9yi";
   };
-  nixpkgs = import nixpkgsTarball (system // { overlays = [overlay] ++ overlays;} );
+  fromEnvNixpkgs = builtins.getEnv "NIXPKGS";
+  nixpkgsSource = if (fromEnvNixpkgs != "") then fromEnvNixpkgs else pinnedNixpkgs;
+  nixpkgs = import nixpkgsSource (system // { overlays = [overlay] ++ overlays;} );
 in
 with nixpkgs; rec {
   inherit  modules system nixpkgs;

@@ -1,16 +1,17 @@
-# this is another wireless access point/bridge like extensino,
-# but different hardware device
 { psk
 , ssid
 , loghost
 , myKeys
-, sshHostKey }:
-let nixwrt = (import <nixwrt>) { endian = "little";  }; in
-with nixwrt.nixpkgs;
+, sshHostKey
+, lib
+, nixwrt
+,  ...
+}:
 let
+  pkgs = nixwrt.nixpkgs;
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
-      hostname = "upstaisr";
+      hostname = "extensino";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
         "eth0" = {
@@ -25,7 +26,7 @@ let
           params = {
             ssid = ssid;
             country_code = "UK";
-            channel = 10;
+            channel = 1;
             hw_mode = "g";
             ieee80211n = 1;
             wmm_enabled = 1;
@@ -33,6 +34,14 @@ let
             wpa_key_mgmt = "WPA-PSK";
             wpa_psk = psk;
             wpa_pairwise = "CCMP";
+
+            # to get 40MHz channels, we would need to set something
+            # like
+            #  ht_capab = "[HT40-][HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40]";
+            # or
+            # ht_capab = "[SHORT-GI-40][HT40+][HT40-][DSSS_CCK-40]";
+            # but (maybe some regulatory misconfiguration) my hardware
+            # doesn't like that and refuses to start hostapd
           };
           memberOf = "br0";
        };
@@ -48,13 +57,12 @@ let
          shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
       ];
       packages = [ pkgs.iproute ];
-      busybox = { applets = ["ln"]; };
     };
 
-    wantedModules = with nixwrt.modules;
+in (with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        (import <nixwrt/modules/lib.nix> {})
-       (import <nixwrt/devices/gl-mt300n-v2.nix> {})
+       (import <nixwrt/devices/gl-mt300a.nix> {})
        (sshd { hostkey = sshHostKey ; })
        (_ : _ : super : { packages = super.packages ++ [ pkgs.iperf3 ] ; })
        busybox
@@ -70,18 +78,4 @@ let
        (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf"; })
        (syslog { inherit loghost ; })
        (ntpd { host = "pool.ntp.org"; })
-    ];
-
-    in {
-      firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
-      kernel = nixwrt.kernel (nixwrt.mergeModules wantedModules);
-      # phramware generates an image which boots from the "fake" phram mtd
-      # device - required if you want to boot from u-boot without
-      # writing the image to flash first
-      phramware =
-        let phram_ = (nixwrt.modules.phram {
-              offset = "0x900000"; sizeMB = "7";
-            });
-            m = wantedModules ++ [phram_];
-        in nixwrt.firmware (nixwrt.mergeModules m);
-    }
+      ])

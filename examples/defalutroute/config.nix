@@ -25,12 +25,11 @@
 , psk
 , sshHostKey
 , ssid
+, lib
+, nixwrt
+, ...
 }:
-let nixwrt = (import <nixwrt>) { endian = "big"; };
-in
-with nixwrt.nixpkgs;
 let
-  odhcp6Update = ../nixwrt/dhcp6c-update.lua;
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
       hostname = "defalutroute";
@@ -85,55 +84,41 @@ let
       packages = [ pkgs.iproute ];
     };
 
-    wantedModules = with nixwrt.modules;
-      [(_ : _ : _ : baseConfiguration)
-       (import <nixwrt/modules/lib.nix> {})
-       (import <nixwrt/devices/gl-ar750.nix> {})
-       (sshd { hostkey = sshHostKey ; })
-       busybox
-       kernelMtd
-       (switchconfig {
-         name = "switch0";
-         interface = "eth1";
-         vlans = {
-	         "1" = "0t 1 2 3 4";           # lan (0 is cpu)
-	       };
-       })
-       (l2tp {
-         username = l2tpUsername;
-         password = l2tpPassword;
-         endpoint = l2tpPeer;
-         lac = "aaisp";
-         ifname = "l2tp-aaisp";
+in (with nixwrt.modules;
+  [(_ : _ : _ : baseConfiguration)
+   (import <nixwrt/modules/lib.nix> {})
+   (import <nixwrt/devices/gl-ar750.nix> {})
+   (sshd { hostkey = sshHostKey ; })
+   busybox
+   kernelMtd
+   (switchconfig {
+     name = "switch0";
+     interface = "eth1";
+     vlans = {
+	     "1" = "0t 1 2 3 4";           # lan (0 is cpu)
+	   };
+   })
+   (l2tp {
+     username = l2tpUsername;
+     password = l2tpPassword;
+     endpoint = l2tpPeer;
+     lac = "aaisp";
+     ifname = "l2tp-aaisp";
 
-       })
-       (pkgs : _ : super : {
-         services = super.services // {
-           odhcp6c = {
-             start =
-               "${pkgs.odhcp6c}/bin/odhcp6c -d -P 64 -s ${odhcp6Update} -p /run/odhcp6c.pid -v -v l2tp-aaisp";
-             depends = [ "l2tp-aaisp" ];
-           };
-         };
-         packages = super.packages ++ [pkgs.odhcp6c pkgs.lua];
-       })
+   })
+   (pkgs : _ : super : {
+     services = super.services // {
+       odhcp6c = {
+         start =
+           "${pkgs.odhcp6c}/bin/odhcp6c -d -P 64 -s ${odhcp6Update} -p /run/odhcp6c.pid -v -v l2tp-aaisp";
+         depends = [ "l2tp-aaisp" ];
+       };
+     };
+     packages = super.packages ++ [pkgs.odhcp6c pkgs.lua];
+   })
 
-#       haveged
-#       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
-       (syslog { inherit loghost; })
-#       (ntpd { host = "pool.ntp.org"; })
-    ];
-
-    in {
-      firmware = nixwrt.firmware (nixwrt.mergeModules wantedModules);
-
-      # phramware generates an image which boots from the "fake" phram mtd
-      # device - required if you want to boot from u-boot without
-      # writing the image to flash first
-      phramware =
-        let phram_ = (nixwrt.modules.phram {
-              offset = "0xa00000"; sizeMB = "7";
-            });
-            m = wantedModules ++ [phram_];
-        in nixwrt.firmware (nixwrt.mergeModules m);
-    }
+   #       haveged
+   #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
+   (syslog { inherit loghost; })
+   #       (ntpd { host = "pool.ntp.org"; })
+  ])
