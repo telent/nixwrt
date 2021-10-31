@@ -12,9 +12,7 @@ let
     inherit rsyncPassword myKeys loghost sshHostKey lib ssid nixwrt psk;
   };
   allConfig = nixwrt.mergeModules modules;
-  qemu = nixwrt.nixpkgs.buildPackages.qemu.override {
-    sdlSupport = false;
-  };
+  qemu = nixwrt.nixpkgs.pkgsBuildBuild.qemu;
 in rec {
   emulator = writeScript "emulator" ''
     #!${stdenv.shell}
