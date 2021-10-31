@@ -136,32 +136,6 @@ in {
     outputs = if self.stdenv.isMips then [ "lib" "out" ] else ["out"];
   } // (if self.stdenv.isMips then { dontStrip = false; } else {})  );
 
-  # I don't know why I can't get nixpkgs lua to build without readline
-  # but it seems simpler to start from upstream than figure it out
-  lua = with self; stdenv.mkDerivation {
-    pname = "lua";
-    version = "5.4.0";
-    src = builtins.fetchurl {
-      url = "https://www.lua.org/ftp/lua-5.4.0.tar.gz";
-      sha256 = "0a3ysjgcw41x5r1qiixhrpj2j1izp693dvmpjqd457i1nxp87h7a";
-    };
-    stripAllList = [ "bin" ];
-
-    postPatch = let ar = "${stdenv.hostPlatform.config}-ar"; in ''
-      sed -i src/Makefile -e 's/^AR= ar/AR= ${ar}/'
-      sed -i src/luaconf.h -e '/LUA_USE_DLOPEN/d' -e '/LUA_USE_READLINE/d'
-    '';
-    makeFlags = ["linux"
-                 "CC=${stdenv.hostPlatform.config}-cc"
-                 "RANLIB=${stdenv.hostPlatform.config}-ranlib"
-                 "INSTALL_TOP=${placeholder "out"}"
-                ];
-    installPhase = ''
-      mkdir -p $out/bin
-      cp src/lua $out/bin
-    '';
-  };
-
   # we need to build real lzma instead of using xz, because the lzma
   # decoder in u-boot doesn't understand streaming lzma archives
   # ("Stream with EOS marker is not supported") and xz can't create
@@ -234,7 +208,6 @@ in {
   swconfig =  stripped (self.callPackage ./pkgs/swconfig.nix { });
 
   tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
-
 
   xl2tpd = super.xl2tpd.overrideAttrs (o: {
     postPatch = ''
