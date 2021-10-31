@@ -89,7 +89,7 @@ export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
 	 -I nixwrt-config=`pwd`/$^ \
 	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
 	 --argstr sshHostKey "`cat emu-host-key`" \
-	 examples/default.nix -o $@
+	 examples/default.nix -o out/$@
 
 repl:
 	nix repl $(INCLUDE)
