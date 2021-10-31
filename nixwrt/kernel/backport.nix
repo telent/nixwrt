@@ -6,7 +6,13 @@
 , fetchFromGitHub
 , autoreconfHook
 , coccinelle
-, donorTree } :
+, ocamlPackages
+, donorTree
+, python3
+, ncurses
+, pcre
+, pkg-config
+} :
 let
   backports = stdenv.mkDerivation {
     name = "linux-backports";
@@ -37,7 +43,9 @@ let
               ];
   };
   coccinelleNew  = coccinelle.overrideAttrs (o: {
-    nativeBuildInputs = [ autoreconfHook ];
+    depsBuildBuild = [ autoreconfHook ] ++ o.buildInputs;
+    buildInputs = [ pcre ];
+    strictDeps = true;
     doCheck = false;
     postInstall = "true";
     src =
