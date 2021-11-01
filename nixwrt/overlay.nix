@@ -183,20 +183,21 @@ in {
      buildInputs = [];
      postPatch = ''
        sed -i -e  's@_PATH_VARRUN@"/run/"@'  pppd/main.c
+       sed -i -e  's@^FILTER=y@# FILTER unset@'  pppd/Makefile.linux
      '';
      buildPhase = ''
        runHook preBuild
-       make -C pppd USE_TDB= HAVE_MULTILINK= USE_EAPTLS= USE_CRYPT=y
-       make -C pppd/plugins/rp-pppoe
-       make -C pppd/plugins/pppol2tp
+       make -C pppd CC=$CC USE_TDB= HAVE_MULTILINK= USE_EAPTLS= USE_CRYPT=y
+       make -C pppd/plugins/pppoe CC=$CC
+       make -C pppd/plugins/pppol2tp CC=$CC
        runHook postBuild;
      '';
      installPhase = ''
       runHook preInstall
-      mkdir -p $out/bin $out/lib/pppd/2.4.8
-      cp pppd/pppd pppd/plugins/rp-pppoe/pppoe-discovery $out/bin
-      cp pppd/plugins/rp-pppoe/rp-pppoe.so $out/lib/pppd/2.4.8
-      cp pppd/plugins/pppol2tp/{open,pppo}l2tp.so $out/lib/pppd/2.4.8
+      mkdir -p $out/bin $out/lib/pppd/2.4.9
+      cp pppd/pppd pppd/plugins/pppoe/pppoe-discovery $out/bin
+      cp pppd/plugins/pppoe/pppoe.so $out/lib/pppd/2.4.9
+      cp pppd/plugins/pppol2tp/{open,pppo}l2tp.so $out/lib/pppd/2.4.9
       runHook postInstall
     '';
     postFixup = "";
