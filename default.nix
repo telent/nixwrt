@@ -18,5 +18,5 @@ in rec {
           # so depends on _everything_
           offset = "0xa00000"; sizeMB = "7";
         });
-    in nixwrt.firmware (nixwrt.mergeModules [configuration phram_]);
+    in nixwrt.firmware (nixwrt.mergeModules (modules ++ [phram_]));
 }
