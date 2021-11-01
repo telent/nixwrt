@@ -1,5 +1,7 @@
 EXAMPLES=arhcive defalutroute emu extensino upstaisr
 
+SECRETS=./secrets
+
 default:
 	@echo "No default target, choose from $(EXAMPLES)"
 
@@ -69,7 +71,8 @@ export SSH_AUTHORIZED_KEYS=$(file <  $(ssh_public_key_file))
 export SSH_HOST_KEY=$(file < emu-host-key)
 
 %:examples/%/config.nix
-	env $(shell cat secrets) $(NIX_BUILD_ARGS) \
+	test -f $(SECRETS)
+	env $(shell cat $(SECRETS)) $(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
 	 -I nixwrt-config=`pwd`/$^ \
 	 default.nix -o out/$@
