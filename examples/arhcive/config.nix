@@ -1,6 +1,6 @@
 # Status Oct 2020: builds, boots, Works On My Network
 
-{ lib, nixwrt} :
+{ lib, nixwrt, device} :
 let secrets = {
       rsyncPassword = nixwrt.secret "ARHCIVE_RSYNC_PASSWORD";
       psk = nixwrt.secret "PSK";
@@ -42,7 +42,7 @@ let secrets = {
 in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (import <nixwrt/devices/gl-mt300n-v2.nix> {})
+   (nixwrt.devices.${device.name} {})
    (rsyncd { password = secrets.rsyncPassword; })
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox

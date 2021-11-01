@@ -23,16 +23,7 @@ ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
 ## Per-target config
 
-arhcive: ATTRS=--argstr endian little
-
 emu: image=emulator
-emu: ATTRS= --argstr endian big
-
-defalutroute: ATTRS=--argstr endian big
-
-extensino: ATTRS=--argstr endian little
-
-upstaisr: ATTRS=--argstr endian little
 
 ## Variables & Functions
 
@@ -42,7 +33,7 @@ ifdef DRY_RUN
 DRY_RUN_FLAG=--dry-run
 endif
 
-NIX_BUILD=nix-build -j1
+NIX_BUILD=nix-build
 NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE) $(DRY_RUN_FLAG)  -A $(image)
 
 # nixpkgs doesn't recognise mips-linux as a supported system
@@ -70,11 +61,13 @@ export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
 export SSH_AUTHORIZED_KEYS=$(file <  $(ssh_public_key_file))
 export SSH_HOST_KEY=$(file < emu-host-key)
 
-%:examples/%/config.nix
+%:examples/%/config.nix examples/%/device.nix
 	test -f $(SECRETS)
 	env $(shell cat $(SECRETS)) $(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
-	 -I nixwrt-config=`pwd`/$^ \
+	 -I nixwrt-config=`pwd`/$< \
+	 -I nixwrt-device=`pwd`/$(<D)/device.nix \
+	 -I nixwrt-hardware=`pwd`/examples/hardware.nix \
 	 default.nix -o out/$@
 
 repl:

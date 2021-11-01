@@ -1,8 +1,9 @@
-{endian} : let nixwrt = (import <nixwrt>) { inherit endian; }; in
+let device = import <nixwrt-device>;
+    nixwrt = (import <nixwrt>) { inherit (device) endian; }; in
 with nixwrt.nixpkgs;
 let
-  modules = import <nixwrt-config> { inherit lib nixwrt; };
   allConfig = nixwrt.mergeModules modules;
+  modules = import <nixwrt-config> { inherit device lib nixwrt; };
 in rec {
   emulator = nixwrt.emulator allConfig;
 

@@ -70,4 +70,5 @@ with nixpkgs; rec {
                  in assert (a != "") ||
                            throw "no environent variable ${builtins.toJSON name}"; a;
 
+  devices = import ./devices;
 }

@@ -1,6 +1,6 @@
 # this is another wireless access point/bridge like extensino,
 # but different hardware device
-{ lib, nixwrt } :
+{ lib, nixwrt, device } :
 let
   secrets = {
     psk = nixwrt.secret "PSK";
@@ -54,7 +54,7 @@ let
 in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (import <nixwrt/devices/gl-mt300n-v2.nix> {})
+   (nixwrt.devices.${device.name} {})
    (sshd { hostkey = secrets.sshHostKey ; })
    (_ : _ : super : {
      packages = super.packages ++

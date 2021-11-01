@@ -1,5 +1,6 @@
 { lib
 , nixwrt
+, device
 }:
 let
   secrets = {
@@ -63,7 +64,7 @@ let
 in (with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        (import <nixwrt/modules/lib.nix> {})
-       (import <nixwrt/devices/gl-mt300a.nix> {})
+       (nixwrt.devices.${device.name} {})
        (sshd { hostkey = secrets.sshHostKey ; })
        (_ : _ : super : { packages = super.packages ++ [ pkgs.iperf3 ] ; })
        busybox

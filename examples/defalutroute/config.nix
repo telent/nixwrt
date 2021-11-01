@@ -16,7 +16,7 @@
 #   [ ] ntp
 #   [ ] pppoe
 
-{lib, nixwrt} :
+{lib, nixwrt, device} :
 let secrets = {
       psk = nixwrt.secret "PSK";
       ssid = nixwrt.secret "SSID";
@@ -84,7 +84,7 @@ let secrets = {
 in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (import <nixwrt/devices/gl-ar750.nix> {})
+   (nixwrt.devices.${device.name} {})
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd

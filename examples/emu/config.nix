@@ -1,6 +1,4 @@
-{ lib
-, nixwrt
-}:
+{ lib, nixwrt, device}:
 let
   secrets = {
     myKeys = builtins.getEnv "SSH_AUTHORIZED_KEYS";
@@ -25,7 +23,7 @@ let
   m = with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (import <nixwrt/devices/qemu.nix> {})
+   (nixwrt.devices.${device.name} {})
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
