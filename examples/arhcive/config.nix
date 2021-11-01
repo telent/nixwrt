@@ -1,14 +1,14 @@
 # Status Oct 2020: builds, boots, Works On My Network
 
-{ rsyncPassword
-, myKeys
-, loghost
-, sshHostKey
-, lib
-, nixwrt
-, ...
-}:
-let
+{ lib, nixwrt} :
+let secrets = {
+      rsyncPassword = nixwrt.secret "ARHCIVE_RSYNC_PASSWORD";
+      psk = nixwrt.secret "PSK";
+      ssid = nixwrt.secret "SSID";
+      loghost = nixwrt.secret "LOGHOST";
+      myKeys = nixwrt.secret "SSH_AUTHORIZED_KEYS";
+      sshHostKey = nixwrt.secret "SSH_HOST_KEY";
+    };
     baseConfiguration = {
       hostname = "arhcive";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
@@ -23,7 +23,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
         {name="store"; uid=500; gid=500; gecos="Storage owner"; dir="/srv";
          shell="/dev/null"; authorizedKeys = [];}
       ];
@@ -43,8 +43,8 @@ in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
    (import <nixwrt/devices/gl-mt300n-v2.nix> {})
-   (rsyncd { password = rsyncPassword; })
-   (sshd { hostkey = sshHostKey ; })
+   (rsyncd { password = secrets.rsyncPassword; })
+   (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    (usbdisk {
      label = "backup-disk";
@@ -59,7 +59,7 @@ in (with nixwrt.modules;
      interface = "eth0";
      vlans = {"2" = "1 2 3 6t";  "3" = "0 6t"; };
    })
-   (syslog { inherit loghost ; })
+   (syslog { inherit (secrets) loghost ; })
    (ntpd { host = "pool.ntp.org"; })
    (dhcpClient {
      resolvConfFile = "/run/resolv.conf";

@@ -1,13 +1,14 @@
-{ psk
-, ssid
-, loghost
-, myKeys
-, sshHostKey
-, lib
+{ lib
 , nixwrt
-,  ...
 }:
 let
+  secrets = {
+    psk = nixwrt.secret "PSK";
+    ssid = nixwrt.secret "SSID";
+    loghost = nixwrt.secret "LOGHOST";
+    myKeys = nixwrt.secret "SSH_AUTHORIZED_KEYS";
+    sshHostKey = nixwrt.secret "SSH_HOST_KEY";
+  };
   pkgs = nixwrt.nixpkgs;
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
@@ -24,7 +25,7 @@ let
         "wlan0" = {
           type = "hostap";
           params = {
-            ssid = ssid;
+            ssid = secrets.ssid;
             country_code = "UK";
             channel = 1;
             hw_mode = "g";
@@ -32,7 +33,7 @@ let
             wmm_enabled = 1;
             wpa = 2;
             wpa_key_mgmt = "WPA-PSK";
-            wpa_psk = psk;
+            wpa_psk = secrets.psk;
             wpa_pairwise = "CCMP";
 
             # to get 40MHz channels, we would need to set something
@@ -54,7 +55,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
       ];
       packages = [ pkgs.iproute ];
     };
@@ -63,7 +64,7 @@ in (with nixwrt.modules;
       [(_ : _ : _ : baseConfiguration)
        (import <nixwrt/modules/lib.nix> {})
        (import <nixwrt/devices/gl-mt300a.nix> {})
-       (sshd { hostkey = sshHostKey ; })
+       (sshd { hostkey = secrets.sshHostKey ; })
        (_ : _ : super : { packages = super.packages ++ [ pkgs.iperf3 ] ; })
        busybox
        kernelMtd
@@ -76,6 +77,6 @@ in (with nixwrt.modules;
         };
         })
        (dhcpClient { interface = "br0"; resolvConfFile = "/run/resolv.conf"; })
-       (syslog { inherit loghost ; })
+       (syslog { inherit (secrets) loghost ; })
        (ntpd { host = "pool.ntp.org"; })
       ])

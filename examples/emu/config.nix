@@ -1,11 +1,11 @@
-{ myKeys
-, loghost
-, sshHostKey
-, lib
+{ lib
 , nixwrt
-, ...
 }:
 let
+  secrets = {
+    myKeys = builtins.getEnv "SSH_AUTHORIZED_KEYS";
+    sshHostKey = builtins.getEnv "SSH_HOST_KEY";
+  };
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
       hostname = "emu";
@@ -16,7 +16,7 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
       ];
       packages = [ nixwrt.nixpkgs.iproute ];
       busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
@@ -26,7 +26,7 @@ let
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
    (import <nixwrt/devices/qemu.nix> {})
-   (sshd { hostkey = sshHostKey ; })
+   (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
    (dhcpClient {

@@ -84,7 +84,7 @@ let
     inherit tree ;
     inherit (self.kernel) config;
     checkedConfig = checkConfig // extraConfig;
-    inherit (nixpkgs) stdenv buildPackages writeText runCommand;
+    inherit (nixpkgs) stdenv lib buildPackages writeText runCommand;
   };
 
   modules = (import ../kernel/make-backport-modules.nix) {

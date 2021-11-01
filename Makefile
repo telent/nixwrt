@@ -3,6 +3,8 @@ EXAMPLES=arhcive defalutroute emu extensino upstaisr
 default:
 	@echo "No default target, choose from $(EXAMPLES)"
 
+all: $(EXAMPLES)
+
 # WARNING: This Makefile is my personal attempt to make building
 # my personal NixWRT images more personally convenient for me (personally).
 # It does not attempt to address the general questions of
@@ -17,49 +19,29 @@ default:
 image?=firmware  # build flashable image
 ssh_public_key_file?=/etc/ssh/authorized_keys.d/$(USER)
 
--include $(SECRETS)
-
 ## Per-target config
 
-e=$(or $(value $(1)),$(error "$(1) undefined (add it to your SECRETS file?)"))
-
-arhcive: ATTRS=\
- --argstr endian little \
- --argstr loghost $(call e,LOGHOST)\
- --argstr rsyncPassword $(call e,ARHCIVE_RSYNC_PASSWORD)
+arhcive: ATTRS=--argstr endian little
 
 emu: image=emulator
-emu: ATTRS=\
- --argstr endian big \
- --argstr loghost $(call e,LOGHOST)
+emu: ATTRS= --argstr endian big
 
-defalutroute: ATTRS=\
- --argstr endian big \
- --argstr ssid $(call e,SSID) \
- --argstr psk $(call e,PSK) \
- --argstr loghost $(call e,LOGHOST) \
- --argstr l2tpUsername $(call e,L2TP_USERNAME) \
- --argstr l2tpPassword $(call e,L2TP_PASSWORD) \
- --argstr l2tpPeer $(call e,L2TP_PEER)
+defalutroute: ATTRS=--argstr endian big
 
-extensino: ATTRS=\
- --argstr endian little \
- --argstr ssid $(call e,SSID) \
- --argstr psk $(call e,PSK) \
- --argstr loghost $(call e,LOGHOST)
+extensino: ATTRS=--argstr endian little
 
-upstaisr: ATTRS=\
- --argstr endian little \
- --argstr ssid $(call e,SSID) \
- --argstr psk $(call e,PSK) \
- --argstr loghost $(call e,LOGHOST)
+upstaisr: ATTRS=--argstr endian little
 
 ## Variables & Functions
 
 INCLUDE=-I nixwrt=./nixwrt
 
+ifdef DRY_RUN
+DRY_RUN_FLAG=--dry-run
+endif
+
 NIX_BUILD=nix-build -j1
-NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE)  -A $(image)
+NIX_BUILD_ARGS=$(NIX_BUILD) --show-trace $(INCLUDE) $(DRY_RUN_FLAG)  -A $(image)
 
 # nixpkgs doesn't recognise mips-linux as a supported system
 export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
@@ -83,12 +65,13 @@ export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
 %-host-key:
 	ssh-keygen -m PEM -P '' -t rsa -f $@ -b 2048
 
+export SSH_AUTHORIZED_KEYS=$(file <  $(ssh_public_key_file))
+export SSH_HOST_KEY=$(file < emu-host-key)
+
 %:examples/%/config.nix
-	$(NIX_BUILD_ARGS) \
+	env $(shell cat secrets) $(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
 	 -I nixwrt-config=`pwd`/$^ \
-	 --argstr myKeys "`cat $(ssh_public_key_file) `" \
-	 --argstr sshHostKey "`cat emu-host-key`" \
 	 default.nix -o out/$@
 
 repl:

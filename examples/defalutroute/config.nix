@@ -16,20 +16,17 @@
 #   [ ] ntp
 #   [ ] pppoe
 
-{
-  loghost
-, l2tpUsername
-, l2tpPassword
-, l2tpPeer
-, myKeys
-, psk
-, sshHostKey
-, ssid
-, lib
-, nixwrt
-, ...
-}:
-let
+{lib, nixwrt} :
+let secrets = {
+      psk = nixwrt.secret "PSK";
+      ssid = nixwrt.secret "SSID";
+      loghost = nixwrt.secret "LOGHOST";
+      myKeys = nixwrt.secret "SSH_AUTHORIZED_KEYS";
+      sshHostKey = nixwrt.secret "SSH_HOST_KEY";
+      l2tpUsername = nixwrt.secret "L2TP_USERNAME";
+      l2tpPassword = nixwrt.secret "L2TP_PASSWORD";
+      l2tpPeer = nixwrt.secret "L2TP_PEER";
+    };
   baseConfiguration = lib.recursiveUpdate
     nixwrt.emptyConfig {
       hostname = "defalutroute";
@@ -47,7 +44,7 @@ let
           memberOf = "br0";
           debug = true;
           params = rec   {
-            inherit ssid;
+            inherit (secrets) ssid;
             ht_capab = "[HT40+]";
             vht_oper_chwidth = 1;
             vht_oper_centr_freq_seg0_idx = channel + 6;
@@ -63,7 +60,7 @@ let
           memberOf = "br0";
           debug = true;
           params = {
-            inherit ssid;
+            inherit (secrets) ssid;
             country_code = "US";
             channel = 9;
             wmm_enabled = 1;
@@ -79,16 +76,16 @@ let
       };
       users = [
         {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" myKeys);}
+         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
       ];
-      packages = [ pkgs.iproute ];
+      packages = [ nixwrt.nixpkgs.iproute ];
     };
 
 in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
    (import <nixwrt/devices/gl-ar750.nix> {})
-   (sshd { hostkey = sshHostKey ; })
+   (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
    (switchconfig {
@@ -99,14 +96,14 @@ in (with nixwrt.modules;
 	   };
    })
    (l2tp {
-     username = l2tpUsername;
-     password = l2tpPassword;
-     endpoint = l2tpPeer;
+     username = secrets.l2tpUsername;
+     password = secrets.l2tpPassword;
+     endpoint = secrets.l2tpPeer;
      lac = "aaisp";
      ifname = "l2tp-aaisp";
 
    })
-   (pkgs : _ : super : {
+   (pkgs : _ : super : let odhcp6Update = ""; in {
      services = super.services // {
        odhcp6c = {
          start =
@@ -114,11 +111,11 @@ in (with nixwrt.modules;
          depends = [ "l2tp-aaisp" ];
        };
      };
-     packages = super.packages ++ [pkgs.odhcp6c pkgs.lua];
+     packages = super.packages ++ [pkgs.odhcp6c];
    })
 
    #       haveged
    #       (pppoe { options = { debug = ""; }; auth = "* * mysecret\n"; })
-   (syslog { inherit loghost; })
+   (syslog { inherit (secrets) loghost; })
    #       (ntpd { host = "pool.ntp.org"; })
   ])

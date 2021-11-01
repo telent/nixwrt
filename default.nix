@@ -1,16 +1,7 @@
-{ myKeys
-, loghost ? "loghost"
-, psk ? "whatevs"
-, ssid ? "netowrkname"
-, endian
-, rsyncPassword ? null
-, sshHostKey }:
-let nixwrt = (import <nixwrt>) { inherit endian ;  }; in
+{endian} : let nixwrt = (import <nixwrt>) { inherit endian; }; in
 with nixwrt.nixpkgs;
 let
-  modules = import <nixwrt-config> {
-    inherit rsyncPassword myKeys loghost sshHostKey lib ssid nixwrt psk;
-  };
+  modules = import <nixwrt-config> { inherit lib nixwrt; };
   allConfig = nixwrt.mergeModules modules;
   qemu = nixwrt.nixpkgs.pkgsBuildBuild.qemu;
 in rec {
@@ -29,7 +20,7 @@ in rec {
   '';
 
   firmware = nixwrt.firmware allConfig;
-  kernel = nixwrt.kernel allConfig;
+
   # phramware generates an image which boots from the "fake" phram mtd
   # device - required if you want to boot from u-boot without
   # writing the image to flash first

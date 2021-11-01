@@ -53,4 +53,9 @@ with nixpkgs; rec {
       kernelImage = configuration.kernel.package;
       rootImage = rootfs configuration;
     };
+
+  secret = name: let a = builtins.getEnv name;
+                 in assert (a != "") ||
+                           throw "no environent variable ${builtins.toJSON name}"; a;
+
 }

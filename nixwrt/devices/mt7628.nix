@@ -96,7 +96,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
             inherit tree ;
             inherit (self.kernel) config;
             checkedConfig = checkConfig // extraConfig;
-            inherit (nixpkgs) stdenv buildPackages writeText runCommand;
+            inherit (nixpkgs) stdenv lib buildPackages writeText runCommand;
           };
           fdt = kb.makeFdt {
             dts = options.dts {inherit (ralink) openwrt;};
