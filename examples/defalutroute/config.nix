@@ -16,7 +16,7 @@
 #   [ ] ntp
 #   [ ] pppoe
 
-{nixwrt, device} :
+{nixwrt, device, config} :
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
@@ -30,7 +30,7 @@ let
       l2tpPeer = nixwrt.secret "L2TP_PEER";
     };
   baseConfiguration = lib.recursiveUpdate
-    nixwrt.emptyConfig {
+    config {
       hostname = "defalutroute";
       busybox  = { applets = ["stty"] ; };
       webadmin = { allow = ["localhost" "192.168.1.0/24"]; };

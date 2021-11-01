@@ -1,6 +1,6 @@
 # this is another wireless access point/bridge like extensino,
 # but different hardware device
-{ nixwrt, device } :
+{ nixwrt, device, config } :
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
@@ -11,7 +11,7 @@ let
     sshHostKey = nixwrt.secret "SSH_HOST_KEY";
   };
   baseConfiguration = lib.recursiveUpdate
-    nixwrt.emptyConfig {
+    config {
       hostname = "upstaisr";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {

@@ -71,6 +71,11 @@
       };
     };
 
+  user = attributes: nixpkgs: self: super:
+    super // {
+      users = super.users ++ [attributes];
+    };
+
   usbdisk =  options: nixpkgs: self: super:
     with nixpkgs;
     lib.attrsets.recursiveUpdate super {

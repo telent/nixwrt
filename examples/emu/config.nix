@@ -1,4 +1,4 @@
-{ nixwrt, device}:
+{ nixwrt, device, config}:
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
@@ -6,25 +6,26 @@ let
     sshHostKey = builtins.getEnv "SSH_HOST_KEY";
   };
   baseConfiguration = lib.recursiveUpdate
-    nixwrt.emptyConfig {
+    config {
       hostname = "emu";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
         "eth0" = { } ;
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
-      users = [
-        {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
-      ];
       packages = [ nixwrt.nixpkgs.iproute ];
       busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
     };
 
-  m = with nixwrt.modules;
+in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
    (device.module {})
+   (user {
+     name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
+     shell="/bin/sh";
+     authorizedKeys = (lib.splitString "\n" secrets.myKeys);
+   })
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
@@ -32,5 +33,4 @@ let
      resolvConfFile = "/run/resolv.conf";
      interface = "eth0";
    })
-  ];
-in m
+  ])

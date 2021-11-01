@@ -1,4 +1,4 @@
-{ nixwrt, device}:
+{ nixwrt, device, config}:
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
@@ -10,7 +10,7 @@ let
   };
   pkgs = nixwrt.nixpkgs;
   baseConfiguration = lib.recursiveUpdate
-    nixwrt.emptyConfig {
+    config {
       hostname = "extensino";
       webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
       interfaces = {
