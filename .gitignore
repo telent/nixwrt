@@ -3,6 +3,7 @@ result
 *-key
 secrets
 secrets.*
+!secrets.example
 \#*
 .#**.rej
 *-host-key

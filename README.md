@@ -114,7 +114,7 @@ You will need
   you can access U-Boot across the network. The OpenWrt wiki is often
   very helpful here.
 
-Now, clone the nixwrt repo, and also the nixpkgs revision on which it depends
+Clone the nixwrt repo:
 
     $ git clone git@github.com:telent/nixwrt
     $ cd nixwrt
@@ -124,19 +124,26 @@ The best way to get started is to look at one of the examples in
 device you want to use and ideally which has most recently been
 updated.  There should be advisory and/or warning comments at the top of each.
 
-Each example has a quite similar structure: (a) boilerplate, (b) a
-base `configuration`, (c) an array of `wantedModules`, and (d) two
-targets `firmware` and `phramware` which build firmware images.
+Each example consists of two files:
+
+* `config.nix` contains a base configuration and an array of "modules"
+  which are merged into it
+
+* `device.nix` names a device (router make/model) which should
+  correspond to one of the keys in `nixwrt/devices/default.nix`
+
 
 
 ## Build it
 
-There is a Makefile to help you get started on building any of the examples.
-To build the `extensino` example, run
+There is a Makefile to help you get started on building any of the
+examples.  To build the `extensino` example, run
 
-    $ make extensino SSID=mysid PSK=db6c814b6a96464e1fa02efabb240ce8ceb490ddce54e6dbd4fac2f35e8184ae image=phramware
+    $ cp secrets.example secrets
+	$ $EDITOR secrets # update SSID and other details
+    $ make extensino image=phramware
 
-This should create a file `extensino/firmware.bin` which you need
+This should create a file `out/extensino/firmware.bin` which you need
 to copy to your TFTP server.
 
 Caveat: the makefile is a convenience thing for hacking/testing and
