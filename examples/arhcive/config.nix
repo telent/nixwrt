@@ -1,7 +1,8 @@
 # Status Oct 2020: builds, boots, Works On My Network
 
-{ lib, nixwrt, device} :
-let secrets = {
+{ nixwrt, device} :
+let lib = nixwrt.nixpkgs.lib;
+    secrets = {
       rsyncPassword = nixwrt.secret "ARHCIVE_RSYNC_PASSWORD";
       psk = nixwrt.secret "PSK";
       ssid = nixwrt.secret "SSID";
@@ -42,7 +43,7 @@ let secrets = {
 in (with nixwrt.modules;
   [(_ : _ : _ : baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (nixwrt.devices.${device.name} {})
+   (device.module {})
    (rsyncd { password = secrets.rsyncPassword; })
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox

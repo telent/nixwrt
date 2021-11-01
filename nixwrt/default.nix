@@ -69,6 +69,4 @@ with nixpkgs; rec {
   secret = name: let a = builtins.getEnv name;
                  in assert (a != "") ||
                            throw "no environent variable ${builtins.toJSON name}"; a;
-
-  devices = import ./devices;
 }

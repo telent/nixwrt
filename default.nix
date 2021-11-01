@@ -1,9 +1,8 @@
-let device = import <nixwrt-device>;
-    nixwrt = (import <nixwrt>) { inherit (device) endian; }; in
-with nixwrt.nixpkgs;
-let
-  modules = import <nixwrt-config> { inherit device lib nixwrt; };
-  configuration = nixwrt.mergeModules modules;
+let deviceName = (import <nixwrt-device>).name;
+    device = (import <nixwrt/devices>).${deviceName};
+    nixwrt = (import <nixwrt>) { inherit (device) endian; };
+    modules = import <nixwrt-config> { inherit device nixwrt; };
+    configuration = nixwrt.mergeModules modules;
 in rec {
   emulator = nixwrt.emulator configuration;
 
@@ -14,6 +13,9 @@ in rec {
   # writing the image to flash first
   phramware =
     let phram_ = (nixwrt.modules.phram {
+          # XXX the offset should come from device.foo
+          # XXX the size depends on the firmware image size
+          # so depends on _everything_
           offset = "0xa00000"; sizeMB = "7";
         });
     in nixwrt.firmware (nixwrt.mergeModules [configuration phram_]);
