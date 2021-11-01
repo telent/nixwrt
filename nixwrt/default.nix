@@ -54,6 +54,20 @@ with nixpkgs; rec {
       rootImage = rootfs configuration;
     };
 
+  emulator = configuration : writeScript "emulator" ''
+    #!${stdenv.shell}
+    rootfs=${rootfs configuration}/image.squashfs
+    vmlinux=${configuration.kernel.package}/vmlinux
+    dtb=${configuration.kernel.package}/kernel.dtb
+    set +x
+    ${nixpkgs.pkgsBuildBuild.qemu}/bin/qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
+      -append ${builtins.toJSON configuration.boot.commandLine} \
+      -netdev user,id=mynet0,net=10.8.6.0/24,dhcpstart=10.8.6.4 \
+      -device virtio-net-pci,netdev=mynet0 \
+      -drive if=virtio,readonly=on,file=''$rootfs \
+        -nographic
+  '';
+
   secret = name: let a = builtins.getEnv name;
                  in assert (a != "") ||
                            throw "no environent variable ${builtins.toJSON name}"; a;
