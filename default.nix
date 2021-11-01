@@ -1,10 +1,10 @@
 let deviceName = (import <nixwrt-device>).name;
     device = (import <nixwrt/devices>).${deviceName};
     nixwrt = (import <nixwrt>) { inherit (device) endian; };
-    modules = import <nixwrt-config> {
-      config = nixwrt.emptyConfig;
-      inherit device nixwrt;
-    };
+    modules =
+      [( _ : _ : _ :  nixwrt.emptyConfig)
+       (device.module {})] ++
+      import <nixwrt-config> {inherit device nixwrt; };
     configuration = nixwrt.mergeModules modules;
 in rec {
   emulator = nixwrt.emulator configuration;

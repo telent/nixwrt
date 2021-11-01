@@ -16,7 +16,7 @@
 #   [ ] ntp
 #   [ ] pppoe
 
-{nixwrt, device, config} :
+{nixwrt, device} :
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
@@ -29,64 +29,62 @@ let
       l2tpPassword = nixwrt.secret "L2TP_PASSWORD";
       l2tpPeer = nixwrt.secret "L2TP_PEER";
     };
-  baseConfiguration = lib.recursiveUpdate
-    config {
-      hostname = "defalutroute";
-      busybox  = { applets = ["stty"] ; };
-      webadmin = { allow = ["localhost" "192.168.1.0/24"]; };
-      interfaces = {
-        "eth0" = { } ;
-        "eth0.1" = {
-          type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
-          memberOf = "br0";
-        };
-        "eth1" = { ipv4Address = "10.0.0.5/24"; };
-        "wlan0" = {
-          type = "hostap";
-          memberOf = "br0";
-          debug = true;
-          params = rec   {
-            inherit (secrets) ssid;
-            ht_capab = "[HT40+]";
-            vht_oper_chwidth = 1;
-            vht_oper_centr_freq_seg0_idx = channel + 6;
-            country_code = "US";
-            channel = 36;
-            ieee80211ac = 1;
-            wmm_enabled = 1;
-            hw_mode = "a";
-          };
-        };
-        "wlan1" = {
-          type = "hostap";
-          memberOf = "br0";
-          debug = true;
-          params = {
-            inherit (secrets) ssid;
-            country_code = "US";
-            channel = 9;
-            wmm_enabled = 1;
-            ieee80211n = 1;
-            hw_mode = "g";
-          };
-        };
-        "br0" = {
-          type = "bridge";
-          ipv4Address = "192.168.1.4/24";
-        };
-        lo = { ipv4Address = "127.0.0.1/8"; };
+  baseConfiguration = {
+    hostname = "defalutroute";
+    busybox  = { applets = ["stty"] ; };
+    webadmin = { allow = ["localhost" "192.168.1.0/24"]; };
+    interfaces = {
+      "eth0" = { } ;
+      "eth0.1" = {
+        type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
+        memberOf = "br0";
       };
-      users = [
-        {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
-      ];
-      packages = [ nixwrt.nixpkgs.iproute ];
+      "eth1" = { ipv4Address = "10.0.0.5/24"; };
+      "wlan0" = {
+        type = "hostap";
+        memberOf = "br0";
+        debug = true;
+        params = rec   {
+          inherit (secrets) ssid;
+          ht_capab = "[HT40+]";
+          vht_oper_chwidth = 1;
+          vht_oper_centr_freq_seg0_idx = channel + 6;
+          country_code = "US";
+          channel = 36;
+          ieee80211ac = 1;
+          wmm_enabled = 1;
+          hw_mode = "a";
+        };
+      };
+      "wlan1" = {
+        type = "hostap";
+        memberOf = "br0";
+        debug = true;
+        params = {
+          inherit (secrets) ssid;
+          country_code = "US";
+          channel = 9;
+          wmm_enabled = 1;
+          ieee80211n = 1;
+          hw_mode = "g";
+        };
+      };
+      "br0" = {
+        type = "bridge";
+        ipv4Address = "192.168.1.4/24";
+      };
+      lo = { ipv4Address = "127.0.0.1/8"; };
     };
+    users = [
+      {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
+       shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
+    ];
+    packages = [ nixwrt.nixpkgs.iproute ];
+  };
 
 in (with nixwrt.modules;
-  [(_ : _ : _ : baseConfiguration)
+  [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (device.module {})
    (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
