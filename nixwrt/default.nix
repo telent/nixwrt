@@ -23,8 +23,6 @@ with nixpkgs; rec {
     in lib.fix (self: lib.foldl extend {}
                   (map (x: x self) (map (f: f nixpkgs) ms)));
 
-  monitrc = pkgs.callPackage ./monitrc.nix;
-
   emptyConfig = {
     interfaces = {};
     etc = {};
@@ -44,7 +42,7 @@ with nixpkgs; rec {
 
   rootfs = configuration: pkgs.callPackage ./rootfs-image.nix {
     busybox = configuration.busybox.package;
-    monitrc = (monitrc configuration);
+    monitrc = ((pkgs.callPackage ./monitrc.nix) configuration);
     inherit configuration;
   };
 
