@@ -40,7 +40,9 @@ let
     fstab = {
       content = (import ./fstab.nix lib) configuration.filesystems;
     };
-    passwd = {content = (import ./mkpasswd.nix lib) configuration.users; };
+    passwd = {
+      content = (import ./mkpasswd.nix) lib configuration.users;
+    };
     inittab = {content = ''
       ::askfirst:-/bin/sh
       ::sysinit:/etc/rc
@@ -90,7 +92,7 @@ let
          configuration.filesystems)}
     /etc/dropbear d 0700 root root
     /etc/dropbear/dropbear_rsa_host_key f 0600 root root cat ${dropbearHostKey}
-    /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline ((builtins.elemAt configuration.users 0).authorizedKeys) }"
+    /root/.ssh/authorized_keys f 0600 root root echo -e "${builtins.concatStringsSep newline (configuration.users.root.authorizedKeys) }"
   '';
   squashfs =
     let excludeWildcards = [ "... lib*.a" "... man/man[1-9]" ];

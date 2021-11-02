@@ -26,7 +26,12 @@ with nixpkgs; rec {
   emptyConfig = {
     interfaces = {};
     etc = {};
-    users = [ ];
+    users = {
+      root = {
+        uid=0; gid=0; gecos="Super User"; dir="/root";
+        shell="/bin/sh";
+      };
+    };
 
     # Packages in this list will have symlinks in /bin added to their
     # binaries in the store path. Packages which are dependencies of

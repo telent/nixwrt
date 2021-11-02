@@ -22,12 +22,12 @@ let lib = nixwrt.nixpkgs.lib;
         "eth0" = { } ;
         lo = { ipv4Address = "127.0.0.1/8"; };
       };
-      users = [
-        {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-         shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
-        {name="store"; uid=500; gid=500; gecos="Storage owner"; dir="/srv";
-         shell="/dev/null"; authorizedKeys = [];}
-      ];
+      users = {
+        store = {
+          uid=500; gid=500; gecos="Storage owner"; dir="/srv";
+          shell="/dev/null"; authorizedKeys = [];
+        };
+      };
       busybox = {
         # because I have empirically determined that
 	      # being able to see which copy of a file is more recent
@@ -42,7 +42,10 @@ in (with nixwrt.modules;
   [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
    (rsyncd { password = secrets.rsyncPassword; })
-   (sshd { hostkey = secrets.sshHostKey ; })
+   (sshd {
+     hostkey = secrets.sshHostKey;
+     authkeys = { root = lib.splitString "\n" secrets.myKeys; };
+   })
    busybox
    (usbdisk {
      label = "backup-disk";

@@ -44,17 +44,16 @@ let
       };
       lo = { ipv4Address = "127.0.0.1/8"; };
     };
-    users = [
-      {name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-       shell="/bin/sh"; authorizedKeys = (lib.splitString "\n" secrets.myKeys);}
-    ];
     packages = [ ];
     busybox = { applets = ["ln"]; };
   };
 in (with nixwrt.modules;
   [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (sshd { hostkey = secrets.sshHostKey ; })
+   (sshd {
+     hostkey = secrets.sshHostKey;
+     authkeys = { root = lib.splitString "\n" secrets.myKeys; };
+   })
    (_ : _ : super : {
      packages = super.packages ++
                 (with nixwrt.nixpkgs; [ iproute iperf3 ]);

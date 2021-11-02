@@ -19,12 +19,10 @@ let
 in (with nixwrt.modules;
   [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
    (import <nixwrt/modules/lib.nix> {})
-   (user {
-     name="root"; uid=0; gid=0; gecos="Super User"; dir="/root";
-     shell="/bin/sh";
-     authorizedKeys = (lib.splitString "\n" secrets.myKeys);
+   (sshd {
+     hostkey = secrets.sshHostKey;
+     authkeys = { root = (lib.splitString "\n" secrets.myKeys); };
    })
-   (sshd { hostkey = secrets.sshHostKey ; })
    busybox
    kernelMtd
    (dhcpClient {
