@@ -30,11 +30,11 @@ device tree for it already.
 
 ## Applications and use cases (former, current and prospective)
 
-* Working: Rsync backup server (see examples/arhcive.nix)
+* Working: Rsync backup server (see examples/arhcive/)
 
-* Working: Wireless extender (see examples/{extensino.nix,upstaisr.nix}
+* Working: Wireless extender (see examples/{extensino,upstaisr}
 
-* WIP: PPPoE router/access point (examples/defalutroute.nix)
+* WIP: PPPoE router/access point (examples/defalutroute)
 
 
 # What's it made of?
