@@ -120,6 +120,7 @@ in nixpkgs.lib.attrsets.recursiveUpdate super {
   boot = {
     loadAddress = "0x80000000";
     entryPoint = "0x80000000";
+    phramBaseAddress = "0xa00000";
     commandLine = "earlyprintk=serial,ttyS0 console=ttyS0,115200 panic=10 oops=panic init=/bin/init loglevel=8 rootfstype=squashfs";
   };
 }

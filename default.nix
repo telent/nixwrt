@@ -19,7 +19,8 @@ in rec {
           # XXX the offset should come from device.foo
           # XXX the size depends on the firmware image size
           # so depends on _everything_
-          offset = "0xa00000"; sizeMB = "7";
+          offset = configuration.boot.phramBaseAddress;
+          sizeMB = "7";
         });
     in nixwrt.firmware (nixwrt.mergeModules (modules ++ [phram_]));
 }
