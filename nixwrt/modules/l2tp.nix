@@ -1,22 +1,32 @@
-options@{lac, ifname, username, password, endpoint, ...}: nixpkgs: self: super:
+options@{lac, dhcp, ifname, username, password, endpoint, ...}: nixpkgs: self: super:
 with nixpkgs;
-# FIXME this only works for a single tunnel/session, generalising this
-# for multiple-anything is left for another time
+
 let
+  dhcp-service = super.svcs.${dhcp};
+  ip-up-script = pkgs.writeScript "ip-up" ''
+    #!/bin/sh
+    # params are interface-name tty-device speed local-IP-address
+    #  remote-IP-address ipparam
+    . ${dhcp-service.statefns} l2tp
+    setstate local-address $4
+    setstate peer-address $5
+    setstate ready true
+  '';
   ppp_options = writeText "ppp.options" ''
     +ipv6
     debug
     ipv6cp-use-ipaddr
-    ifname ${ifname}
     name ${username}
+    ip-up-script ${ip-up-script}
     password ${password}
+    logfile /dev/console
     noauth
   '';
   configFile = writeText "xl2tpd.conf" ''
     [global]
     max retries = 1
     [lac ${lac}]
-    autodial = no
+    autodial = yes
     ppp debug = no
     redial = no
     lns = ${endpoint}
@@ -36,23 +46,19 @@ in lib.attrsets.recursiveUpdate super {
   kernel.config."PPP_DEFLATE" = "y";
   kernel.config."PPP_SYNC_TTY" = "y";
 
-  interfaces."${ifname}" = {
-    type = "l2tp";
-    depends = ["xl2tpd"];
-    ifup = [
-      "/bin/echo c ${lac} > /run/xl2tpd.control"
-    ];
-    ifdown = [
-      "/bin/echo d ${lac} > /run/xl2tpd.control"
-    ];
-  };
-
   etc."xl2tpd.secrets" = {
     mode = "0400";
     content = "# empty apart from this comment\n";
   };
 
-  services.xl2tpd = {
-    start = "${pkgs.xl2tpd}/bin/xl2tpd -c ${configFile} -s /etc/xl2tpd.secrets -p /run/xl2tpd.pid -C /run/xl2tpd.control";
+  # echo "c aaisp" >/run/xl2tpd.control
+
+  svcs.xl2tpd = svc {
+    name = "l2tp";
+    pid = "/run/xl2tpd.pid";
+    foreground = true;
+    depends = [ dhcp-service.ready  ];
+    start = "${pkgs.xl2tpd}/bin/xl2tpd -D -c ${configFile} -s /etc/xl2tpd.secrets -p /run/xl2tpd.pid -C /run/xl2tpd.control";
+    outputs = ["ready"];
   };
 }

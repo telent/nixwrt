@@ -1,12 +1,12 @@
 with import <nixpkgs> {};
 let t = callPackage ./testfns.nix {};
-    svcnix = callPackage ./svcnix.nix { baseDir = "/tmp"; };
-    foo = svcnix.build {
+    svcnix = callPackage ./default.nix { baseDir = "/tmp"; };
+    foo = svcnix {
       name = "foo";
       start = "setstate ready true";
       outputs = ["ready"];
     };
-    bar = svcnix.build {
+    bar = svcnix {
       name = "bar";
       start = "setstate ready true";
       outputs = ["ready"];
@@ -29,12 +29,12 @@ in t.examples [
     '')
   (let
     delay = "3";
-    slow = svcnix.build {
+    slow = svcnix {
       name = "foo";
       start = "sleep ${delay}; setstate ready true";
       outputs = ["ready"];
     };
-    bar = svcnix.build {
+    bar = svcnix {
       name = "bar";
       start = "setstate ready true";
       outputs = ["ready"];
@@ -54,7 +54,7 @@ in t.examples [
       test-wait 10  -f ${bar.ready} || fail "${bar.ready} not found"
       ! test -f ${bar.blocked} || fail "${bar.blocked} found unexpectedly"
     '')
-  (let slant = svcnix.build {
+  (let slant = svcnix {
          name  = "slant";
          start = "setstate ready true; sleep 3";
          outputs = ["ready"];
@@ -64,7 +64,7 @@ in t.examples [
          test-wait 50  -f ${slant.ready} || fail "${slant.ready} not found"
          test-wait 50 \! -f ${slant.ready} || fail "${slant.ready} found unexpectedly"
        '')
-  (let foo = svcnix.build {
+  (let foo = svcnix {
       name = "foo";
       start = "setstate ready true; setstate pidnum \$$";
       outputs = ["ready" "pidnum"];

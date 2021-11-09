@@ -12,14 +12,21 @@
 , monitrc
 , ...}:
 let
+  allServices = pkgs.svc {
+    name = "all-systems";
+    start = "setstate ready true";
+    outputs = ["ready"];
+    depends = lib.mapAttrsToList (n: s: builtins.trace n s.ready) configuration.svcs;
+  };
   packagesToInstall = configuration.packages ++ [
     busybox
     monit
     monitrc
+    allServices.package
   ] ++ lib.optional (configuration.kernel ? firmware) configuration.kernel.firmware;
   dropbearHostKey = runCommand "makeHostKey" {
     name= "makeHostKey"; preferLocalBuild = true;
-    inkey=configuration.services.dropbear.hostKey;
+    inkey = configuration.sshHostKey;
   } ''
       echo "$inkey" | ${buildPackages.dropbear}/bin/dropbearconvert openssh dropbear /dev/fd/0 $out
     '';
@@ -31,7 +38,7 @@ let
       include ${monitrc}
       '';
     };
-    "monit.id" = { content = builtins.hashString "md5" configuration.services.dropbear.hostKey; };
+    "monit.id" = { content = builtins.hashString "md5" configuration.sshHostKey; };
     group = {content = ''
       root:!!:0:
       nogroup:x:65534:
@@ -46,7 +53,6 @@ let
     inittab = {content = ''
       ::askfirst:-/bin/sh
       ::sysinit:/etc/rc
-      ::respawn:${monit}/bin/monit -I -c /etc/monitrc
     '';};
     "mdev.conf" = { content = ''
       -[sh]d[a-z] 0:0 660 @${monit}/bin/monit start vol_\$MDEV
@@ -63,7 +69,9 @@ let
       mount -t devpts none /dev/pts
       echo ${configuration.hostname} > /proc/sys/kernel/hostname
       echo /bin/mdev > /proc/sys/kernel/hotplug
+      mkdir /run/services
       mdev -s
+      ${allServices.package} start &
     '';};
 
   } // configuration.etc) ;

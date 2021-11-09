@@ -44,6 +44,7 @@ nixpkgs: self: super:
           "reboot"
           "rm"
           "rmdir"
+          "sleep"
           "umount"
           "zcat"
         ] ++ lib.attrByPath ["busybox" "applets"] [] super;

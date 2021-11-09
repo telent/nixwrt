@@ -40,7 +40,9 @@ with nixpkgs; rec {
     packages = [ ];
 
     # default busybox config is quite minimal but you can add applets here
-    busybox = { applets = []; };
+    busybox = { applets = ["sleep"]; };
+
+    svcs = {};
 
     filesystems = {} ;
   };

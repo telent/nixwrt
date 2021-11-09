@@ -7,51 +7,52 @@
 
 ,  baseDir ? "/run/services"
 } :
-rec {
+let
   statefns =
     writeScript "state-fns.sh" ''
       state_dir="${baseDir}/$1"
       rmstate(){ rm $state_dir/$1; }
-      setstate(){ mkdir -p $state_dir && echo $2 > $state_dir/$1 ; }
+      setstate(){ mkdir -p $state_dir && echo "''${2-null}" > $state_dir/$1 ; }
     '';
-  build = {
-    name
-    , pid ? null
-    , start
-    , stop ? null
-    , outputs ? []
-    , depends ? []
-    , foreground ? false
-  } :
-    let
-      stop' = if (stop != null)
-              then stop
-              else if (pid != null)
-              then "test -f ${pid} && ${utillinux}/bin/kill --signal 15 --timeout 15000 9 $(cat ${pid})"
-              else "true";
-      mkOutput = self : o : { service = self; outPath = o; };
-      package =
-        let waitDepends =
-              if depends != []
-              then "until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done"
-              else "";
-        in writeScript "${name}-ctl" ''
+in {
+  name
+, pid ? null
+, start
+, stop ? null
+, outputs ? []
+, depends ? []
+, foreground ? false
+} :
+  let
+    stop' = if (stop != null)
+            then stop
+            else if (pid != null)
+            then "test -f ${pid} && ${utillinux}/bin/kill --signal 15 --timeout 15000 9 $(cat ${pid})"
+            else "true";
+    mkOutput = self : o : { service = self; outPath = o; };
+    package =
+      let waitDepends =
+            if depends != []
+            then "until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done"
+            else "";
+          servicesForDepends = lib.lists.unique (map (f: f.service) depends);
+      in writeScript "${name}-ctl" ''
           #! ${runtimeShell}
           . ${statefns} ${name}
           case $1 in
             start)
               if test -d ${baseDir}/${name}; then
-                echo "service $name: already started"
+                echo "service ${name}: already started"
               else
                 mkdir ${baseDir}/${name}
                 setstate blocked
-                for d in ${lib.strings.concatStringsSep " " (map (f: f.service) depends)}; do
+                for d in ${lib.strings.concatStringsSep " " servicesForDepends}; do
                   $d start &
                 done
                 ${waitDepends}
                 rmstate blocked
                 ${start}
-                ${if foreground then "$0 stop" else ""}
+                ${if foreground then "echo ${name} process exited; $0 stop" else ""}
               fi
               ;;
             stop)
@@ -64,11 +65,10 @@ rec {
               ;;
            esac
       '';
-      outputSet = lib.lists.foldr
-        (el : m : m //
-                  (builtins.listToAttrs
-                    [{name=el; value= (mkOutput package "${baseDir}/${name}/${el}");}]))
-        {}
-        (["blocked"] ++ outputs);
-    in { inherit package; } // outputSet;
-}
+    outputSet = lib.lists.foldr
+      (el : m : m //
+                (builtins.listToAttrs
+                  [{name=el; value= (mkOutput package "${baseDir}/${name}/${el}");}]))
+      {}
+      (["blocked"] ++ outputs);
+  in { inherit package statefns; } // outputSet
