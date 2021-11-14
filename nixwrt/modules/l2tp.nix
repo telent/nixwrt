@@ -1,21 +1,19 @@
-options@{lac, dhcp, ifname, username, password, endpoint, ...}: nixpkgs: self: super:
+options@{dhcp, ifname, username, password, peer, ...}: nixpkgs: self: super:
 with nixpkgs;
 
 let
   dhcp-service = super.svcs.${dhcp};
   ip-up-script = pkgs.writeScript "ip-up" ''
     #!/bin/sh
-    # params are interface-name tty-device speed local-IP-address
-    #  remote-IP-address ipparam
+    # params are ifname tty speed local-addr remote-addr ipparam
     . ${dhcp-service.statefns} l2tp
-    setstate local-address $4
-    setstate peer-address $5
+    setstate local-v4-address $4
+    setstate peer-v4-address $5
     setstate ready true
   '';
   ipv6-up-script = pkgs.writeScript "ipv6-up" ''
-    #!/bin/sh -x
-    # params are interface-name tty-device speed local-IP-address
-    #  remote-IP-address ipparam
+    #!/bin/sh
+    # params are ifname tty speed local-addr remote-addr ipparam
 
     # this is a workaround for a bug I haven't diagnosed yet.
     # the ipv6 link address that pppd adds seems not to work
@@ -26,6 +24,8 @@ let
     ip=${pkgs.iproute}/bin/ip
     $ip address del $4 dev $1 scope link
     $ip address add $4 peer $5 dev $1 scope link
+    setstate local-v6-address $4
+    setstate peer-v6-address $5
   '';
   ppp_options = writeText "ppp.options" ''
     +ipv6
@@ -42,18 +42,17 @@ let
   configFile = writeText "xl2tpd.conf" ''
     [global]
     max retries = 1
-    [lac ${lac}]
+    [lac lac]
     autodial = yes
     ppp debug = no
     redial = no
-    lns = ${endpoint}
+    lns = ${peer}
     require authentication = no
     pppoptfile = ${ppp_options}
   ''
     ;
 in lib.attrsets.recursiveUpdate super {
   packages = super.packages ++ [ pkgs.xl2tpd pkgs.ppp ];
-  busybox = { applets = super.busybox.applets ++ ["echo"];}; # unneeded?
 
   kernel.config."L2TP" = "y";
   kernel.config."PPP" = "y";
@@ -68,14 +67,15 @@ in lib.attrsets.recursiveUpdate super {
     content = "# empty apart from this comment\n";
   };
 
-  # echo "c aaisp" >/run/xl2tpd.control
-
   svcs.xl2tpd = svc {
     name = "l2tp";
     pid = "/run/xl2tpd.pid";
     foreground = true;
     depends = [ dhcp-service.ready  ];
-    start = "${pkgs.xl2tpd}/bin/xl2tpd -D -c ${configFile} -s /etc/xl2tpd.secrets -p /run/xl2tpd.pid -C /run/xl2tpd.control";
+    start = ''
+      ip link set up dev lo
+      ${pkgs.xl2tpd}/bin/xl2tpd -D -c ${configFile} -s /etc/xl2tpd.secrets -p /run/xl2tpd.pid -C /run/xl2tpd.control
+'';
     outputs = ["ready"];
   };
 }

@@ -46,9 +46,6 @@ in (with nixwrt.modules;
    (l2tp {
      dhcp = "dhcp-eth0";
      ifname = "wan0";
-     lac = secrets.l2tp.lac;
-     endpoint = secrets.l2tp.peer;
-     username = secrets.l2tp.username;
-     password = secrets.l2tp.password;
+     inherit (secrets.l2tp) peer username password;
    })
   ])
