@@ -45,7 +45,7 @@ in (with nixwrt.modules;
    (dhcpClient { interface = "eth0"; name = "dhcp-eth0"; })
    (l2tp {
      dhcp = "dhcp-eth0";
-     ifname = "eth0";
+     ifname = "wan0";
      lac = secrets.l2tp.lac;
      endpoint = secrets.l2tp.peer;
      username = secrets.l2tp.username;

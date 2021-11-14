@@ -12,12 +12,29 @@ let
     setstate peer-address $5
     setstate ready true
   '';
+  ipv6-up-script = pkgs.writeScript "ipv6-up" ''
+    #!/bin/sh -x
+    # params are interface-name tty-device speed local-IP-address
+    #  remote-IP-address ipparam
+
+    # this is a workaround for a bug I haven't diagnosed yet.
+    # the ipv6 link address that pppd adds seems not to work
+    # (can't be pinged, doesn't see traffic), unless I delete
+    # and add it again. Don't know why. From the pppd source code
+    # it uses an ioctl to create the route whereas iproute is
+    # using netlink, maybe that's a place to start investigating
+    ip=${pkgs.iproute}/bin/ip
+    $ip address del $4 dev $1 scope link
+    $ip address add $4 peer $5 dev $1 scope link
+  '';
   ppp_options = writeText "ppp.options" ''
     +ipv6
-    debug
     ipv6cp-use-ipaddr
+    ipv6cp-accept-local
+    ifname ${ifname}
     name ${username}
     ip-up-script ${ip-up-script}
+    ipv6-up-script ${ipv6-up-script}
     password ${password}
     logfile /dev/console
     noauth
