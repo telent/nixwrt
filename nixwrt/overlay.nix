@@ -216,6 +216,8 @@ in {
 
   svc = self.callPackage ./services {};
 
+  strace = super.strace.override { libunwind = null; };
+
   swconfig =  stripped (self.callPackage ./pkgs/swconfig.nix { });
 
   tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
