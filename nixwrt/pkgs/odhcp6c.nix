@@ -12,10 +12,9 @@ in stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "openwrt";
     repo = "odhcp6c";
-    rev = "49305e6847efa43e008d0bebdc176e1833120947";
-    sha256 = "08n939b190sq92ixvghw2sllmp6kbxz0dxv8av7x68c4gbwpgh4g";
+    rev = "94adc8bbfa5150d4c2ceb4e05ecd1840dfa3df08";
+    sha256 = "02jz1i5l5p5nsmpp2lwrw8hbfrg17f2lg70xcgcvb7xh6l5q8jan";
   };
   name = "odhcp6c";
-
   nativeBuildInputs = [ cmake ];
 }
