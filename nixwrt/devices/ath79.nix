@@ -1,7 +1,7 @@
 options: nixpkgs: self: super:
 with nixpkgs.lib;
 let
-  kb = self.nixwrt.kernel;
+  kb = nixpkgs.kernelBuilders;
   openwrt =  nixpkgs.fetchFromGitHub {
     owner = "openwrt";
     repo = "openwrt";

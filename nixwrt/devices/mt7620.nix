@@ -2,7 +2,7 @@ options: nixpkgs: self: super:
 with nixpkgs.lib;
 let
   ralink = (import ./ralink.nix { inherit nixpkgs; inherit (self) nixwrt; });
-  kb = self.nixwrt.kernel;
+  kb = nixpkgs.kernelBuilders;
   extraConfig = {
     "ASN1" = "y";
     "ASYMMETRIC_KEY_TYPE" = "y";

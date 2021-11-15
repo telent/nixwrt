@@ -2,7 +2,7 @@ options: nixpkgs: self: super:
 with nixpkgs.lib;
 let
   dts = v :"${v}/arch/mips/boot/dts/mti/malta.dts";
-  kb = self.nixwrt.kernel;
+  kb = nixpkgs.kernelBuilders;
   openwrt =  nixpkgs.fetchFromGitHub {
     owner = "openwrt";
     repo = "openwrt";

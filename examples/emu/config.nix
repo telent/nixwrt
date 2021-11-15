@@ -18,7 +18,6 @@ let
 
 in (with nixwrt.modules;
   [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
-   (import <nixwrt/modules/lib.nix> {})
    (sshd {
      hostkey = secrets.sshHostKey;
      authkeys = { root = (lib.splitString "\n" secrets.myKeys); };

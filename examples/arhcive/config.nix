@@ -40,7 +40,6 @@ let lib = nixwrt.nixpkgs.lib;
 
 in (with nixwrt.modules;
   [(_ : _ : super : lib.recursiveUpdate super baseConfiguration)
-   (import <nixwrt/modules/lib.nix> {})
    (rsyncd { password = secrets.rsyncPassword; })
    (sshd {
      hostkey = secrets.sshHostKey;

@@ -105,6 +105,8 @@ in {
     '';
   }));
 
+  kernelBuilders = import ./kernel { inherit (self) lib runCommand; };
+
   kexectools = let ovr = o @ {patches ? []
                               , buildInputs ? []
                               , nativeBuildInputs ? []

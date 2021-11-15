@@ -1,6 +1,6 @@
 { nixpkgs
 , nixwrt } :
-let kb = nixwrt.kernel;
+let kb = nixpkgs.kernelBuilders;
 in rec {
   listFiles = dir: builtins.attrNames (builtins.readDir dir);
   openwrt =  nixpkgs.fetchFromGitHub {

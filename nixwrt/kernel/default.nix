@@ -1,4 +1,4 @@
-options: nixpkgs: self: super:
+{ lib, runCommand }:
 let
   applyVersion = tokens : fn :
     builtins.foldl' (f: x: f x) fn (map toString tokens);
@@ -9,9 +9,8 @@ let
     in builtins.fetchurl {
       inherit sha256 url;
     };
-  lib = nixpkgs.lib;
   readDefconfig = file:
-    let f = nixpkgs.pkgs.runCommand "defconfig.json"  { } ''
+    let f = runCommand "defconfig.json"  { } ''
       echo -e "{\n" > $out
       (source ${file} ; for v in ''${!CONFIG@} ; do printf "  \"%s\": \"%s\",\n" "$v" "''${!v}" ;done ) >> $out
       echo -e "  \042SWALLOW_COMMA\042: \042n\042 \n}" >> $out
@@ -25,10 +24,6 @@ let
   makeUimage = import <nixwrt/kernel/uimage.nix>;
   makeFdt = import <nixwrt/kernel/build-fdt.nix>;
 in {
-  nixwrt = {
-    kernel = {
-      inherit fetchUpstreamKernel readDefconfig patchSourceTree
-        makeVmlinux makeUimage makeFdt;
-    };
-  };
+  inherit fetchUpstreamKernel readDefconfig patchSourceTree
+    makeVmlinux makeUimage makeFdt;
 }
