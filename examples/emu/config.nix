@@ -2,8 +2,8 @@
 let
   lib = nixwrt.nixpkgs.lib;
   secrets = {
-    myKeys = builtins.getEnv "SSH_AUTHORIZED_KEYS";
-    sshHostKey = builtins.getEnv "SSH_HOST_KEY";
+    myKeys = nixwrt.secret "SSH_AUTHORIZED_KEYS";
+    sshHostKey = nixwrt.secret "SSH_HOST_KEY";
   };
   baseConfiguration = {
     hostname = "emu";
