@@ -277,7 +277,7 @@ ELF kernel image and a root filesystem instead of a combined firmware
 image, and also because Qemu doesn't appear to support device trees.
 
     $ make emu SSID=mysid PSK=whatevs  LOGHOST=loghost.lan image=emulator
-    $ ./emu
+    $ ./out/emu
 
 
 ## Troubleshooting
