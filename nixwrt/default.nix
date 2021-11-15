@@ -41,6 +41,7 @@ with nixpkgs; rec {
 
     # default busybox config is quite minimal but you can add applets here
     busybox = { applets = []; };
+    svcs = {};
 
     filesystems = {} ;
   };

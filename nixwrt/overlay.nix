@@ -206,9 +206,15 @@ in {
   # we had trouble building rsync with acl support
   rsync = stripped (super.rsync.override { enableACLs = false; } );
 
+  svc = self.callPackage ./services {};
+
   swconfig =  stripped (self.callPackage ./pkgs/swconfig.nix { });
 
   tcpdump =super.tcpdump.overrideAttrs (o: { dontStrip = false; });
+
+  utillinux = super.utillinux.override {
+    systemd = null; ncurses = null;
+  } ;
 
   xl2tpd = super.xl2tpd.overrideAttrs (o: {
     postPatch = ''
