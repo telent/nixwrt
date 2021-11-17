@@ -8,6 +8,18 @@
 ,  baseDir ? "/run/services"
 } :
 let
+  mergeConfigs = with lib; attrList:
+    let f = attrPath:
+          zipAttrsWith (n: values:
+            if tail values == []
+            then head values
+            else if all isList values
+            then unique (concatLists values)
+            else if all isAttrs values
+            then f (attrPath ++ [n]) values
+            else last values
+          );
+    in f [] attrList;
   statefns =
     writeScript "state-fns.sh" ''
       state_dir="${baseDir}/$1"
@@ -22,6 +34,7 @@ in {
 , outputs ? []
 , depends ? []
 , foreground ? false
+, config ? []
 } :
   let
     stop' = if (stop != null)
@@ -29,13 +42,17 @@ in {
             else if (pid != null)
             then "test -f ${pid} && ${utillinux}/bin/kill --signal 15 --timeout 15000 9 $(cat ${pid})"
             else "true";
-    mkOutput = self : o : { service = self; outPath = o; };
+    mergedConfig =
+      mergeConfigs ([config] ++ (map (f: f.mergedConfig ) depends));
+
+    mkOutput = self : o : { inherit mergedConfig; service = self; outPath = o; };
+    servicesForDepends = lib.lists.unique (map (f: f.service) depends);
     package =
       let waitDepends =
             if depends != []
             then "until test ${lib.strings.concatStringsSep " -a " (map (f: "-f ${f}") depends)} ; do sleep 1; done"
             else "";
-          servicesForDepends = lib.lists.unique (map (f: f.service) depends);
+
       in writeScript "${name}-ctl" ''
           #! ${runtimeShell}
           . ${statefns} ${name}
@@ -71,4 +88,6 @@ in {
                   [{name=el; value= (mkOutput package "${baseDir}/${name}/${el}");}]))
       {}
       (["blocked"] ++ outputs);
-  in { inherit package statefns; } // outputSet
+  in {
+    inherit package statefns mergedConfig;
+  } // outputSet

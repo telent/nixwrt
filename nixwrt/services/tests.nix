@@ -77,4 +77,31 @@ in t.examples [
        pid2=`cat ${foo.pidnum}`
        test "$pid1" = "$pid2" || fail "pids $pid1, $pid2 differ"
     '')
+
+  (let charles = svcnix {
+         name = "charles";
+         start = "setstate ready true";
+         outputs = ["ready"];
+         config = {
+           applets = ["one" "two" "three"];
+         };
+       };
+       dale = svcnix {
+         name = "dale";
+         start = "setstate ready true";
+         outputs = ["ready"];
+         depends = [ charles.ready ];
+         config = {
+           applets = ["zeven"];
+         };
+       };
+   in
+     assert
+       (charles.mergedConfig == {
+         applets = ["one" "two" "three"];
+       });
+     assert
+       (dale.mergedConfig.applets == ["zeven" "one" "two" "three" ]);
+     null
+       )
 ]

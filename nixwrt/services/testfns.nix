@@ -31,5 +31,5 @@
       buildInputs = es;
       testPhase = "touch $out";
     };
-
+  trace1 = f: builtins.trace (builtins.deepSeq f f) f;
 }
