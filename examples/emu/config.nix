@@ -9,9 +9,7 @@ let
   baseConfiguration = {
     hostname = "emu";
     webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
-    interfaces = {
-      "eth0" = { } ;
-    };
+    interfaces = { };
     packages = [ nixwrt.nixpkgs.iproute ];
     busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
   };
@@ -25,12 +23,9 @@ in (with nixwrt.modules;
    busybox
    kernelMtd
    (_: self: super: lib.recursiveUpdate super {
-     svcs.lo = (services.netdevice { ifname = "lo"; });
-   })
-
-
-   (dhcpClient {
-     resolvConfFile = "/run/resolv.conf";
-     interface = "eth0";
+     svcs.lo = (services.netdevice "lo");
+     svcs.eth0 =
+       let link = (services.netdevice "eth0");
+       in services.dhcpc { interface = link ; hostname = "emu"; };
    })
   ])

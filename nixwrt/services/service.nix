@@ -77,5 +77,5 @@ in {
       {}
       (["blocked"] ++ outputs);
   in {
-    inherit package statefns mergedConfig;
+    inherit name package statefns mergedConfig;
   } // outputSet
