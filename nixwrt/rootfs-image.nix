@@ -12,17 +12,10 @@
 , monitrc
 , ...}:
 let
-  allServices = pkgs.svc {
-    name = "all-systems";
-    start = "setstate ready true";
-    outputs = ["ready"];
-    depends = lib.mapAttrsToList (n: s: builtins.trace n s.ready) configuration.svcs;
-  };
   packagesToInstall = configuration.packages ++ [
     busybox
     monit
     monitrc
-    allServices.package
   ] ++ lib.optional (configuration.kernel ? firmware) configuration.kernel.firmware;
   dropbearHostKey = runCommand "makeHostKey" {
     name= "makeHostKey"; preferLocalBuild = true;
@@ -72,7 +65,7 @@ let
       echo /bin/mdev > /proc/sys/kernel/hotplug
       mkdir /run/services
       mdev -s
-      ${allServices.package} start &
+      ${configuration.supervisor}  start &
     '';};
 
   } // configuration.etc) ;

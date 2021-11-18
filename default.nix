@@ -4,7 +4,20 @@ let deviceName = (import <nixwrt-device>).name;
     modules =
       [( _ : _ : _ :  nixwrt.emptyConfig)
        (device.module {})] ++
-      import <nixwrt-config> {inherit device nixwrt; };
+      import <nixwrt-config> {inherit device nixwrt; } ++
+      [(nixpkgs: self: super :
+        let dmerge = nixpkgs.lib.recursiveUpdate ;
+            allServices = nixpkgs.lib.mapAttrsToList (n: s: s.ready) super.svcs;
+            starter = nixpkgs.pkgs.svc {
+              name = "all-systems";
+              start = "setstate ready true";
+              outputs = ["ready"];
+              depends = allServices ;
+            };
+        in dmerge (dmerge super starter.mergedConfig) {
+          supervisor = starter.package;
+          packages = [ starter.package ];
+        })];
     configuration = nixwrt.mergeModules modules;
 in rec {
   emulator = nixwrt.emulator configuration;
