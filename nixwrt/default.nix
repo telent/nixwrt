@@ -58,7 +58,7 @@ with nixpkgs; rec {
       rootImage = rootfs configuration;
     };
 
-  services = callPackage ./services> {};
+  services = callPackage ./services {};
 
   emulator = configuration : writeScript "emulator" ''
     #!${stdenv.shell}

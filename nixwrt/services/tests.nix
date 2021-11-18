@@ -1,6 +1,10 @@
 with import <nixpkgs> {};
 let t = callPackage ./testfns.nix {};
-    svcnix = callPackage ./service.nix { baseDir = "/tmp"; };
+    mergeConfigs = import ../merge_configs.nix { inherit lib;};
+    svcnix = callPackage ./service.nix {
+      lib = lib // { inherit mergeConfigs; };
+      baseDir = "/tmp";
+    };
     foo = svcnix {
       name = "foo";
       start = "setstate ready true";

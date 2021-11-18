@@ -8,18 +8,6 @@
 ,  baseDir ? "/run/services"
 } :
 let
-  mergeConfigs = with lib; attrList:
-    let f = attrPath:
-          zipAttrsWith (n: values:
-            if tail values == []
-            then head values
-            else if all isList values
-            then unique (concatLists values)
-            else if all isAttrs values
-            then f (attrPath ++ [n]) values
-            else last values
-          );
-    in f [] attrList;
   statefns =
     writeScript "state-fns.sh" ''
       state_dir="${baseDir}/$1"
@@ -43,7 +31,7 @@ in {
             then "test -f ${pid} && ${utillinux}/bin/kill --signal 15 --timeout 15000 9 $(cat ${pid})"
             else "true";
     mergedConfig =
-      mergeConfigs ([config] ++ (map (f: f.mergedConfig ) depends));
+      lib.mergeConfigs ([config] ++ (map (f: f.mergedConfig ) depends));
 
     mkOutput = self : o : { inherit mergedConfig; service = self; outPath = o; };
     servicesForDepends = lib.lists.unique (map (f: f.service) depends);

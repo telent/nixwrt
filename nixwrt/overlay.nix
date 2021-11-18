@@ -2,6 +2,10 @@ self: super:
 let
   stripped = p : p.overrideAttrs(o: { stripAllList = [ "bin" "sbin" ];});
 in {
+  lib = super.lib // {
+    trace1 = x: builtins.trace (builtins.deepSeq x x) x;
+    mergeConfigs = import ./merge_configs.nix { inherit (self) lib; };
+  };
 
   busybox = stripped (super.busybox.overrideAttrs (o: {
     # busybox derivation has a postConfigure action conditional on
