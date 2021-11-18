@@ -1,6 +1,6 @@
 with import <nixpkgs> {};
 let t = callPackage ./testfns.nix {};
-    svcnix = callPackage ./default.nix { baseDir = "/tmp"; };
+    svcnix = callPackage ./service.nix { baseDir = "/tmp"; };
     foo = svcnix {
       name = "foo";
       start = "setstate ready true";

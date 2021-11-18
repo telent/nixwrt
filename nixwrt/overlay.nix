@@ -208,7 +208,7 @@ in {
   # we had trouble building rsync with acl support
   rsync = stripped (super.rsync.override { enableACLs = false; } );
 
-  svc = self.callPackage ./services {};
+  svc = self.callPackage ./services/service.nix {};
 
   strace = super.strace.override { libunwind = null; };
 
