@@ -1,6 +1,7 @@
 { nixwrt, device}:
 let
   lib = nixwrt.nixpkgs.lib;
+  services = nixwrt.services;
   secrets = {
     myKeys = nixwrt.secret "SSH_AUTHORIZED_KEYS";
     sshHostKey = nixwrt.secret "SSH_HOST_KEY";
@@ -10,7 +11,6 @@ let
     webadmin = { allow = ["localhost" "192.168.8.0/24"]; };
     interfaces = {
       "eth0" = { } ;
-      lo = { ipv4Address = "127.0.0.1/8"; };
     };
     packages = [ nixwrt.nixpkgs.iproute ];
     busybox = { applets = [ "poweroff" "halt" "reboot" ]; };
@@ -24,6 +24,11 @@ in (with nixwrt.modules;
    })
    busybox
    kernelMtd
+   (_: self: super: lib.recursiveUpdate super {
+     svcs.lo = (services.netdevice { ifname = "lo"; });
+   })
+
+
    (dhcpClient {
      resolvConfFile = "/run/resolv.conf";
      interface = "eth0";

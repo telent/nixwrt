@@ -58,6 +58,8 @@ with nixpkgs; rec {
       rootImage = rootfs configuration;
     };
 
+  services = callPackage ./services> {};
+
   emulator = configuration : writeScript "emulator" ''
     #!${stdenv.shell}
     rootfs=${rootfs configuration}/image.squashfs
