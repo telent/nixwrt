@@ -187,6 +187,15 @@ in {
   }).overrideAttrs (o : {
      stripAllList = [ "bin" ];
      buildInputs = [];
+
+     patches =
+       o.patches ++
+       [(self.fetchpatch {
+         name = "ipv6-script-options.patch";
+         url = "https://github.com/telent/ppp/compare/ipv6-script-options.patch";
+         sha256 = "0q6ackl3k8qqx4fdx56lsn57jics5qddk3sq5fgcnnvmgc6rjlhz";
+       })];
+
      postPatch = ''
        sed -i -e  's@_PATH_VARRUN@"/run/"@'  pppd/main.c
        sed -i -e  's@^FILTER=y@# FILTER unset@'  pppd/Makefile.linux
