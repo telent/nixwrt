@@ -72,7 +72,9 @@ with nixpkgs; rec {
         -nographic
   '';
 
-  secret = name: let a = builtins.getEnv name;
-                 in assert (a != "") ||
-                           throw "no environent variable ${builtins.toJSON name}"; a;
+  secret = name:
+    let a = builtins.getEnv name;
+    in assert (a != "") ||
+              throw "no environment variable ${builtins.toJSON name}";
+      a;
 }
