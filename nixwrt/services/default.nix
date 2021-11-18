@@ -34,7 +34,7 @@ in {
 , outputs ? []
 , depends ? []
 , foreground ? false
-, config ? []
+, config ? {}
 } :
   let
     stop' = if (stop != null)
