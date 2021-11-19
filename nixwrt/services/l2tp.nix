@@ -10,7 +10,7 @@ let
   ip-up-script = writeScript "ip-up" ''
     #!/bin/sh
     # params are ifname tty speed local-addr remote-addr ipparam
-    . ${link.statefns} l2tp
+    . ${link.statefns} ${serviceName}
     setstate local-v4-address $4
     setstate peer-v4-address $5
     setstate ready true
@@ -18,6 +18,7 @@ let
   ipv6-up-script = writeScript "ipv6-up" ''
     #!/bin/sh
     # params are ifname tty speed local-addr remote-addr ipparam
+    . ${link.statefns} ${serviceName}
 
     # this is a workaround for a bug I haven't diagnosed yet.
     # the ipv6 link address that pppd adds seems not to work
