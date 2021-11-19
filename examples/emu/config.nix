@@ -29,10 +29,11 @@ in (with nixwrt.modules;
    busybox
    kernelMtd
    (_: self: super:
-     let lo = services.netdevice "lo";
+     let lo = services.netdevice {ifname = "lo"; };
          eth0 =
-           let link = services.netdevice "eth0";
+           let link = services.netdevice {ifname = "eth0"; };
            in services.dhcpc { interface = link ; hostname = "emu"; };
+
          wan0 =
            let l2tp = services.l2tp {
                  link = eth0;
@@ -44,9 +45,15 @@ in (with nixwrt.modules;
              ifname = "wan0";
              hostname = "emu";
            };
+
+         eth1 = services.netdevice {
+           ifname = "eth1";
+           # XXX need to configure with the prefix from dhcp6c-wan0
+           addresses = ["192.168.19.1/24"];
+         };
      in
        lib.recursiveUpdate super {
-         svcs = { inherit lo eth0 wan0; };
+         svcs = { inherit lo eth0 eth1 wan0; };
        }
    )
   ])
