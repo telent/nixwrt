@@ -39,7 +39,11 @@ in (with nixwrt.modules;
                  ifname = "wan0";
                  inherit (secrets.l2tp) peer username password;
                };
-           in l2tp; #services.odhcp6c { };
+           in services.dhcp6c {
+             link = l2tp;
+             ifname = "wan0";
+             hostname = "emu";
+           };
      in
        lib.recursiveUpdate super {
          svcs = { inherit lo eth0 wan0; };
