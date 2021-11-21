@@ -21,6 +21,11 @@ in {
     doCheck = !self.stdenv.isMips && o.doCheck;
   });
 
+  dnsmasq = super.dnsmasq.overrideAttrs(o: {
+    preBuild = "";
+  });
+
+
   dropbearSmall = stripped (super.dropbear.overrideAttrs (o: {
     PROGRAMS = "dropbear";
     LDFLAGS="-Wl,--gc-sections";

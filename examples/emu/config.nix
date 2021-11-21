@@ -48,8 +48,44 @@ in (with nixwrt.modules;
 
          eth1 = services.netdevice {
            ifname = "eth1";
-           # XXX need to configure with the prefix from dhcp6c-wan0
-           addresses = ["192.168.19.1/24"];
+           addresses = ["192.168.19.1/24" ];
+         };
+
+         dnsmasq =  nixpkgs.pkgs.svc {
+           foreground = true;
+           name = "dnsmasq";
+           depends = [ eth1.ready ];
+           pid = "/run/dnsmasq-eth1.pid";
+           start = lib.concatStringsSep " " [
+             "setstate ready true; "
+             "${nixpkgs.pkgs.dnsmasq}/bin/dnsmasq"
+#             "--no-daemon" # debug mode
+             "--dhcp-range=192.168.19.5,192.168.19.240"
+             "--dhcp-range=::4,::ffff,constructor:eth1,slaac"
+             "--user=dnsmasq"
+             "--group=nogroup"
+             "--domain=example.com"
+             # "--group=dnsmasq"
+             "--interface=eth1"
+             "--keep-in-foreground" # not debug mode
+             "--dhcp-authoritative"
+             "--servers-file=/run/resolv.conf"
+             "--log-dhcp"
+             "--enable-ra"
+             "--log-debug"
+             "--log-facility=-"
+             "--dhcp-leasefile=/run/dnsmasq-eth1.leases"
+             "--pid-file=/run/dnsmasq-eth1.pid"
+           ];
+           outputs = ["ready"];
+           config = {
+             users.dnsmasq = {
+               uid = 51; gid= 51; gecos = "DNS/DHCP service user";
+               dir = "/run/dnsmasq";
+               shell = "/bin/false";
+             };
+           };
+         };
          forwarding = nixpkgs.pkgs.svc {
            depends = [ eth1.ready wan0.prefixes ];
            outputs = [ "ready"];
@@ -74,7 +110,7 @@ in (with nixwrt.modules;
          };
      in
        lib.recursiveUpdate super {
-         svcs = { inherit lo eth0 eth1 wan0 forwarding; };
+         svcs = { inherit lo eth0 eth1 wan0 forwarding dnsmasq; };
        }
    )
   ])
