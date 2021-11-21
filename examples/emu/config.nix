@@ -28,7 +28,7 @@ in (with nixwrt.modules;
    })
    busybox
    kernelMtd
-   (_: self: super:
+   (nixpkgs: self: super:
      let lo = services.netdevice {ifname = "lo"; };
          eth0 =
            let link = services.netdevice {ifname = "eth0"; };
@@ -50,10 +50,31 @@ in (with nixwrt.modules;
            ifname = "eth1";
            # XXX need to configure with the prefix from dhcp6c-wan0
            addresses = ["192.168.19.1/24"];
+         forwarding = nixpkgs.pkgs.svc {
+           depends = [ eth1.ready wan0.prefixes ];
+           outputs = [ "ready"];
+           name = "forwarding";
+           start = ''
+             # XXX most likely we should be using only the first
+             # of the prefixes advertised, any others are probably
+             # for a VPN or some other use
+             for prefix in $(cat ${wan0.prefixes}) ; do
+               prefix=''${prefix%%,*}
+               network=''${prefix%%/*}
+               bits=''${prefix#*/}
+               ${nixpkgs.pkgs.iproute}/bin/ip address add ''${network}1/$bits dev eth1
+             done
+             echo "1" > /proc/sys/net/ipv6/conf/all/forwarding
+             # ipv4 doesn't work yet, no NAT/masquerading
+             # echo "1" > /proc/sys/net/ipv4/ip_forward
+             ip route add default dev wan0
+             ip -6 route add default via fe80::203:97ff:fe05:4000 dev wan0
+             setstate ready true
+           '';
          };
      in
        lib.recursiveUpdate super {
-         svcs = { inherit lo eth0 eth1 wan0; };
+         svcs = { inherit lo eth0 eth1 wan0 forwarding; };
        }
    )
   ])
