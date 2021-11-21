@@ -1,6 +1,7 @@
 { iproute, svc, lib }:
 { ifname
 , addresses ? []
+, depends ? []
 } : let addressCommands =
           lib.concatStringsSep
           "\n"
@@ -17,4 +18,5 @@ in svc {
     setstate ready true
   '';
   stop = "${iproute}/bin/ip link set down dev ${ifname}";
+  inherit depends;
 }
