@@ -53,5 +53,5 @@ in svc rec {
   start = "${odhcp6c}/bin/odhcp6c -P ${builtins.toJSON prefixLength}  -p ${pid}   -v -e -s '${writeScript "dhcp6script" dhcp6script}'  ${ifname}";
   foreground = true;
   depends = [ link.ready ];
-  outputs = [ "ready" "address" "prefixes"];
+  outputs = [ "ready" "address" "nameservers" "prefixes"];
 }

@@ -51,6 +51,16 @@ in (with nixwrt.modules;
            addresses = ["192.168.19.1/24" ];
          };
 
+         nswatcher = nixpkgs.pkgs.svc {
+           name = "nswatcher";
+           depends = [ wan0.nameservers ];
+           outputs = ["ready"];
+           start = ''
+             echo "nameserver $(cat ${wan0.nameservers})" > /run/resolv.conf
+             setstate ready true
+           '';
+         };
+
          dnsmasq =  nixpkgs.pkgs.svc {
            foreground = true;
            name = "dnsmasq";
@@ -59,7 +69,6 @@ in (with nixwrt.modules;
            start = lib.concatStringsSep " " [
              "setstate ready true; "
              "${nixpkgs.pkgs.dnsmasq}/bin/dnsmasq"
-#             "--no-daemon" # debug mode
              "--dhcp-range=192.168.19.5,192.168.19.240"
              "--dhcp-range=::4,::ffff,constructor:eth1,slaac"
              "--user=dnsmasq"
@@ -69,7 +78,7 @@ in (with nixwrt.modules;
              "--interface=eth1"
              "--keep-in-foreground" # not debug mode
              "--dhcp-authoritative"
-             "--servers-file=/run/resolv.conf"
+             "--resolv-file=/run/resolv.conf"
              "--log-dhcp"
              "--enable-ra"
              "--log-debug"
@@ -110,7 +119,16 @@ in (with nixwrt.modules;
          };
      in
        lib.recursiveUpdate super {
-         svcs = { inherit lo eth0 eth1 wan0 forwarding dnsmasq; };
+         svcs = {
+           inherit
+             dnsmasq
+             eth0
+             eth1
+             forwarding
+             lo
+             nswatcher
+             wan0
+           ; };
        }
    )
   ])
