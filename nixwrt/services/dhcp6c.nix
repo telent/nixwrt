@@ -26,9 +26,9 @@ let
         ip addr add $addr dev $dev
         setstate address $addr
       done
-      setstate ready true
       setstate prefixes $PREFIXES
       setstate nameservers $RDNSS
+      setstate ready true
     }
     echo $0 $1 $2
     case $2 in
