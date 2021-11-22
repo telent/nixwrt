@@ -72,11 +72,10 @@ in (with nixwrt.modules;
              "--dhcp-range=192.168.19.5,192.168.19.240"
              "--dhcp-range=::4,::ffff,constructor:eth1,slaac"
              "--user=dnsmasq"
-             "--group=nogroup"
              "--domain=example.com"
-             # "--group=dnsmasq"
+             "--group=dnsmasq"
              "--interface=eth1"
-             "--keep-in-foreground" # not debug mode
+             "--keep-in-foreground"
              "--dhcp-authoritative"
              "--resolv-file=/run/resolv.conf"
              "--log-dhcp"
@@ -92,6 +91,9 @@ in (with nixwrt.modules;
                uid = 51; gid= 51; gecos = "DNS/DHCP service user";
                dir = "/run/dnsmasq";
                shell = "/bin/false";
+             };
+             groups.dnsmasq = {
+               gid = 51; usernames = ["dnsmasq"];
              };
            };
          };

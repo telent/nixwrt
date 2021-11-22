@@ -32,6 +32,10 @@ with nixpkgs; rec {
         shell="/bin/sh";
       };
     };
+    groups = {
+      root = { gid = 0; };
+      nogroup =  { gid = 65534; };
+    };
 
     # Packages in this list will have symlinks in /bin added to their
     # binaries in the store path. Packages which are dependencies of

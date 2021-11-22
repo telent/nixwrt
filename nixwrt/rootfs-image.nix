@@ -32,10 +32,14 @@ let
       '';
     };
     "monit.id" = { content = builtins.hashString "md5" configuration.sshHostKey; };
-    group = {content = ''
-      root:!!:0:
-      nogroup:x:65534:
-    '';};
+    group =
+      let lines = lib.mapAttrsToList
+        (name: grp@{gid, usernames ? []}:
+          "${name}:x:${builtins.toString gid}:${lib.concatStringsSep "," usernames}\n" )
+        configuration.groups;
+      in {
+        content = lib.concatStrings lines;
+      };
     hosts = {content = "127.0.0.1 localhost\n"; };
     fstab = {
       content = (import ./fstab.nix lib) configuration.filesystems;
