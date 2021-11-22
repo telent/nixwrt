@@ -65,12 +65,14 @@ with nixpkgs; rec {
     rootfs=${rootfs configuration}/image.squashfs
     vmlinux=${configuration.kernel.package}/vmlinux
     dtb=${configuration.kernel.package}/kernel.dtb
+    qemu=${nixpkgs.pkgsBuildBuild.qemu}/bin/qemu-system-mips
+    netdev=''${1-socket,listen=:5133}
     set +x
-    ${nixpkgs.pkgsBuildBuild.qemu}/bin/qemu-system-mips  -M malta -m 128 -nographic  -kernel ''$vmlinux \
+    $qemu  -M malta -m 128 -nographic  -kernel ''$vmlinux \
       -append ${builtins.toJSON configuration.boot.commandLine} \
       -netdev user,id=mynet0,net=10.8.6.0/24,dhcpstart=10.8.6.4 \
       -device virtio-net-pci,netdev=mynet0 \
-      -netdev socket,id=mynet1,listen=:5133 \
+      -netdev $netdev,id=mynet1 \
       -device virtio-net-pci,netdev=mynet1 \
       -drive if=virtio,readonly=on,file=''$rootfs \
         -nographic
