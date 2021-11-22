@@ -34,17 +34,16 @@ in (with nixwrt.modules;
            let link = services.netdevice {ifname = "eth0"; };
            in services.dhcpc { interface = link ; hostname = "emu"; };
 
-         wan0 =
-           let l2tp = services.l2tp {
-                 link = eth0;
+         l2tp = services.l2tp {
+           link = eth0;
                  ifname = "wan0";
                  inherit (secrets.l2tp) peer username password;
-               };
-           in services.dhcp6c {
-             link = l2tp;
-             ifname = "wan0";
-             hostname = "emu";
-           };
+         };
+         wan0 = services.dhcp6c {
+           link = l2tp;
+           ifname = "wan0";
+           hostname = "emu";
+         };
 
          eth1 = services.netdevice {
            ifname = "eth1";
@@ -98,7 +97,7 @@ in (with nixwrt.modules;
            };
          };
          forwarding = nixpkgs.pkgs.svc {
-           depends = [ eth1.ready wan0.prefixes ];
+           depends = [ eth1.ready wan0.prefixes l2tp.peer-v6-address ];
            outputs = [ "ready"];
            name = "forwarding";
            start = ''
@@ -115,7 +114,7 @@ in (with nixwrt.modules;
              # ipv4 doesn't work yet, no NAT/masquerading
              # echo "1" > /proc/sys/net/ipv4/ip_forward
              ip route add default dev wan0
-             ip -6 route add default via fe80::203:97ff:fe05:4000 dev wan0
+             ip -6 route add default via ''$(cat ${l2tp.peer-v6-address}) dev wan0
              setstate ready true
            '';
          };

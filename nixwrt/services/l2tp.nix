@@ -64,7 +64,13 @@ in svc rec {
   start = ''
     ${xl2tpd}/bin/xl2tpd -D -c ${configFile} -s /etc/xl2tpd.secrets -p ${pid} -C /run/${serviceName}.control
   ''  ;
-  outputs = ["ready"];
+  outputs = [
+    "ready"
+    "local-v4-address"
+    "local-v6-address"
+    "peer-v4-address"
+    "peer-v6-address"
+  ];
   config = {
     packages = [ xl2tpd ppp ];
     kernel.config = {
