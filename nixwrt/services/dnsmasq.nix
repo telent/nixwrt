@@ -17,7 +17,7 @@ svc rec {
     --domain=${domain} \
     --group=dnsmasq \
     --interface=${lan.name} \
-    ${lib.concatStringsSep " " (builtins.map (r: "--dhcp-range=${r}") ranges)}
+    ${lib.concatStringsSep " " (builtins.map (r: "--dhcp-range=${r}") ranges)} \
     --keep-in-foreground \
     --dhcp-authoritative \
     --resolv-file=${resolvFile} \
