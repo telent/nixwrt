@@ -100,6 +100,41 @@ in (with nixwrt.modules;
            depends = [ eth1.ready wan0.prefixes l2tp.peer-v6-address ];
            outputs = [ "ready"];
            name = "forwarding";
+           config = {
+             kernel.config = {
+               "BRIDGE_NETFILTER" = "y";
+               "NETFILTER" = "y";
+               "NETFILTER_ADVANCED" = "y";
+               "NETFILTER_INGRESS" = "y";
+               "NETFILTER_NETLINK" = "y";
+               "NETFILTER_NETLINK_LOG" = "y";
+               "NFT_CHAIN_NAT_IPV4" = "y";
+               "NFT_CHAIN_NAT_IPV6" = "y";
+               "NFT_CHAIN_ROUTE_IPV4" = "y";
+               "NFT_CHAIN_ROUTE_IPV6" = "y";
+               "NFT_CT" = "y";
+               "NFT_MASQ" = "y";
+               "NFT_NAT" = "y";
+               "NFT_REJECT_IPV4" = "y";
+               "NF_CONNTRACK" = "y";
+               "NF_CONNTRACK_AMANDA" = "y";
+               "NF_CONNTRACK_FTP" = "y";
+               "NF_CONNTRACK_H323" = "y";
+               "NF_CONNTRACK_IRC" = "y";
+               "NF_CONNTRACK_LABELS" = "y";
+               "NF_CONNTRACK_NETBIOS_NS" = "y";
+               "NF_CONNTRACK_PPTP" = "y";
+               "NF_CONNTRACK_SNMP" = "y";
+               "NF_CT_PROTO_DCCP" = "y";
+               "NF_CT_PROTO_GRE" = "y";
+               "NF_CT_PROTO_SCTP" = "y";
+               "NF_CT_PROTO_UDPLITE" = "y";
+               "NF_TABLES" = "y";
+               "NF_TABLES_BRIDGE" = "y";
+               "NF_TABLES_IPV4" = "y";
+               "NF_TABLES_IPV6" = "y";
+             };
+           };
            start = ''
              # XXX most likely we should be using only the first
              # of the prefixes advertised, any others are probably
@@ -108,13 +143,17 @@ in (with nixwrt.modules;
                prefix=''${prefix%%,*}
                network=''${prefix%%/*}
                bits=''${prefix#*/}
+               peeraddr=''$(cat ${l2tp.peer-v6-address})
                ${nixpkgs.pkgs.iproute}/bin/ip address add ''${network}1/$bits dev eth1
              done
              echo "1" > /proc/sys/net/ipv6/conf/all/forwarding
-             # ipv4 doesn't work yet, no NAT/masquerading
-             # echo "1" > /proc/sys/net/ipv4/ip_forward
+             echo "1" > /proc/sys/net/ipv4/ip_forward
+             nft(){ ${nixpkgs.pkgs.nftables}/bin/nft $* ;}
+             nft 'add table nat'
+             nft 'add chain nat postrouting { type nat hook postrouting priority 100 ; }'
+             nft 'add rule nat postrouting oif wan0 masquerade'
              ip route add default dev wan0
-             ip -6 route add default via ''$(cat ${l2tp.peer-v6-address}) dev wan0
+             ip -6 route add default via $peeraddr dev wan0
              setstate ready true
            '';
          };
