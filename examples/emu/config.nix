@@ -60,41 +60,15 @@ in (with nixwrt.modules;
            '';
          };
 
-         dnsmasq =  nixpkgs.pkgs.svc {
-           foreground = true;
-           name = "dnsmasq";
-           depends = [ eth1.ready ];
-           pid = "/run/dnsmasq-eth1.pid";
-           start = lib.concatStringsSep " " [
-             "setstate ready true; "
-             "${nixpkgs.pkgs.dnsmasq}/bin/dnsmasq"
-             "--dhcp-range=192.168.19.5,192.168.19.240"
-             "--dhcp-range=::4,::ffff,constructor:eth1,slaac"
-             "--user=dnsmasq"
-             "--domain=example.com"
-             "--group=dnsmasq"
-             "--interface=eth1"
-             "--keep-in-foreground"
-             "--dhcp-authoritative"
-             "--resolv-file=/run/resolv.conf"
-             "--log-dhcp"
-             "--enable-ra"
-             "--log-debug"
-             "--log-facility=-"
-             "--dhcp-leasefile=/run/dnsmasq-eth1.leases"
-             "--pid-file=/run/dnsmasq-eth1.pid"
+         dnsmasq = services.dnsmasq {
+           name = "dnsmasq-eth1";
+           lan = eth1;
+           resolvFile = "/run/resolv.conf";
+           domain = "example.com";
+           ranges = [
+             "192.168.19.5,192.168.19.240"
+             "::4,::ffff,constructor:eth1,slaac"
            ];
-           outputs = ["ready"];
-           config = {
-             users.dnsmasq = {
-               uid = 51; gid= 51; gecos = "DNS/DHCP service user";
-               dir = "/run/dnsmasq";
-               shell = "/bin/false";
-             };
-             groups.dnsmasq = {
-               gid = 51; usernames = ["dnsmasq"];
-             };
-           };
          };
          forwarding = nixpkgs.pkgs.svc {
            depends = [ eth1.ready wan0.prefixes l2tp.peer-v6-address ];
