@@ -2,7 +2,7 @@
 , writeTextFile
 , writeScript
 , lib
-, runtimeShell
+# , runtimeShell
 , utillinux
 
 ,  baseDir ? "/run/services"
@@ -42,7 +42,7 @@ in {
             else "";
 
       in writeScript "${name}-ctl" ''
-          #! ${runtimeShell}
+          #! /bin/sh
           . ${statefns} ${name}
           case $1 in
             start)
