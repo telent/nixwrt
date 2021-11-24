@@ -12,7 +12,7 @@ nixpkgs: self: super:
         ${aconfig}
       '';
     };
-  in lib.attrsets.recursiveUpdate super {
+  in lib.merge2Configs super {
       # we can probably pare this down a bit further if we're really pushed for space
       busybox.applets = [
           "cat"
@@ -45,9 +45,10 @@ nixpkgs: self: super:
           "rm"
           "rmdir"
           "sleep"
+          "test"
           "umount"
           "zcat"
-        ] ++ lib.attrByPath ["busybox" "applets"] [] super;
+      ];
 
       busybox.config = {
         "ASH" = "y";
@@ -59,7 +60,7 @@ nixpkgs: self: super:
         "FEATURE_PIDFILE" = "y"; # monit needs this
         "FEATURE_USE_INITTAB" = "y"; # monit needs this
         "PID_FILE_PATH" = builtins.toJSON "/run";
-      } // lib.attrByPath ["busybox" "config"] {} super;
+      };
 
       busybox.package = pkgs.busybox.override (derivationAttrs {
         config = self.busybox.config ;
