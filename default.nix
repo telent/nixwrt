@@ -36,7 +36,7 @@ in rec {
           # XXX the size depends on the firmware image size
           # so depends on _everything_
           offset = configuration.boot.phramBaseAddress;
-          sizeMB = "7";
+          sizeMB = configuration.boot.phramSizeMB;
         });
     in nixwrt.firmware (nixwrt.mergeModules (modules ++ [phram_]));
 }
