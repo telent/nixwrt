@@ -36,8 +36,8 @@ in (with nixwrt.modules;
 
          l2tp = services.l2tp {
            link = eth0;
-                 ifname = "wan0";
-                 inherit (secrets.l2tp) peer username password;
+           ifname = "wan0";
+           inherit (secrets.l2tp) peer username password;
          };
          wan0 = services.dhcp6c {
            link = l2tp;
