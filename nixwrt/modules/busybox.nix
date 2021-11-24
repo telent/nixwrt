@@ -4,7 +4,7 @@ nixpkgs: self: super:
     let xconfig = builtins.concatStringsSep "\n"
       (lib.mapAttrsToList (n: v: "CONFIG_${pkgs.lib.strings.toUpper n} ${toString v}") config);
         aconfig = builtins.concatStringsSep "\n"
-      (map (n: "CONFIG_${pkgs.lib.strings.toUpper n} y") applets);
+          (map (n: "CONFIG_${pkgs.lib.strings.toUpper n} y") applets);
     in {
       enableMinimal = true;
       extraConfig = ''
