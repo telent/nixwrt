@@ -142,10 +142,10 @@ let
       cp $blobdir/board.bin  $out/firmware/ath10k/QCA9887/hw1.0/
     '';
   };
-  modloaderservice = {
-    type = "oneshot";
-    start = let s= nixpkgs.writeScriptBin "load-modules.sh" ''
-      #!${nixpkgs.busybox}/bin/sh
+  modloaderservice = nixpkgs.pkgs.svc {
+    name = "load-modules";
+    outputs = ["ready"];
+    start = ''
       cd ${modules}
       insmod ./compat/compat.ko
       insmod ./net/wireless/cfg80211.ko
@@ -156,13 +156,16 @@ let
       insmod drivers/net/wireless/ath/ath9k/ath9k_hw.ko
       insmod drivers/net/wireless/ath/ath9k/ath9k_common.ko
       insmod drivers/net/wireless/ath/ath9k/ath9k.ko debug=0xffffffff
-    ''; in "${s}/bin/load-modules.sh";
+      setstate ready true
+    '';
   };
 in nixpkgs.lib.attrsets.recursiveUpdate super {
   packages = ( if super ? packages then super.packages else [] )
-             ++ [modules];
-  services.modloader = modloaderservice;
-  busybox.applets = super.busybox.applets ++ [ "insmod" "lsmod" "modinfo" ];
+             ++ [nixpkgs.pkgs.kmod modules];
+  svcs.modloader = modloaderservice;
+  busybox.applets = super.busybox.applets ++ [
+    "touch" "insmod" "lsmod" "modinfo"
+  ];
   kernel = rec {
     inherit vmlinux tree firmware;
     config =
