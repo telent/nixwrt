@@ -63,7 +63,7 @@ export SSH_HOST_KEY=$(file < emu-host-key)
 
 %:examples/%/config.nix examples/%/device.nix
 	test -f $(SECRETS)
-	env $(shell cat $(SECRETS)) $(NIX_BUILD_ARGS) \
+	env $(shell cat $(SECRETS)) $(MAKEOVERRIDES) $(NIX_BUILD_ARGS) \
 	 $(ATTRS) \
 	 -I nixwrt-config=`pwd`/$< \
 	 -I nixwrt-device=`pwd`/$(<D)/device.nix \
