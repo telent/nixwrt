@@ -40,41 +40,8 @@ let
     busybox  = { applets = ["stty"] ; };
     webadmin = { allow = ["localhost" "192.168.1.0/24"]; };
     ignoredInterfaces = {
-      "eth0" = { } ;
-      "eth0.1" = {
-        type = "vlan"; id = 2; parent = "eth0"; depends = []; # lan
-        memberOf = "br0";
-      };
-      "eth1" = { ipv4Address = "10.0.0.5/24"; };
-      "wlan0" = {
-        type = "hostap";
-        memberOf = "br0";
-        debug = true;
-        params = rec   {
-          inherit (secrets) ssid;
-          ht_capab = "[HT40+]";
-          vht_oper_chwidth = 1;
-          vht_oper_centr_freq_seg0_idx = channel + 6;
-          country_code = "US";
-          channel = 36;
-          ieee80211ac = 1;
-          wmm_enabled = 1;
-          hw_mode = "a";
-        };
-      };
-      "wlan1" = {
-        type = "hostap";
-        memberOf = "br0";
-        debug = true;
-        params = {
-          inherit (secrets) ssid;
-          country_code = "US";
-          channel = 9;
-          wmm_enabled = 1;
-          ieee80211n = 1;
-          hw_mode = "g";
-        };
-      };
+
+
       "br0" = {
         type = "bridge";
         ipv4Address = "192.168.1.4/24";
@@ -96,6 +63,8 @@ in (with nixwrt.modules;
    (nixpkgs: self: super:
      let lo = services.netdevice {ifname = "lo"; };
          wanLink =
+           # strange but true: per the dts file for this
+           # device, eth1 is the lan interface.
            let link = services.netdevice {ifname = "eth1"; };
            in services.dhcpc { interface = link ; hostname = "emu"; };
 
@@ -117,8 +86,27 @@ in (with nixwrt.modules;
            addresses = ["192.168.19.1/24" ];
          };
 
-         wlan1 = services.netdevice { ifname = "wlan1"; };
+         wlan0 = services.netdevice { ifname = "wlan0"; };
+         hostap-wlan0 = services.hostapd {
+           name = "hostap-wlan0";
+           debug = true;
+           wlan = wlan0;
+           modloader = super.svcs.modloader;
+           params = rec {
+             inherit (secrets) ssid;
+             ht_capab = "[HT40+]";
+             vht_oper_chwidth = 1;
+             vht_oper_centr_freq_seg0_idx = channel + 6;
+             country_code = "US";
+             channel = 36;
+             ieee80211ac = 1;
+             wmm_enabled = 1;
+             hw_mode = "a";
+           };
+           psk = secrets.psk;
+         };
 
+         wlan1 = services.netdevice { ifname = "wlan1"; };
          hostap-wlan1 = services.hostapd {
            name = "hostap-wlan1";
            debug = true;
@@ -172,7 +160,7 @@ in (with nixwrt.modules;
              lo
              nswatcher
              wan0
-             hostap-wlan1
+             hostap-wlan0 hostap-wlan1
              # XXX ntp
            ; };
        }
